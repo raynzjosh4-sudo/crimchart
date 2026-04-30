@@ -1,0 +1,134 @@
+name: crown
+description: "Crown - A new Flutter project."
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.0-290.4.beta
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  video_player: ^2.10.1
+  # --- Existing state ---
+  provider: ^6.1.5+1
+  # --- Architecture: State Management ---
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+  # --- Architecture: Navigation ---
+  go_router: ^14.6.2
+  # --- Architecture: Dependency Injection ---
+  get_it: ^8.0.3
+  injectable: ^2.5.0
+  # --- Architecture: Network ---
+  dio: ^5.8.0+1
+  # --- Architecture: Local Storage ---
+  shared_preferences: ^2.3.5
+  # --- Architecture: Utilities ---
+  equatable: ^2.0.7
+  dartz: ^0.10.1
+  ffi: ^2.1.3
+  path_provider: ^2.1.5
+  connectivity_plus: ^6.1.4
+  # --- Existing UI packages ---
+  infinite_scroll_pagination: ^5.1.1
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.4.1
+  flutter_staggered_grid_view: ^0.7.0
+  lucide_icons: ^0.257.0
+  hugeicons: ^1.1.5
+  flutter_localization: ^0.3.3
+  intl: ^0.20.2
+  auto_size_text: ^3.0.0
+  country_picker: ^2.0.27
+  photo_manager: ^3.9.0
+  ffmpeg_kit_flutter_new: ^4.1.0
+  sqflite: ^2.4.1
+  sqflite_common_ffi: ^2.3.5
+  supabase_flutter: ^2.12.1
+  email_validator: ^2.1.1
+  toastification: ^3.0.3
+  password_strength_checker: 1.3.2
+  flutter_secure_storage: ^10.0.0
+  minio: ^3.5.8
+  path: ^1.9.1
+  just_audio: ^0.10.5
+  audio_service: ^0.18.18
+  record: ^5.1.0
+  permission_handler: ^11.3.1
+  visibility_detector: ^0.4.0+2
+
+  uuid: any
+  wakelock_plus: ^1.4.0
+  media_kit: ^1.1.11
+  media_kit_video: ^1.2.5
+  media_kit_libs_video: ^1.0.7
+  http: ^1.6.0
+  mime: ^2.0.0
+dependency_overrides:
+  record_linux: ^1.1.2
+  record_platform_interface: ^1.1.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+  build_runner: ^2.4.15
+  injectable_generator: ^2.7.0
+  riverpod_generator: ^2.6.3
+  mockito: ^5.4.5
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/playstore.png"
+  adaptive_icon_background: "#121212"
+  adaptive_icon_foreground: "assets/icons/playstore.png"
+  windows:
+    generate: true
+    image_path: "assets/icons/playstore.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
+
+  # To add assets to your application, add an assets section, like this:
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  fonts:
+    - family: "Comic Relief"
+      fonts:
+        - asset: fonts/Comic_Relief/ComicRelief-Regular.ttf
+        - asset: fonts/Comic_Relief/ComicRelief-Bold.ttf
+          weight: 700
+    - family: "Archivo Black"
+      fonts:
+        - asset: fonts/Comic_Relief/Archivo_Black,Comic_Relief,Inter,Playfair_Display,Roboto_Condensed/Archivo_Black/ArchivoBlack-Regular.ttf
+    - family: "Inter"
+      fonts:
+        - asset: fonts/Comic_Relief/Archivo_Black,Comic_Relief,Inter,Playfair_Display,Roboto_Condensed/Inter/Inter-VariableFont_opsz,wght.ttf
+        - asset: fonts/Comic_Relief/Archivo_Black,Comic_Relief,Inter,Playfair_Display,Roboto_Condensed/Inter/Inter-Italic-VariableFont_opsz,wght.ttf
+          style: italic
+    - family: "Playfair Display"
+      fonts:
+        - asset: fonts/Comic_Relief/Archivo_Black,Comic_Relief,Inter,Playfair_Display,Roboto_Condensed/Playfair_Display/PlayfairDisplay-VariableFont_wght.ttf
+        - asset: fonts/Comic_Relief/Archivo_Black,Comic_Relief,Inter,Playfair_Display,Roboto_Condensed/Playfair_Display/PlayfairDisplay-Italic-VariableFont_wght.ttf
+          style: italic
+    - family: "Roboto Condensed"
+      fonts:
+        - asset: fonts/Comic_Relief/Archivo_Black,Comic_Relief,Inter,Playfair_Display,Roboto_Condensed/Roboto_Condensed/RobotoCondensed-VariableFont_wght.ttf
+        - asset: fonts/Comic_Relief/Archivo_Black,Comic_Relief,Inter,Playfair_Display,Roboto_Condensed/Roboto_Condensed/RobotoCondensed-Italic-VariableFont_wght.ttf
+          style: italic
+
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
