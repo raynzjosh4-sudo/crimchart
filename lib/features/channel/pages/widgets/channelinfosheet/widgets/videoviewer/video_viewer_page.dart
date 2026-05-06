@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:crown/features/feed/application/feed_controller.dart';
 import 'package:crown/features/feed/domain/entities/post_entity.dart';
-import 'package:crown/features/feed/domain/repositories/feed_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -11,7 +10,6 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:crown/core/localization/localization_provider.dart';
 import 'package:crown/core/widgets/chart_image.dart';
-import 'package:crown/core/utils/responsive_size.dart';
 
 class VideoViewerPage extends ConsumerStatefulWidget {
   final List<PostEntity> initialVideos;
@@ -106,7 +104,9 @@ class _VideoViewerPageState extends ConsumerState<VideoViewerPage> {
         itemBuilder: (context, index) {
           return VerticalVideoItem(
             post: _videos[index],
-            thumbnailUrl: _videos[index].thumbnailUrls.isNotEmpty ? _videos[index].thumbnailUrls.first : null,
+            thumbnailUrl: _videos[index].thumbnailUrls.isNotEmpty
+                ? _videos[index].thumbnailUrls.first
+                : null,
             onBack: () => Navigator.pop(context),
           );
         },
@@ -146,18 +146,18 @@ class _VerticalVideoItemState extends State<VerticalVideoItem> {
   Future<void> _initPlayer() async {
     if (widget.post.videoUrl == null) return;
     String url = widget.post.videoUrl!;
-    
+
     // 👑 Robust Path Handling
-    final media = url.startsWith('http') 
-        ? Media(url) 
-        : (url.startsWith('file://') 
-            ? Media(url) 
-            : Media(File(Uri.decodeComponent(url)).uri.toString()));
+    final media = url.startsWith('http')
+        ? Media(url)
+        : (url.startsWith('file://')
+              ? Media(url)
+              : Media(File(Uri.decodeComponent(url)).uri.toString()));
 
     try {
       await player.open(media, play: true);
       player.setPlaylistMode(PlaylistMode.loop);
-      
+
       // 👑 Sync Playback State for Thumbnail Overlay
       player.stream.playing.listen((playing) {
         if (mounted) setState(() => _isPlaying = playing);
@@ -196,8 +196,8 @@ class _VerticalVideoItemState extends State<VerticalVideoItem> {
         if (!_isPlaying && widget.thumbnailUrl != null)
           SizedBox.expand(
             child: ChartImage(
-              url: widget.thumbnailUrl!.startsWith('http') 
-                  ? widget.thumbnailUrl 
+              url: widget.thumbnailUrl!.startsWith('http')
+                  ? widget.thumbnailUrl
                   : Uri.decodeComponent(widget.thumbnailUrl!),
               fit: BoxFit.cover,
             ),
@@ -205,9 +205,7 @@ class _VerticalVideoItemState extends State<VerticalVideoItem> {
 
         // ── 3. OPTIONAL LOADING OVERLAY ──
         if (!_initialized)
-          const Center(
-            child: CircularProgressIndicator(color: Colors.white70),
-          ),
+          const Center(child: CircularProgressIndicator(color: Colors.white70)),
 
         // ── TOP ACTIONS ──
         Positioned(

@@ -95,6 +95,7 @@ class _ChannelsPageState extends ConsumerState<ChannelsPage> {
       backgroundColor: backgroundColor,
       appBar: ChartAppBar(
         title: context.tr('channels_title'),
+        showBack: false,
         backgroundColor: backgroundColor,
         titleStyle: TextStyle(
           color: colorScheme.onSurface,
@@ -201,7 +202,8 @@ class _PageContent extends ConsumerWidget {
     }
 
     // === CHANNEL modes: driven by real Supabase data ===
-    final channelsState = ref.watch(channelsListControllerProvider(filter));
+    // 👑 ALWAYS fetch only the channels the user is joined in or owns
+    final channelsState = ref.watch(channelsListControllerProvider('joined'));
 
     if (channelsState.status == ChannelsListStatus.loading &&
         channelsState.channels.isEmpty) {
@@ -225,10 +227,11 @@ class _PageContent extends ConsumerWidget {
       );
     }
 
+    // Client-side filtering based on the selected tab
     final displayChannels = channelsState.channels.where((ch) {
-      final isMine = ch.creatorId == currentUserId;
-      final isInvited = ch.isCharted;
-      return isMine || isInvited;
+      if (filter == 'private') return ch.isPrivate;
+      if (filter == 'public') return !ch.isPrivate;
+      return true; // 'all' or 'channels' show everything they joined
     }).toList();
 
     if (displayChannels.isEmpty) {
@@ -254,10 +257,10 @@ class _PageContent extends ConsumerWidget {
           description: entity.description,
           imageUrl: entity.avatarUrl.isNotEmpty ? entity.avatarUrl : null,
           memberCount: entity.memberCount,
-          staterName: entity.name,
-          staterAvatarUrl: entity.avatarUrl.isNotEmpty
-              ? entity.avatarUrl
-              : null,
+          staterName: entity.creatorName ?? entity.name,
+          staterAvatarUrl:
+              entity.creatorAvatarUrl ??
+              (entity.avatarUrl.isNotEmpty ? entity.avatarUrl : null),
           leaderAvatarUrl: entity.leaderAvatarUrl ?? entity.creatorAvatarUrl,
           unreadCount: entity.unreadCount,
           isOwnChannel: entity.creatorId == currentUserId,

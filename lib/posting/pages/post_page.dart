@@ -6,6 +6,7 @@ import '../tabs/photos_tab.dart';
 import '../tabs/videos_tab.dart';
 import '../tabs/audio_tab.dart';
 import '../pages/finalpostpage/finalize_post_page.dart';
+import 'package:crown/backicon/custom_back_button.dart';
 
 // EditPostPage is commented out (editing tools pending implementation):
 // import 'editing/edit_post_page.dart';
@@ -54,6 +55,12 @@ class _PostPageState extends State<PostPage>
 
   Future<void> _onNext() async {
     final List<MediaItem> selectedMediaItems = _selectedItems.values.toList();
+
+    if (widget.isManifestoContext) {
+      Navigator.pop(context, selectedMediaItems);
+      return;
+    }
+
     // Skip editing — go straight to the share/finalize page
     Navigator.push(
       context,
@@ -78,6 +85,7 @@ class _PostPageState extends State<PostPage>
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
+        leading: CustomBackButton(onPressed: () => Navigator.pop(context)),
         title: Text(
           context.tr('recents'),
           style: TextStyle(

@@ -232,12 +232,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             staterAvatarUrl: extra?['staterAvatarUrl'],
             description: extra?['description'],
             ageRestriction: extra?['ageRestriction'],
-            membersOtherChannels: extra?['membersOtherChannels'] ?? false,
-            membersFollowing: extra?['membersFollowing'] ?? true,
+            visibleToOtherChannelMembers:
+                extra?['visibleToOtherChannelMembers'] ?? false,
+            visibleToFollowedUsers: extra?['visibleToFollowedUsers'] ?? true,
             joinMethod: extra?['joinMethod'] ?? 'invite',
             preventLeaving: extra?['preventLeaving'] ?? false,
-            countryRestrictions: extra?['countryRestrictions'] as List<String>? ?? const ['Global'],
+            countryRestrictions:
+                extra?['countryRestrictions'] as List<String>? ??
+                const ['Global'],
             allowCommentingBy: extra?['allowCommentingBy'] ?? 'all',
+            allowStatusPostingBy: extra?['allowStatusPostingBy'] ?? 'all',
             members: extra?['members'] as List<Member>? ?? const [],
           );
         },

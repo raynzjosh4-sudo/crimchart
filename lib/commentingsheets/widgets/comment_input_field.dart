@@ -3,7 +3,6 @@ import 'package:crown/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'animated_send_button.dart';
-import 'package:crown/core/widgets/chart_image.dart';
 
 class CommentInputField extends StatelessWidget {
   final TextEditingController controller;
@@ -13,6 +12,7 @@ class CommentInputField extends StatelessWidget {
   final VoidCallback? onLongPressEnd;
   final String? userImageUrl;
   final bool hasMedia;
+  final bool showTextField; // 👑 ADDED
 
   const CommentInputField({
     super.key,
@@ -23,6 +23,7 @@ class CommentInputField extends StatelessWidget {
     this.onLongPressEnd,
     this.userImageUrl,
     this.hasMedia = false,
+    this.showTextField = true, // 👑 DEFAULT TO TRUE
   });
 
   @override
@@ -50,71 +51,79 @@ class CommentInputField extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-
           // Text Input
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Expanded(
-                  child: Container(
-                    constraints:
-                        BoxConstraints(minHeight: 48.h, maxHeight: 120.h),
-                    decoration: BoxDecoration(
-                      color: colorScheme.onSurface.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(28.r),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 12.w),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        // Post/Camera Icon (on the left now)
-                        Padding(
-                          padding: EdgeInsets.only(bottom: 12.h),
-                          child: GestureDetector(
-                            onTap: onImageTap,
-                            child: Icon(
-                              LucideIcons.camera,
-                              color: colorScheme.onSurface.withValues(alpha: 0.5),
-                              size: 24.sp,
+                if (showTextField)
+                  Expanded(
+                    child: Container(
+                      constraints: BoxConstraints(
+                        minHeight: 48.h,
+                        maxHeight: 120.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.onSurface.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(28.r),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 12.w),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          // Post/Camera Icon (on the left now)
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 12.h),
+                            child: GestureDetector(
+                              onTap: onImageTap,
+                              child: Icon(
+                                LucideIcons.camera,
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.5,
+                                ),
+                                size: 24.sp,
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(width: 8.w),
+                          SizedBox(width: 8.w),
 
-                        // Main TextField
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12.h),
-                            child: TextField(
-                              controller: controller,
-                              maxLines: 5,
-                              minLines: 1,
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                color: colorScheme.onSurface,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: context.tr('message'), // Update translation key if needed
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                                hintStyle: TextStyle(
-                                  color: colorScheme.onSurface.withValues(
-                                    alpha: 0.4,
-                                  ),
+                          // Main TextField
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12.h),
+                              child: TextField(
+                                controller: controller,
+                                maxLines: 5,
+                                minLines: 1,
+                                style: TextStyle(
                                   fontSize: 16.sp,
-                                  fontWeight: FontWeight.w400,
+                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: context.tr(
+                                    'message',
+                                  ), // Update translation key if needed
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  hintStyle: TextStyle(
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.4,
+                                    ),
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w400,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ),
+                  )
+                else
+                  const Spacer(), // 👑 Pushes the button to the right
                 SizedBox(width: 8.w),
 
                 // Floating Send/Mic Button
@@ -129,24 +138,25 @@ class CommentInputField extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: showSend
                             ? colorScheme.primary
-                            : colorScheme.primary, // Now using theme color!
+                            : colorScheme.surfaceContainerHighest,
                         shape: BoxShape.circle,
                         boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
+                          if (showSend)
+                            BoxShadow(
+                              color: colorScheme.primary.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
                         ],
                       ),
                       child: Center(
                         child: AnimatedSendButton(
                           size: 22.sp,
-                          color: Colors.white,
-                          icon: showSend ? LucideIcons.send : LucideIcons.mic,
+                          color: showSend ? Colors.white : colorScheme.onSurface.withValues(alpha: 0.5),
+                          icon: LucideIcons.send,
                           onTap: showSend ? onSend : () {},
-                          onLongPressStart: !showSend ? onLongPressStart : null,
-                          onLongPressEnd: !showSend ? onLongPressEnd : null,
+                          onLongPressStart: null,
+                          onLongPressEnd: null,
                         ),
                       ),
                     );

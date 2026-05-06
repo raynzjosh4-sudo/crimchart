@@ -1,29 +1,39 @@
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/core/theme/theme_provider.dart';
 import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crown/features/channel/pages/video_tab/video_tab_view.dart';
 import 'package:crown/features/allchannels/models/chart_channel.dart';
 import 'package:crown/features/channel/channelsettings/channel_settings_page.dart';
-import 'package:crown/features/widgets/messages_section.dart';
+import 'package:crown/features/channel/pages/widgets/invite_card.dart';
 import 'package:crown/profile/models/charter_model.dart';
-import 'package:crown/core/localization/localization_provider.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:crown/features/newinsidechartstartpage/models/member.dart';
-
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
-import 'package:crown/features/channel/application/channel_feed_provider.dart';
-import 'package:crown/features/auth/application/auth_controller.dart';
-import 'package:crown/posting/application/posting_controller.dart';
-import 'package:crown/posting/models/media_item.dart';
-import 'package:record/record.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:crown/commentingsheets/widgets/comment_input_field.dart';
+import 'package:crown/features/newinsidechartstartpage/models/chart.dart';
+import 'package:crown/features/channel/pages/discovery_widgets/members_story_bar.dart';
+import 'package:crown/features/channel/pages/discovery_widgets/status_widget_shimmer.dart';
+import 'package:crown/features/channel/pages/discovery_widgets/creator_contact_bar.dart';
+import 'package:crown/features/channel/pages/discovery_widgets/suggestion_channels_section.dart';
+import 'package:crown/features/channel/pages/discovery_widgets/channel_end_summary.dart';
+import 'package:crown/features/channel/pages/discovery_widgets/channel_nav_bar.dart';
+import 'package:crown/features/channel/pages/members_tab/members_tab_view.dart';
+import 'package:crown/features/channel/pages/messages_tab/messages_page.dart';
+import 'package:crown/backicon/custom_back_button.dart';
+import 'package:crown/features/channel/domain/entities/channel_item.dart';
 import 'package:crown/posting/pages/post_page.dart';
+import 'package:record/record.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:crown/commentingsheets/widgets/commenting_sheet.dart';
+import 'package:crown/features/channel/application/channel_feed_provider.dart';
+import 'package:crown/features/channel/application/channel_statuses_provider.dart';
+import 'package:crown/features/channel/pages/discovery_widgets/feed_post_placeholder.dart';
+import 'package:crown/features/widgets/channelmemberdata/thread_discussion_sheet.dart';
+import 'package:crown/features/channel/pages/discovery_widgets/feed_post_shimmer.dart';
+import 'package:crown/features/channel/pages/widgets/pagination_error_footer.dart';
+
+import 'package:crown/features/channel/application/channels_list_controller.dart';
+import 'dart:math';
 
 class ChannelPage extends ConsumerStatefulWidget {
   final ChartChannel? channel;
@@ -49,11 +59,14 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
   late final AudioRecorder _audioRecorder;
   bool _isRecording = false;
   bool _showFab = true;
+  int _currentTabIndex = 0;
+  late final int _randomSuggestionIndex;
 
   @override
   void initState() {
     super.initState();
     _audioRecorder = AudioRecorder();
+    _randomSuggestionIndex = Random().nextInt(3) + 2; // 2, 3, or 4
   }
 
   @override
@@ -64,84 +77,23 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
     super.dispose();
   }
 
+  // ─── Time Helper ─────────────────────────────────────────────────────────────
+
+  String _formatTimeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
+    if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo ago';
+    return '${(diff.inDays / 365).floor()}y ago';
+  }
+
   // ─── Recording Logic ────────────────────────────────────────────────────────
 
-  Future<void> _startRecording() async {
-    final status = await Permission.microphone.request();
-    if (status != PermissionStatus.granted) return;
-
-    if (await _audioRecorder.isRecording()) return;
-
-    try {
-      final dir = await getTemporaryDirectory();
-      final path =
-          '${dir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
-
-      const config = RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        bitRate: 24000,
-        sampleRate: 16000,
-        numChannels: 1,
-      );
-
-      await _audioRecorder.start(config, path: path);
-      setState(() => _isRecording = true);
-    } catch (e) {
-      debugPrint('Failed to start recording: $e');
-    }
-  }
-
-  Future<void> _stopRecording() async {
-    try {
-      final path = await _audioRecorder.stop();
-      setState(() => _isRecording = false);
-      if (path != null) {
-        _handlePost(recordedAudioPath: path);
-      }
-    } catch (e) {
-      debugPrint('Failed to stop recording: $e');
-    }
-  }
-
-  Future<void> _handlePost({String? recordedAudioPath}) async {
-    final caption = _commentController.text.trim();
-    if (caption.isEmpty && recordedAudioPath == null) return;
-
-    final user = ref.read(authControllerProvider).user;
-    if (user == null) return;
-
-    final displayChannel = widget.channel ?? _getDummyChannel();
-    List<MediaItem> items = [];
-
-    if (recordedAudioPath != null) {
-      items.add(
-        MediaItem(
-          path: recordedAudioPath,
-          type: MediaType.audio,
-          source: MediaSource.device,
-        ),
-      );
-    }
-
-    // Determine type: Channels usually get Manifestos as top-level posts
-    String determinedType = PostType.manifesto;
-
-    await ref
-        .read(postingControllerProvider.notifier)
-        .createPost(
-          media: items,
-          caption: caption,
-          channelId: displayChannel.id,
-          channelName: displayChannel.title,
-          isMyChannel: false,
-          postType: determinedType,
-        );
-
-    _commentController.clear();
-  }
-
   void _openPostPage() {
-    final displayChannel = widget.channel ?? _getDummyChannel();
+    final displayChannel = widget.channel ?? _getEmptyChannel();
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => PostPage(
@@ -152,286 +104,516 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
     );
   }
 
-  // 👑 EXTRACTED HEADER UI: We moved this out of the Slivers list!
-  Widget _buildConversationHeader(
-    ChartChannel displayChannel,
-    ThemeData theme,
-    Color currentColor,
-  ) {
-    return Column(
-      children: [
-        if (displayChannel.description != null &&
-            displayChannel.description!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: Text(
-              displayChannel.description!,
-              textAlign: TextAlign.center,
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                height: 1.5,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        SizedBox(height: 12.h),
-        Text(
-          '${displayChannel.memberCount} ${context.tr('members').toUpperCase()}',
-          style: TextStyle(
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w900,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            letterSpacing: 1.5,
-          ),
-        ),
-
-        // 👑 CHANGED: Replaced the massive 120.h gap with a clean 32.h gap
-        // This is the space between the yellow button and the first chat message!
-        SizedBox(height: 32.h),
-      ],
+  void _openStatusSheet() {
+    final displayChannel = widget.channel ?? _getEmptyChannel();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommentingSheet(
+        channelId: displayChannel.id,
+        channelName: displayChannel.title,
+        isStatus: true, // 👑 New flag
+      ),
     );
   }
+
+  void _openPostCommentSheet(dynamic item) {
+    final displayChannel = widget.channel ?? _getEmptyChannel();
+    final theme = Theme.of(context);
+
+    // Extraction logic for both Manifesto and Invitation items
+    final String postId = (item is ManifestoItem)
+        ? item.id
+        : (item is InvitationItem ? item.id : '');
+    final String username = (item is ManifestoItem)
+        ? item.authorUsername
+        : (item is InvitationItem ? item.authorUsername : '');
+    final String avatar = (item is ManifestoItem)
+        ? (item.authorAvatarUrl ?? '')
+        : (item is InvitationItem ? (item.authorAvatarUrl ?? '') : '');
+    final List<String> images = (item is ManifestoItem) ? item.imageUrls : [];
+    final List<String> videos = (item is ManifestoItem)
+        ? (item.videoUrl != null ? [item.videoUrl!] : [])
+        : [];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ThreadDiscussionSheet(
+        threadId: postId,
+        channelId: displayChannel.id,
+        channelName: displayChannel.title,
+      ),
+    );
+  }
+
+  // 👑 EXTRACTED HEADER UI: We moved this out of the Slivers list!
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final backgroundColor = theme.scaffoldBackgroundColor;
-    final currentColor = context.read<ThemeProvider>().currentColor;
-    final displayChannel = widget.channel ?? _getDummyChannel();
-    final feedState = ref.watch(channelFeedProvider(displayChannel.id));
-    final List<PostEntity> channelPosts = feedState.allPosts;
+    final displayChannel = widget.channel ?? _getEmptyChannel();
 
-    final bool canAccess =
-        !displayChannel.isPrivate ||
+    bool canPostStatus =
         displayChannel.isOwnChannel ||
-        displayChannel.isCharted;
+        displayChannel.allowStatusPostingBy == 'all' ||
+        displayChannel.allowStatusPostingBy == 'joined';
+    if (displayChannel.allowStatusPostingBy == 'none' &&
+        !displayChannel.isOwnChannel) {
+      canPostStatus = false;
+    }
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: ChartAppBar(
-        title: displayChannel.title,
-        titleWidget: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: 250.w),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (displayChannel.imageUrl != null) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16.w),
-                      child: CachedNetworkImage(
-                        imageUrl: displayChannel.imageUrl!,
-                        width: 24.w,
-                        height: 24.w,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: backgroundColor.withValues(alpha: 0.1),
-                        ),
-                        errorWidget: (context, url, error) => Icon(
-                          LucideIcons.image,
-                          size: 14.sp,
-                          color: currentColor.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                  ],
-                  Flexible(
-                    child: Text(
-                      context.tr(displayChannel.title),
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16.sp,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ),
-                ],
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification scrollInfo) {
+          if (scrollInfo.metrics.pixels >=
+              scrollInfo.metrics.maxScrollExtent * 0.7) {
+            if (_currentTabIndex == 0) {
+              final notifier = ref.read(
+                channelFeedProvider(displayChannel.id).notifier,
+              );
+              debugPrint(
+                '📜 [Scroll Trigger] Near bottom (70%), calling loadMore...',
+              );
+              notifier.loadMore();
+            }
+          }
+          return true;
+        },
+        child: CustomScrollView(
+          physics: const ClampingScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              backgroundColor: backgroundColor,
+              surfaceTintColor: backgroundColor,
+              forceElevated: true,
+              elevation: 0,
+              titleSpacing: 0,
+              floating: _currentTabIndex != 1,
+              pinned: _currentTabIndex == 1,
+              snap: _currentTabIndex != 1,
+              leading: CustomBackButton(
+                color: colorScheme.onSurface,
+                onPressed: () => Navigator.of(context).pop(),
               ),
-              Row(
-                children: [
-                  Text(
-                    '${displayChannel.memberCount} ${context.tr('members')}',
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      color: colorScheme.onSurface.withValues(alpha: 0.5),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    ' • ',
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      color: colorScheme.onSurface.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  Text(
-                    displayChannel.isPrivate
-                        ? context.tr("private")
-                        : context.tr("public"),
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      color: colorScheme.onSurface.withValues(alpha: 0.5),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        backgroundColor: backgroundColor,
-        actions: [
-          IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChannelSettingsPage(
-                  channelId: displayChannel.id,
-                  channelTitle: displayChannel.title,
-                  memberCount: displayChannel.memberCount,
-                  createdAt: displayChannel
-                      .createdAt, // ✅ FIXED: Pass actual creation date
-                  staterAvatarUrl: displayChannel.imageUrl,
-                  description: displayChannel.description,
-                  ageRestriction: displayChannel.age_restriction,
-                  membersOtherChannels: displayChannel.membersOtherChannels,
-                  membersFollowing: displayChannel.membersFollowing,
-                  joinMethod: displayChannel.joinMethod,
-                  preventLeaving: displayChannel.preventLeaving,
-                  countryRestrictions: displayChannel.countryRestrictions,
-                  allowCommentingBy: displayChannel.allowCommentingBy,
-                  members: widget.contestants
-                      .map(
-                        (c) => Member(
-                          id: c.id,
-                          name: c.displayName,
-                          avatarUrl: c.profileImageUrl,
-                          title: c.title,
-                          channelsCount: c.channelCount,
-                        ),
-                      )
-                      .toList(),
+              centerTitle: true,
+              title: Text(
+                displayChannel.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 24.sp,
+                  letterSpacing: -0.5,
                 ),
               ),
-            ),
-            icon: Icon(
-              LucideIcons.settings,
-              color: colorScheme.onSurface,
-              size: 22.sp,
-            ),
-          ),
-          SizedBox(width: 8.w),
-        ],
-        titleStyle: TextStyle(
-          color: colorScheme.onSurface,
-          fontWeight: FontWeight.w900,
-          fontSize: 18.sp,
-          letterSpacing: 0.5,
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    return false;
-                  },
-                  child: CustomScrollView(
-                    reverse: true,
-                    controller: _scrollController,
-                    slivers: [
-                      // ── BOTTOM PADDING ──
-                      SliverPadding(padding: EdgeInsets.only(bottom: 20.h)),
-
-                      // ── MESSAGES SECTION (Newest at Bottom) ──
-                      if (canAccess)
-                        MessagesSection(
-                          initialMessageId: widget.initialMessageId,
-                          targetMemberId: widget.focusedContestant?.id,
+              actions: [
+                SizedBox(width: 8.w),
+                // Plus Button
+                Container(
+                  height: 36.w,
+                  width: 36.w,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurface.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    iconSize: 22.sp,
+                    icon: const Icon(Icons.add),
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => CommentingSheet(
                           channelId: displayChannel.id,
-                          scrollController: _scrollController,
-                          headerWidget: _buildConversationHeader(
-                            displayChannel,
-                            theme,
-                            currentColor,
-                          ),
-                        )
-                      else ...[
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  LucideIcons.lock,
-                                  size: 48.sp,
-                                  color: colorScheme.onSurface.withValues(
-                                    alpha: 0.3,
-                                  ),
+                          channelName: displayChannel.title,
+                          showInputField: true,
+                          showPostSettings: true,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                // Settings Button
+                Container(
+                  height: 36.w,
+                  width: 36.w,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurface.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    iconSize: 20.sp,
+                    icon: const Icon(Icons.more_horiz),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChannelSettingsPage(
+                          channelId: displayChannel.id,
+                          channelTitle: displayChannel.title,
+                          memberCount: displayChannel.memberCount,
+                          createdAt: displayChannel.createdAt,
+                          staterAvatarUrl: displayChannel.imageUrl,
+                          description: displayChannel.description,
+                          ageRestriction: displayChannel.age_restriction,
+                          visibleToOtherChannelMembers:
+                              displayChannel.visibleToOtherChannelMembers,
+                          visibleToFollowedUsers:
+                              displayChannel.visibleToFollowedUsers,
+                          joinMethod: displayChannel.joinMethod,
+                          preventLeaving: displayChannel.preventLeaving,
+                          countryRestrictions:
+                              displayChannel.countryRestrictions,
+                          allowCommentingBy: displayChannel.allowCommentingBy,
+                          allowStatusPostingBy:
+                              displayChannel.allowStatusPostingBy,
+                          allowInvitationsBy:
+                              displayChannel.allow_invitations_by ?? 'all',
+                          members: widget.contestants
+                              .map(
+                                (c) => Member(
+                                  id: c.id,
+                                  name: c.displayName,
+                                  avatarUrl: c.profileImageUrl,
+                                  title: c.title,
+                                  channelsCount: c.channelCount,
                                 ),
-                                SizedBox(height: 16.h),
-                                Text(
-                                  context.tr('private_channel_message'),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 16.sp,
-                                    color: colorScheme.onSurface.withValues(
-                                      alpha: 0.5,
+                              )
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+              ],
+              bottom: PreferredSize(
+                preferredSize: Size.fromHeight(
+                  _currentTabIndex == 1 ? 166.h : 56.h,
+                ),
+                child: Container(
+                  color: backgroundColor,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ChannelNavBar(
+                        selectedIndex: _currentTabIndex,
+                        onTabSelected: (index) {
+                          if (index == 1) {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                transitionDuration: const Duration(
+                                  milliseconds: 300,
+                                ),
+                                pageBuilder: (context, anim, sec) =>
+                                    MessagesPage(
+                                      channelId: displayChannel.id,
+                                      channelName: displayChannel.title,
+                                      contestants: widget.contestants,
+                                      initialIsMember:
+                                          displayChannel.isOwnChannel ||
+                                          displayChannel.isCharted ||
+                                          widget.contestants.any((c) => c.isMe),
                                     ),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SliverToBoxAdapter(
-                          child: _buildConversationHeader(
-                            displayChannel,
-                            theme,
-                            currentColor,
-                          ),
-                        ),
-                      ],
-
-                      const SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: SizedBox.shrink(),
+                                transitionsBuilder:
+                                    (context, anim, sec, child) {
+                                      const begin = Offset(1.0, 0.0);
+                                      const end = Offset.zero;
+                                      final tween =
+                                          Tween(begin: begin, end: end).chain(
+                                            CurveTween(
+                                              curve: Curves.easeOutCubic,
+                                            ),
+                                          );
+                                      return SlideTransition(
+                                        position: anim.drive(tween),
+                                        child: child,
+                                      );
+                                    },
+                              ),
+                            );
+                          } else {
+                            setState(() => _currentTabIndex = index);
+                          }
+                        },
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
 
-          // ── PERSISTENT WHATSAPP-STYLE INPUT FIELD ──
-          if (canAccess)
-            CommentInputField(
-              controller: _commentController,
-              onSend: _handlePost,
-              onImageTap: _openPostPage,
-              onLongPressStart: _startRecording,
-              onLongPressEnd: _stopRecording,
-              userImageUrl: ref
-                  .watch(authControllerProvider)
-                  .user
-                  ?.profileImageUrl,
-            ),
-        ],
+            if (_currentTabIndex == 0) ...[
+              SliverToBoxAdapter(
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final statusesAsync = ref.watch(
+                      channelStatusesProvider(displayChannel.id),
+                    );
+                    
+                    return statusesAsync.when(
+                      data: (statuses) => MembersStoryBar(
+                        statuses: statuses,
+                        onAddStory: _openStatusSheet,
+                        canPostStatus: canPostStatus,
+                      ),
+                      loading: () => const StatusWidgetShimmer(),
+                      error: (e, st) => const SizedBox.shrink(),
+                    );
+                  },
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: CreatorContactBar(
+                  creatorName: displayChannel.staterName?.isNotEmpty == true
+                      ? displayChannel.staterName!
+                      : displayChannel.title,
+                  creatorImageUrl:
+                      displayChannel.staterAvatarUrl?.isNotEmpty == true
+                      ? displayChannel.staterAvatarUrl
+                      : null,
+                  onMessageTap: () {},
+                  onFollowTap: () {},
+                  isOwnChannel: displayChannel.isOwnChannel,
+                ),
+              ),
+
+              Consumer(
+                builder: (context, ref, child) {
+                  final feedState = ref.watch(
+                    channelFeedProvider(displayChannel.id),
+                  );
+                  final notifier = ref.read(
+                    channelFeedProvider(displayChannel.id).notifier,
+                  );
+                  final allChannelsState = ref.watch(
+                    channelsListControllerProvider('all'),
+                  );
+                  final currentUserId =
+                      Supabase.instance.client.auth.currentUser?.id;
+                  final suggestions = allChannelsState.channels
+                      .where(
+                        (c) =>
+                            c.id != displayChannel.id &&
+                            c.creatorId != currentUserId &&
+                            !c.isCharted,
+                      )
+                      .map((e) => Chart.fromEntity(e))
+                      .toList();
+
+                  if (feedState.isLoading && feedState.channelItems.isEmpty) {
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40.h),
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                    );
+                  }
+
+                  final items = feedState.channelItems;
+
+                  if (items.isEmpty) {
+                    final canPost =
+                        displayChannel.isOwnChannel ||
+                        displayChannel.allowCommentingBy == 'all';
+                    if (!canPost)
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 60.h),
+                        child: Column(
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => CommentingSheet(
+                                    channelId: displayChannel.id,
+                                    channelName: displayChannel.title,
+                                    showInputField: true,
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                height: 80.w,
+                                width: 80.w,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: colorScheme.primary.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.add,
+                                  size: 40.sp,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 16.h),
+                            Text(
+                              'No posts yet. Be the first to post!',
+                              style: TextStyle(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  int getSuggestionCount() =>
+                      items.length < 10 ? 1 : (items.length / 10).floor();
+                  final totalItems = items.length + getSuggestionCount() + 1;
+                  final hasMore = feedState.hasMore;
+
+                  return SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      if (index == totalItems - 1) {
+                        if (hasMore) {
+                          if (feedState.error != null) {
+                            return PaginationErrorFooter(
+                              error: feedState.error!,
+                              onRetry: () => notifier.loadMore(),
+                            );
+                          }
+                          return const FeedPostShimmer();
+                        }
+                        return ChannelEndSummary(
+                          title: displayChannel.title,
+                          imageUrl: displayChannel.imageUrl,
+                          postCount: displayChannel.postsCount,
+                          followerCount: displayChannel.followersCount,
+                          tagsCount: displayChannel.tagsCount,
+                          likesCount: displayChannel.likesCount,
+                        );
+                      }
+
+                      bool isSuggestionSlot = items.length < 10
+                          ? index == _randomSuggestionIndex
+                          : (index + 1) % 11 == 0;
+                      if (isSuggestionSlot && suggestions.isNotEmpty) {
+                        return SuggestionChannelsSection(
+                          channels: suggestions,
+                          onSeeAll: () {},
+                        );
+                      }
+
+                      int adjustedIndex = items.length < 10
+                          ? (index < _randomSuggestionIndex ? index : index - 1)
+                          : index - (index + 1) ~/ 11;
+                      if (adjustedIndex < 0 || adjustedIndex >= items.length) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final item = items[adjustedIndex];
+
+                      if (item is InvitationItem) {
+                        return FeedPostPlaceholder(
+                          authorName: item.authorUsername.isNotEmpty
+                              ? item.authorUsername
+                              : 'Member',
+                          content: item.caption ?? '',
+                          timeAgo: _formatTimeAgo(item.createdAt),
+                          authorImageUrl: item.authorAvatarUrl,
+                          type: 'invite',
+                          likesCount: item.likes,
+                          isLiked: item.isLiked,
+                          onLikeTap: () => notifier.toggleLike(item.id, true),
+                          onCommentTap: () => _openPostCommentSheet(item),
+                          inviteChannelId: item.targetChannelId,
+                          inviteChannelName: item.targetChannelName,
+                          inviteChannelImage: item.targetChannelImage,
+                          inviteChannelTitle: item.targetChannelTitle,
+                          onJoinPressed: () {},
+                        );
+                      }
+                      if (item is ManifestoItem) {
+                        return FeedPostPlaceholder(
+                          authorName: item.authorUsername.isNotEmpty
+                              ? item.authorUsername
+                              : 'Member',
+                          content: item.caption,
+                          timeAgo: _formatTimeAgo(item.createdAt),
+                          authorImageUrl:
+                              item.authorAvatarUrl?.isNotEmpty == true
+                              ? item.authorAvatarUrl
+                              : null,
+                          imageUrls: item.imageUrls.isNotEmpty
+                              ? item.imageUrls
+                              : null,
+                          videoUrl: item.videoUrl?.isNotEmpty == true
+                              ? item.videoUrl
+                              : null,
+                          aspectRatio: item.aspectRatio,
+                          likesCount: item.likes,
+                          commentsCount: item.commentCount,
+                          isLiked: item.isLiked,
+                          onLikeTap: () => notifier.toggleLike(item.id, true),
+                          onCommentTap: () => _openPostCommentSheet(item),
+                        );
+                      }
+                      if (item is ChannelCommentItem) {
+                        return FeedPostPlaceholder(
+                          authorName: item.authorUsername.isNotEmpty
+                              ? item.authorUsername
+                              : 'Member',
+                          content: item.message,
+                          timeAgo: _formatTimeAgo(item.createdAt),
+                          authorImageUrl: item.authorAvatarUrl,
+                          likesCount: item.likes,
+                          isLiked: item.isLiked,
+                          onLikeTap: () => notifier.toggleLike(item.id, false),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }, childCount: totalItems),
+                  );
+                },
+              ),
+            ] else if (_currentTabIndex == 2) ...[
+              VideoTabView(
+                channelId: displayChannel.id,
+                channelName: displayChannel.title,
+                channelTitle: displayChannel.description,
+              ),
+            ] else if (_currentTabIndex == 3) ...[
+              MembersTabView(
+                members: widget.contestants,
+                channelId: displayChannel.id,
+                channelName: displayChannel.title,
+                channelImageUrl: displayChannel.imageUrl,
+                canPostStatus: canPostStatus,
+                allowInvitationsBy:
+                    displayChannel.allow_invitations_by ?? 'all',
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -518,12 +700,20 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
     );
   }
 
-  ChartChannel _getDummyChannel() {
+  ChartChannel _getEmptyChannel() {
     return ChartChannel(
-      id: 'dummy',
-      title: 'The massive influence of AI on modern art',
-      memberCount: 560,
+      id: 'loading',
+      title: 'Channel',
+      description: '...',
+      memberCount: 0,
+      followersCount: 0,
+      tagsCount: 0,
+      likesCount: 0,
+      postsCount: 0,
       isPrivate: false,
+      staterName: '...',
+      staterAvatarUrl: '',
+      imageUrl: '',
     );
   }
 }

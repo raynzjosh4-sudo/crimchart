@@ -118,7 +118,14 @@ class ChartApp extends ConsumerWidget {
                 context,
                 userScaleFactor: themeProvider.displayScale,
               );
-              return child!;
+              final isDark = themeProvider.themeMode == ThemeMode.dark ||
+                  (themeProvider.themeMode == ThemeMode.system &&
+                      MediaQuery.platformBrightnessOf(context) ==
+                          Brightness.dark);
+              return Container(
+                decoration: AppTheme.globalBackgroundDecoration(context, isDark: isDark),
+                child: child!,
+              );
             },
           ),
         );

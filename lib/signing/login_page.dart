@@ -219,7 +219,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.network(
-                          'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                          'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
                           width: 18.w,
                         ),
                         SizedBox(width: 10.w),

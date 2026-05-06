@@ -189,6 +189,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   useHexagon: false,
                   showStatusRing: false,
                   showActiveDot: false,
+                  heroTag: 'avatar_${widget.userId ?? user?.id}',
                 ),
               ),
             ],

@@ -50,14 +50,18 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                 scrollDirection: Axis.vertical,
                 itemCount: widget.imageUrls.length,
                 itemBuilder: (context, index) {
+                  final String url = widget.imageUrls[index];
                   return InteractiveViewer(
                     minScale: 1.0,
                     maxScale: 4.0,
                     child: Center(
-                      child: ChartImage(
-                        url: widget.imageUrls[index],
-                        fit: BoxFit.contain,
-                        width: double.infinity,
+                      child: Hero(
+                        tag: 'image_hero_${url}',
+                        child: ChartImage(
+                          url: url,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                        ),
                       ),
                     ),
                   );

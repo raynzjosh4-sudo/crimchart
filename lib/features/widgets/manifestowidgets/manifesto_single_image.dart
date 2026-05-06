@@ -22,16 +22,19 @@ class ManifestoSingleImage extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16.r),
         child: Container(
-          constraints: BoxConstraints(maxHeight: 700.h), // 👑 Aggressive vertical (was 600.h)
+          constraints: BoxConstraints(maxHeight: 700.h),
           width: double.infinity,
-          child: ChartImage(
-            url: imageUrl,
-            thumbnailUrl: thumbnailUrl,
-            fit: BoxFit.cover,
-            placeholder: Container(
-              height: 300.h,
-              color: Colors.grey.withOpacity(0.1),
-              child: const Center(child: CircularProgressIndicator()),
+          child: Hero(
+            tag: 'image_hero_$imageUrl',
+            child: ChartImage(
+              url: imageUrl,
+              thumbnailUrl: thumbnailUrl,
+              fit: BoxFit.cover,
+              placeholder: Container(
+                height: 300.h,
+                color: Colors.grey.withOpacity(0.1),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
             ),
           ),
         ),

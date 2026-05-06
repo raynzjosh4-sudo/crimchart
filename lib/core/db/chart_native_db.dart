@@ -1,416 +1,1005 @@
-import 'dart:io';
 import 'dart:convert';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart';
+import 'package:crown/features/channel/domain/entities/channel_entity.dart';
+import 'package:drift/drift.dart';
+import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
-import 'package:flutter/foundation.dart';
+import 'chart_db.dart';
+import 'package:crown/core/di/injection.dart';
 
-/// The high-performance C++ SQLite Database Engine for Chart.
-/// Handles cross-platform persistence with zero UI lag via FFI.
+/// The high-performance Drift Database Engine for Chart.
+/// Handles cross-platform persistence with zero UI lag.
 @lazySingleton
 class ChartNativeDB {
-  static Database? _database;
-  static final ChartNativeDB instance = ChartNativeDB._init();
+  final ChartDatabase _db;
 
-  ChartNativeDB._init();
-
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initializeDB('Chart_v2.db');
-    return _database!;
+  ChartNativeDB(this._db) {
+    _syncSchema();
   }
 
-  Future<Database> _initializeDB(String filePath) async {
-    // 1. Setup C++ FFI for SQLite (Desktop-Specific)
-    if (Platform.isWindows || Platform.isLinux) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    }
+  /// 👑 MIGRATION HELPER: Manually ensures new columns exist without wiping DB
+  Future<void> _syncSchema() async {
+    try {
+      await _db.customStatement(
+        'ALTER TABLE channel_posts ADD COLUMN is_liked INTEGER DEFAULT 0;',
+      );
+      debugPrint('✅ [SQLite Migration] Added is_liked to channel_posts');
+    } catch (_) {} // Ignore if column already exists
 
-    // 2. Locate / Create Database File
-    final dbPath = await getApplicationDocumentsDirectory();
-    final path = join(dbPath.path, filePath);
+    try {
+      await _db.customStatement(
+        'ALTER TABLE channel_post_comments ADD COLUMN is_liked INTEGER DEFAULT 0;',
+      );
+      debugPrint(
+        '✅ [SQLite Migration] Added is_liked to channel_post_comments',
+      );
+    } catch (_) {}
 
-    print("Native Engine: Opening DB at $path");
+    try {
+      await _db.customStatement(
+        'ALTER TABLE channel_posts ADD COLUMN is_pending INTEGER DEFAULT 0;',
+      );
+      debugPrint('✅ [SQLite Migration] Added is_pending to channel_posts');
+    } catch (_) {}
 
-    return await openDatabase(
-      path,
-      version: 22, // 👑 BUMP TO 22
-      onCreate: _createDB,
-      onUpgrade: _upgradeDB,
-    );
+    try {
+      await _db.customStatement(
+        'ALTER TABLE manifestos ADD COLUMN is_liked INTEGER DEFAULT 0;',
+      );
+      debugPrint('✅ [SQLite Migration] Added is_liked to manifestos');
+    } catch (_) {}
   }
 
-  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute(
-        'ALTER TABLE users ADD COLUMN ChartsCount INTEGER DEFAULT 0',
-      );
-      await db.execute(
-        'ALTER TABLE users ADD COLUMN channelsCount INTEGER DEFAULT 0',
-      );
-    }
-    if (oldVersion < 3) {
-      await db.execute('ALTER TABLE users ADD COLUMN ChartTitle TEXT');
-      await db.execute('ALTER TABLE users ADD COLUMN birthday TEXT');
-      await db.execute('ALTER TABLE users ADD COLUMN gender TEXT');
-    }
-    if (oldVersion < 4) {
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN imageUrls TEXT DEFAULT "[]"',
-      );
-    }
-    if (oldVersion < 5) {
-      await db.execute('ALTER TABLE posts ADD COLUMN createdAt TEXT');
-    }
-    if (oldVersion < 6) {
-      await db.execute('ALTER TABLE posts ADD COLUMN shares INTEGER DEFAULT 0');
-    }
-    if (oldVersion < 7) {
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN isPending INTEGER DEFAULT 0',
-      );
-      await db.execute(
-        'ALTER TABLE channel_cache ADD COLUMN isPending INTEGER DEFAULT 0',
-      );
-      await db.execute('ALTER TABLE channel_cache ADD COLUMN avatarUrl TEXT');
-    }
-    if (oldVersion < 8) {
-      await db.execute('ALTER TABLE posts ADD COLUMN sdVideoUrl TEXT');
-    }
-    if (oldVersion < 9) {
-      await db.execute('ALTER TABLE posts ADD COLUMN author_id TEXT');
-    }
-    if (oldVersion < 10) {
-      await db.execute('ALTER TABLE posts ADD COLUMN audioUrl TEXT');
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN isAudio INTEGER DEFAULT 0',
-      );
-    }
-    if (oldVersion < 11) {
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN folder_name TEXT DEFAULT "public_posts"',
-      );
-    }
-    if (oldVersion < 12) {
-      await db.execute(
-        'ALTER TABLE channel_cache ADD COLUMN unreadCount INTEGER DEFAULT 0',
-      );
-      await db.execute(
-        'ALTER TABLE channel_cache ADD COLUMN leaderAvatarUrl TEXT',
-      );
-      await db.execute(
-        'ALTER TABLE channel_cache ADD COLUMN creatorAvatarUrl TEXT',
-      );
-    }
-    if (oldVersion < 13) {
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN post_type TEXT DEFAULT "post"',
-      );
-      await db.execute('ALTER TABLE posts ADD COLUMN parent_post_id TEXT');
-      await db.execute('ALTER TABLE posts ADD COLUMN linked_post_id TEXT');
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN link_chain TEXT DEFAULT "[]"',
-      );
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN link_depth INTEGER DEFAULT 0',
-      );
-    }
-    if (oldVersion < 14) {
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN thumbnailUrls TEXT DEFAULT "[]"',
-      );
-    }
-    if (oldVersion < 15) {
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN linked_author_username TEXT',
-      );
-      await db.execute('ALTER TABLE posts ADD COLUMN linked_caption TEXT');
-    }
-    if (oldVersion < 16) {
-      await db.execute('ALTER TABLE posts ADD COLUMN linked_channel_id TEXT');
-    }
-    if (oldVersion < 17) {
-      await db.execute('ALTER TABLE channel_cache ADD COLUMN creator_id TEXT');
-      await db.execute(
-        'ALTER TABLE channel_cache ADD COLUMN isPrivate INTEGER DEFAULT 0',
-      );
-      await db.execute(
-        "ALTER TABLE channel_cache ADD COLUMN age_restriction TEXT DEFAULT 'All Ages'",
-      );
-      await db.execute(
-        'ALTER TABLE channel_cache ADD COLUMN members_other_channels INTEGER DEFAULT 0',
-      );
-      await db.execute(
-        'ALTER TABLE channel_cache ADD COLUMN members_following INTEGER DEFAULT 1',
-      );
-      await db.execute(
-        "ALTER TABLE channel_cache ADD COLUMN join_method TEXT DEFAULT 'invite'",
-      );
-      await db.execute(
-        'ALTER TABLE channel_cache ADD COLUMN prevent_leaving INTEGER DEFAULT 0',
-      );
-      await db.execute(
-        "ALTER TABLE channel_cache ADD COLUMN country_restrictions TEXT DEFAULT  '[\"Global\"]'",
-      );
-      await db.execute(
-        "ALTER TABLE channel_cache ADD COLUMN allow_commenting_by TEXT DEFAULT 'all'",
-      );
-      await db.execute('ALTER TABLE channel_cache ADD COLUMN createdAt TEXT');
-    }
-    if (oldVersion < 18) {
-      await db.execute(
-        'ALTER TABLE manifestos ADD COLUMN is_public INTEGER DEFAULT 1',
-      );
-      await db.execute(
-        'ALTER TABLE manifestos ADD COLUMN allow_comments INTEGER DEFAULT 1',
-      );
-    }
-    if (oldVersion < 19) {
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS manifesto_comments (
-          id TEXT PRIMARY KEY,
-          author_id TEXT NOT NULL,
-          channel_id TEXT NOT NULL,
-          manifesto_id TEXT NOT NULL,
-          message TEXT,
-          image_urls TEXT DEFAULT '[]',
-          likes INTEGER DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      ''');
-    }
-    if (oldVersion < 20) {
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN is_public INTEGER DEFAULT 1',
-      );
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN allow_comments INTEGER DEFAULT 1',
-      );
-    }
-    // 👑 VERSION 21: Decoupling the Pending State
-    if (oldVersion < 21) {
-      await db.execute(
-        'ALTER TABLE manifestos ADD COLUMN isPending INTEGER DEFAULT 0',
-      );
-      await db.execute(
-        'ALTER TABLE manifesto_comments ADD COLUMN isPending INTEGER DEFAULT 0',
-      );
-    }
-    // 👑 VERSION 22: Multi-Video Support
-    if (oldVersion < 22) {
-      await db.execute(
-        'ALTER TABLE manifestos ADD COLUMN video_urls TEXT DEFAULT "[]"',
-      );
-      await db.execute(
-        'ALTER TABLE posts ADD COLUMN video_urls TEXT DEFAULT "[]"',
-      );
+  // For compatibility with legacy code that might still try to access the raw db
+  // Though it's highly recommended to use the helper methods instead.
+  ChartDatabase get db => _db;
+
+  /// 👑 TEMPORARY: Compatibility getter for legacy sqflite code.
+  /// returns dynamic to avoid type errors but will throw at runtime if raw sqflite methods are called.
+  dynamic get database => _db;
+
+  // Static instance for legacy static access
+  static ChartNativeDB get instance => getIt<ChartNativeDB>();
+
+  Future<void> saveUser(Map<String, dynamic> data) async {
+    try {
+      await _db
+          .into(_db.users)
+          .insert(User.fromJson(data), mode: InsertMode.insertOrReplace);
+    } catch (e) {
+      debugPrint('🚨 [SQLite Error] saveUser FAILED: $e');
     }
   }
 
-  Future<void> _createDB(Database db, int version) async {
-    print("Native Engine: Bootstrapping SQLite Tables...");
+  Future<Map<String, dynamic>?> getUser() async {
+    final result = await (_db.select(_db.users)..limit(1)).getSingleOrNull();
+    return result?.toJson();
+  }
 
-    await db.execute('''
-      CREATE TABLE manifestos (
-        id TEXT PRIMARY KEY,
-        author_id TEXT NOT NULL,
-        username TEXT,
-        profile_image_url TEXT,
-        channel_id TEXT NOT NULL,
-        caption TEXT,
-        video_url TEXT,
-        video_urls TEXT DEFAULT '[]',
-        image_urls TEXT,
-        thumbnail_urls TEXT,
-        likes INTEGER DEFAULT 0,
-        comments INTEGER DEFAULT 0,
-        is_public INTEGER DEFAULT 1,
-        allow_comments INTEGER DEFAULT 1,
-        isPending INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    ''');
+  Future<void> deleteUser() async {
+    await _db.delete(_db.users).go();
+  }
 
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS manifesto_comments (
-        id TEXT PRIMARY KEY,
-        author_id TEXT NOT NULL,
-        channel_id TEXT NOT NULL,
-        manifesto_id TEXT NOT NULL,
-        message TEXT,
-        image_urls TEXT DEFAULT '[]',
-        likes INTEGER DEFAULT 0,
-        isPending INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    ''');
+  Future<Map<String, dynamic>?> getManifesto(String id) async {
+    final result = await (_db.select(
+      _db.manifestos,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    return result?.toJson();
+  }
 
-    await db.execute('''
-      CREATE TABLE channel_comments (
-        id TEXT PRIMARY KEY,
-        author_id TEXT NOT NULL,
-        username TEXT,
-        profile_image_url TEXT,
-        channel_id TEXT NOT NULL,
-        manifesto_id TEXT,
-        message TEXT,
-        image_urls TEXT,
-        likes INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (manifesto_id) REFERENCES manifestos (id) ON DELETE CASCADE
-      )
-    ''');
+  Future<Map<String, dynamic>?> getChannelPost(String id) async {
+    final result = await (_db.select(
+      _db.channelPosts,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    return result?.toJson();
+  }
 
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_manifestos_channel ON manifestos(channel_id)',
-    );
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_channel_comments_channel ON channel_comments(channel_id)',
-    );
+  Future<void> upsertManifesto(Map<String, dynamic> data) async {
+    try {
+      await _db
+          .into(_db.manifestos)
+          .insert(Manifesto.fromJson(data), mode: InsertMode.insertOrReplace);
+    } catch (e) {
+      debugPrint('🚨 [SQLite Error] upsertManifesto FAILED: $e');
+    }
+  }
 
-    await db.execute('''
-      CREATE TABLE posts (
-        id TEXT PRIMARY KEY,
-        author_id TEXT,
-        username TEXT,
-        userProfileImageUrl TEXT,
-        channelName TEXT,
-        channelId TEXT,
-        caption TEXT,
-        videoUrl TEXT,
-        video_urls TEXT DEFAULT '[]',
-        audioUrl TEXT,
-        sdVideoUrl TEXT,
-        imageUrls TEXT,
-        thumbnailUrls TEXT,
-        isVideo INTEGER,
-        isAudio INTEGER,
-        folder_name TEXT DEFAULT 'public_posts',
-        aspectRatio REAL,
-        likes INTEGER,
-        comments INTEGER,
-        timeAgo TEXT,
-        createdAt TEXT,
-        shares INTEGER,
-        isLiked INTEGER,
-        chartedCount INTEGER,
-        localFileCache TEXT,
-        isPending INTEGER DEFAULT 0,
-        linked_post_id TEXT,
-        linked_author_username TEXT,
-        linked_caption TEXT,
-        linked_channel_id TEXT,
-        post_type TEXT DEFAULT 'post',
-        parent_post_id TEXT,
-        link_chain TEXT DEFAULT '[]',
-        link_depth INTEGER DEFAULT 0,
-        is_public INTEGER DEFAULT 1,
-        allow_comments INTEGER DEFAULT 1
-      )
-    ''');
+  Future<void> upsertChannelPost(Map<String, dynamic> data) async {
+    try {
+      await _db
+          .into(_db.channelPosts)
+          .insert(ChannelPost.fromJson(data), mode: InsertMode.insertOrReplace);
+    } catch (e) {
+      debugPrint('🚨 [SQLite Error] upsertChannelPost FAILED: $e');
+    }
+  }
 
-    await db.execute('''
-      CREATE TABLE channel_cache (
-        id TEXT PRIMARY KEY,
-        creator_id TEXT,
-        name TEXT,
-        description TEXT,
-        memberCount INTEGER,
-        unreadCount INTEGER DEFAULT 0,
-        isCharted INTEGER,
-        avatarUrl TEXT,
-        leaderAvatarUrl TEXT,
-        creatorAvatarUrl TEXT,
-        isPrivate INTEGER DEFAULT 0,
-        age_restriction TEXT DEFAULT 'All Ages',
-        members_other_channels INTEGER DEFAULT 0,
-        members_following INTEGER DEFAULT 1,
-        join_method TEXT DEFAULT 'invite',
-        prevent_leaving INTEGER DEFAULT 0,
-        country_restrictions TEXT DEFAULT '["Global"]',
-        allow_commenting_by TEXT DEFAULT 'all',
-        createdAt TEXT,
-        isPending INTEGER DEFAULT 0
-      )
-    ''');
+  Future<void> upsertManifestoComment(Map<String, dynamic> data) async {
+    try {
+      await _db
+          .into(_db.manifestoComments)
+          .insert(
+            ManifestoComment.fromJson(data),
+            mode: InsertMode.insertOrReplace,
+          );
+    } catch (e) {
+      debugPrint('🚨 [SQLite Error] upsertManifestoComment FAILED: $e');
+    }
+  }
 
-    await db.execute('''
-      CREATE TABLE users (
-        id TEXT PRIMARY KEY,
-        username TEXT,
-        displayName TEXT,
-        profileImageUrl TEXT,
-        bio TEXT,
-        title TEXT,
-        isVerified INTEGER,
-        followersCount INTEGER,
-        followingCount INTEGER,
-        postsCount INTEGER,
-        ChartsCount INTEGER,
-        channelsCount INTEGER,
-        ChartTitle TEXT,
-        birthday TEXT,
-        gender TEXT,
-        createdAt TEXT,
-        accessToken TEXT,
-        refreshToken TEXT
-      )
-    ''');
+  Future<void> upsertChannelPostComment(Map<String, dynamic> data) async {
+    await _db
+        .into(_db.channelPostComments)
+        .insert(
+          ChannelPostComment.fromJson(data),
+          mode: InsertMode.insertOrReplace,
+        );
+  }
+
+  Future<void> upsertPost(Map<String, dynamic> data) async {
+    await _db
+        .into(_db.posts)
+        .insert(Post.fromJson(data), mode: InsertMode.insertOrReplace);
+  }
+
+  Future<void> upsertChannelStatus(Map<String, dynamic> data) async {
+    await _db
+        .into(_db.channelStatuses)
+        .insert(
+          ChannelStatusesCompanion.insert(
+            id: (data['id'] ?? '') as String,
+            channelId: (data['channelId'] ?? '') as String,
+            authorId: (data['authorId'] ?? '') as String,
+            caption: Value(data['caption'] as String?),
+            imageUrls: Value(data['imageUrls'] as String?),
+            videoUrl: Value(data['videoUrl'] as String?),
+            audioUrl: Value(data['audioUrl'] as String?),
+            isVideo: Value((data['isVideo'] as int?) ?? 0),
+            isAudio: Value((data['isAudio'] as int?) ?? 0),
+            // viewsCount, likesCount, commentsCount default to 0 in the schema
+            commentsCount: Value((data['commentsCount'] as int?) ?? 0),
+            createdAt: Value(data['createdAt'] as String?),
+            expiresAt: Value(data['expiresAt'] as String?),
+            // 👑 TEMP COMMENT: Run 'dart run build_runner build' to enable these!
+            // username: Value(data['username'] as String?),
+            // profileImageUrl: Value(data['profileImageUrl'] as String?),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+  }
+
+  Future<void> trimChannelStatuses({
+    required String channelId,
+    int keepCount = 10,
+  }) async {
+    final rows =
+        await (_db.select(_db.channelStatuses)
+              ..where((t) => t.channelId.equals(channelId))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+                (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
+              ])
+              ..limit(1, offset: keepCount))
+            .get();
+
+    if (rows.isEmpty) return;
+
+    final threshold = rows.first.createdAt;
+    final thresholdId = rows.first.id;
+
+    await (_db.delete(_db.channelStatuses)..where(
+          (t) =>
+              t.channelId.equals(channelId) &
+              (t.createdAt.isSmallerThanValue(threshold!) |
+                  (t.createdAt.equals(threshold) &
+                      t.id.isSmallerThanValue(thresholdId))),
+        ))
+        .go();
+  }
+
+  /// Returns all non-expired statuses for a channel from the local Drift cache.
+  Future<List<Map<String, dynamic>>> getChannelStatuses(
+    String channelId,
+  ) async {
+    final now = DateTime.now().toIso8601String();
+    final rows =
+        await (_db.select(_db.channelStatuses)
+              ..where((t) => t.channelId.equals(channelId))
+              ..where(
+                (t) =>
+                    t.expiresAt.isNull() | t.expiresAt.isBiggerThanValue(now),
+              )
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    return rows.map((r) => r.toJson()).toList();
+  }
+
+  /// Returns all moments for a channel from the local Drift cache.
+  Future<List<Map<String, dynamic>>> getChannelMoments(String channelId) async {
+    final rows =
+        await (_db.select(_db.channelMoments)
+              ..where((t) => t.channelId.equals(channelId))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    return rows.map((r) => r.toJson()).toList();
+  }
+
+  /// Watch all moments for a channel as a reactive stream with pagination support.
+  Stream<List<Map<String, dynamic>>> watchChannelMoments(
+    String channelId, {
+    int limit = 10,
+  }) {
+    return (_db.select(_db.channelMoments)
+          ..where((t) => t.channelId.equals(channelId))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+          ])
+          ..limit(limit))
+        .watch()
+        .map((rows) => rows.map((r) => r.toJson()).toList());
+  }
+
+  Future<void> upsertChannelMoment(Map<String, dynamic> data) async {
+    await _db
+        .into(_db.channelMoments)
+        .insert(
+          ChannelMomentsCompanion.insert(
+            id: (data['id'] ?? '') as String,
+            channelId:
+                (data['channel_id'] ?? data['channelId'] ?? '') as String,
+            authorId: (data['author_id'] ?? data['authorId'] ?? '') as String,
+            authorName: Value(
+              (data['author_name'] ?? data['authorName']) as String?,
+            ),
+            authorAvatarUrl: Value(
+              (data['author_avatar_url'] ?? data['authorAvatarUrl']) as String?,
+            ),
+            mediaUrl: (data['media_url'] ?? data['mediaUrl'] ?? '') as String,
+            mediaType: Value(
+              (data['media_type'] ?? data['mediaType'] ?? 'photo') as String,
+            ),
+            thumbnailUrl: Value(
+              (data['thumbnail_url'] ?? data['thumbnailUrl']) as String?,
+            ),
+            caption: Value(data['caption'] as String?),
+            createdAt: Value(
+              data['created_at'] != null
+                  ? DateTime.parse(data['created_at'].toString())
+                  : DateTime.now(),
+            ),
+            expiresAt: Value(
+              data['expires_at'] != null
+                  ? DateTime.parse(data['expires_at'].toString())
+                  : null,
+            ),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+  }
+
+  /// Deletes all expired moments for a channel from the local Drift cache.
+  Future<void> deleteExpiredMoments(String channelId) async {
+    final now = DateTime.now().toIso8601String();
+    await (_db.delete(_db.channelMoments)
+          ..where((t) => t.channelId.equals(channelId))
+          ..where((t) => t.expiresAt.isSmallerThanValue(DateTime.parse(now))))
+        .go();
+  }
+
+  /// Clears all cached statuses for a given channel.
+  Future<void> deleteChannelStatuses(String channelId) async {
+    await (_db.delete(
+      _db.channelStatuses,
+    )..where((t) => t.channelId.equals(channelId))).go();
+  }
+
+  Future<void> trimChannelMessages({
+    required String channelId,
+    required int keepCount,
+  }) async {
+    // 1. Find the ID of the 'keepCount'-th newest message
+    final latestMessages =
+        await (_db.select(_db.channelMessages)
+              ..where((t) => t.channelId.equals(channelId))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+                (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
+              ])
+              ..limit(keepCount))
+            .get();
+
+    if (latestMessages.length < keepCount) return;
+
+    final oldestToKeep = latestMessages.last;
+
+    // 2. Delete anything older than that message
+    // We compare by createdAt, and use ID as a tie-breaker
+    await (_db.delete(_db.channelMessages)..where(
+          (t) =>
+              t.channelId.equals(channelId) &
+              (t.createdAt.isSmallerThan(
+                    Variable(oldestToKeep.createdAt ?? ''),
+                  ) |
+                  (t.createdAt.equals(oldestToKeep.createdAt ?? '') &
+                      t.id.isSmallerThan(Variable(oldestToKeep.id)))),
+        ))
+        .go();
+  }
+
+  Future<List<Map<String, dynamic>>> getChannelMessages(
+    String channelId, {
+    int limit = 50,
+  }) async {
+    final rows =
+        await (_db.select(_db.channelMessages)
+              ..where((t) => t.channelId.equals(channelId))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.isPending,
+                  mode: OrderingMode.asc,
+                ),
+                (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+                (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
+              ])
+              ..limit(limit))
+            .get();
+    return rows.map((r) => r.toJson()).toList();
+  }
+
+  Stream<List<Map<String, dynamic>>> watchChannelMessages(
+    String channelId, {
+    int limit = 50,
+  }) {
+    return (_db.select(_db.channelMessages)
+          ..where((t) => t.channelId.equals(channelId))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.isPending, mode: OrderingMode.asc),
+            (t) =>
+                OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+            (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
+          ])
+          ..limit(limit))
+        .watch()
+        .map((rows) {
+          final reversed = rows.toList().reversed.toList();
+          return reversed.map((r) => r.toJson()).toList();
+        });
+  }
+
+  Future<void> upsertChannelMessage(Map<String, dynamic> data) async {
+    final channelId = (data['channel_id'] ?? data['channelId'] ?? '') as String;
+    final senderId = (data['sender_id'] ?? data['senderId'] ?? '') as String;
+
+    print('👑 [upsertChannelMessage] channelId=$channelId senderId=$senderId');
+
+    // VIBE CODING HACK: Ensure channel exists to satisfy FOREIGN KEY constraint
+    final channelExists = await (_db.select(
+      _db.channels,
+    )..where((t) => t.id.equals(channelId))).getSingleOrNull();
+
+    print('👑 [upsertChannelMessage] channelExists=${channelExists != null}');
+
+    if (channelExists == null) {
+      await _db
+          .into(_db.channels)
+          .insert(
+            ChannelsCompanion.insert(id: channelId),
+            mode: InsertMode.insertOrIgnore,
+          );
+      print('👑 [upsertChannelMessage] ✅ Created placeholder channel');
+    }
+
+    // VIBE CODING HACK: Ensure channel_member exists to satisfy FOREIGN KEY constraint
+    final memberExists =
+        await (_db.select(_db.channelMembers)..where(
+              (t) => t.channelId.equals(channelId) & t.userId.equals(senderId),
+            ))
+            .getSingleOrNull();
+
+    print('👑 [upsertChannelMessage] memberExists=${memberExists != null}');
+
+    if (memberExists == null) {
+      await _db
+          .into(_db.channelMembers)
+          .insert(
+            ChannelMembersCompanion.insert(
+              channelId: channelId,
+              userId: senderId,
+              role: const Value('member'),
+              joinedAt: Value(DateTime.now()),
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+      print('👑 [upsertChannelMessage] ✅ Created placeholder member');
+    }
+
+    print('👑 [upsertChannelMessage] Inserting message into DB...');
+    await _db
+        .into(_db.channelMessages)
+        .insertOnConflictUpdate(
+          ChannelMessagesCompanion(
+            id: Value(data['id'] as String),
+            channelId: Value(channelId),
+            senderId: Value(senderId),
+            textContent: Value(
+              (data['text_content'] ?? data['textContent']) as String?,
+            ),
+            mediaUrl: Value((data['media_url'] ?? data['mediaUrl']) as String?),
+            mediaType: Value(
+              (data['media_type'] ?? data['mediaType']) as String?,
+            ),
+            voiceNoteUrl: const Value(null),
+            replyToId: Value(
+              (data['reply_to_id'] ?? data['replyToId']) as String?,
+            ),
+            isRead: const Value(0),
+            isPending: Value(
+              ((data['is_pending'] ?? data['isPending']) == true ||
+                      (data['is_pending'] ?? data['isPending']) == 1)
+                  ? 1
+                  : 0,
+            ),
+            messageType: Value(
+              (data['message_type'] ??
+                      data['messageType'] ??
+                      data['media_type'] ??
+                      'text')
+                  as String,
+            ),
+            metadata: Value(
+              data['metadata'] is Map
+                  ? jsonEncode(data['metadata'])
+                  : data['metadata'] as String?,
+            ),
+            createdAt: Value(
+              _parseToUtcString(data['created_at'] ?? data['createdAt']),
+            ),
+          ),
+        );
+    print('👑 [upsertChannelMessage] ✅ Message inserted successfully');
+  }
+
+  /// Normalizes any timestamp value (String, DateTime, or null) to a
+  /// consistent UTC ISO-8601 string. This ensures ordering is always correct
+  /// regardless of device timezone or Supabase format differences.
+  String? _parseToUtcString(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value.toUtc().toIso8601String();
+    if (value is String) {
+      final parsed = DateTime.tryParse(value);
+      return parsed?.toUtc().toIso8601String() ?? value;
+    }
+    return null;
+  }
+
+  // 👑 CHANNEL PRESENCE (ONLINE USERS)
+
+  /// Mark a user as online in a channel. Call when entering the chat.
+  Future<void> markUserOnline({
+    required String channelId,
+    required String userId,
+    String? displayName,
+    String? avatarUrl,
+  }) async {
+    await _db
+        .into(_db.channelPresence)
+        .insertOnConflictUpdate(
+          ChannelPresenceCompanion(
+            channelId: Value(channelId),
+            userId: Value(userId),
+            isOnline: const Value(1),
+            isTyping: const Value(0),
+            lastSeen: Value(DateTime.now().toIso8601String()),
+            lastKnownName: Value(displayName),
+            lastKnownAvatar: Value(avatarUrl),
+          ),
+        );
+  }
+
+  Future<void> markUserOffline({
+    required String channelId,
+    required String userId,
+  }) async {
+    await (_db.update(_db.channelPresence)..where(
+          (t) => t.channelId.equals(channelId) & t.userId.equals(userId),
+        ))
+        .write(
+          ChannelPresenceCompanion(
+            isOnline: const Value(0),
+            isTyping: const Value(0),
+            lastSeen: Value(DateTime.now().toIso8601String()),
+          ),
+        );
+  }
+
+  /// Upsert presence data from remote source.
+  Future<void> upsertPresence(Map<String, dynamic> data) async {
+    final channelId = data['channel_id'] as String;
+    final userId = data['user_id'] as String;
+    await _db
+        .into(_db.channelPresence)
+        .insertOnConflictUpdate(
+          ChannelPresenceCompanion(
+            channelId: Value(channelId),
+            userId: Value(userId),
+            isOnline: Value(
+              (data['is_online'] == true || data['is_online'] == 1) ? 1 : 0,
+            ),
+            isTyping: Value(
+              (data['is_typing'] == true || data['is_typing'] == 1) ? 1 : 0,
+            ),
+            lastSeen: Value(data['last_seen_at']?.toString()),
+            lastKnownName: Value(data['last_known_name']?.toString()),
+            lastKnownAvatar: Value(data['last_known_avatar']?.toString()),
+          ),
+        );
+  }
+
+  /// Update typing status for a user in a channel.
+  Future<void> setTypingStatus({
+    required String channelId,
+    required String userId,
+    required bool isTyping,
+  }) async {
+    // 👑 1. UPDATE LOCAL
+    await (_db.update(_db.channelPresence)..where(
+          (t) => t.channelId.equals(channelId) & t.userId.equals(userId),
+        ))
+        .write(ChannelPresenceCompanion(isTyping: Value(isTyping ? 1 : 0)));
+  }
+
+  /// Watch all online users for a channel as a reactive stream.
+  Stream<List<Map<String, dynamic>>> watchOnlineUsers(String channelId) {
+    return (_db.select(_db.channelPresence)
+          ..where((t) => t.channelId.equals(channelId) & t.isOnline.equals(1)))
+        .watch()
+        .map((rows) => rows.map((r) => r.toJson()).toList());
+  }
+
+  // 👑 COMMON CHANNELS
+  Stream<List<Map<String, dynamic>>> watchCommonChannels(
+    String currentUserId,
+    String otherUserId,
+  ) {
+    // Join common_channels with channels to get the channel details
+    final query =
+        _db.select(_db.commonChannels).join([
+          innerJoin(
+            _db.channels,
+            _db.channels.id.equalsExp(_db.commonChannels.channelId),
+          ),
+        ])..where(
+          _db.commonChannels.userId.equals(currentUserId) &
+              _db.commonChannels.otherUserId.equals(otherUserId),
+        );
+
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        final channel = row.readTable(_db.channels);
+        return channel.toJson();
+      }).toList();
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getPosts({
+    String? authorId,
+    String? channelId,
+    int? offset,
+    int? limit,
+  }) async {
+    final query = _db.select(_db.posts)
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+      ]);
+    if (authorId != null) {
+      query.where((t) => t.authorId.equals(authorId));
+    }
+    if (channelId != null && channelId != 'global') {
+      query.where((t) => t.channelId.equals(channelId));
+    }
+    if (limit != null) {
+      query.limit(limit, offset: offset);
+    }
+    final rows = await query.get();
+    return rows.map((r) => r.toJson()).toList();
+  }
+
+  Future<void> clearSyncedPosts({String? channelId}) async {
+    if (channelId == 'private') {
+      await (_db.delete(
+        _db.channels,
+      )..where((t) => t.isPrivate.equals(1))).go();
+    } else if (channelId == 'public') {
+      await (_db.delete(
+        _db.channels,
+      )..where((t) => t.isPrivate.equals(0))).go();
+    } else if (channelId != null && channelId != 'global') {
+      await (_db.delete(_db.channelPosts)..where(
+            (t) => t.channelId.equals(channelId) & t.isPending.equals(0),
+          ))
+          .go();
+    } else {
+      await (_db.delete(_db.posts)..where((t) => t.isPending.equals(0))).go();
+    }
+  }
+
+  /// 👑 ROLLING CACHE: Keeps only the newest [keepCount] posts for a channel.
+  /// Deletes everything else that isn't pending.
+  Future<void> trimChannelPosts({
+    required String channelId,
+    int keepCount = 10,
+  }) async {
+    try {
+      // 1. Get the IDs of the newest N posts
+      final newest =
+          await (_db.select(_db.channelPosts)
+                ..where((t) => t.channelId.equals(channelId))
+                ..orderBy([
+                  (t) => OrderingTerm(
+                    expression: t.createdAt,
+                    mode: OrderingMode.desc,
+                  ),
+                ])
+                ..limit(keepCount))
+              .get();
+
+      final newestIds = newest.map((p) => p.id).toList();
+
+      // 2. Delete everything else
+      if (newestIds.isNotEmpty) {
+        await (_db.delete(_db.channelPosts)..where(
+              (t) =>
+                  t.channelId.equals(channelId) &
+                  t.id.isNotIn(newestIds) &
+                  t.isPending.equals(0),
+            ))
+            .go();
+        debugPrint(
+          '💾 [SQLite Trim] Kept only the ${newestIds.length} newest posts for $channelId',
+        );
+      }
+    } catch (e) {
+      debugPrint('🚨 [SQLite Trim Error] Failed for $channelId: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchPosts(String queryText) async {
+    final rows =
+        await (_db.select(_db.posts)..where(
+              (t) =>
+                  t.username.like('%$queryText%') |
+                  t.caption.like('%$queryText%'),
+            ))
+            .get();
+    return rows.map((r) => r.toJson()).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getManifestos(String channelId) async {
+    try {
+      final rows =
+          await (_db.select(_db.manifestos)
+                ..where((t) => t.channelId.equals(channelId))
+                ..orderBy([
+                  (t) => OrderingTerm(
+                    expression: t.createdAt,
+                    mode: OrderingMode.desc,
+                  ),
+                ]))
+              .get();
+      return rows.map((r) => r.toJson()).toList();
+    } catch (e) {
+      if (e.toString().contains('no such column: is_liked')) {
+        debugPrint(
+          '🛠️ [SQLite Self-Heal] Detected missing is_liked, migrating...',
+        );
+        await _syncSchema();
+        // Retry once after migration
+        return getManifestos(channelId);
+      }
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getManifestoComments(
+    String channelId,
+  ) async {
+    final rows =
+        await (_db.select(_db.manifestoComments)
+              ..where((t) => t.channelId.equals(channelId))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    return rows.map((r) => r.toJson()).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getChannelPosts(
+    String channelId, {
+    int? offset,
+    int? limit,
+  }) async {
+    try {
+      final query = _db.select(_db.channelPosts)
+        ..where((t) => t.channelId.equals(channelId))
+        ..orderBy([
+          (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+        ]);
+
+      if (limit != null) {
+        query.limit(limit, offset: offset);
+      }
+
+      final rows = await query.get();
+      return rows.map((r) => r.toJson()).toList();
+    } catch (e) {
+      if (e.toString().contains('no such column: is_liked')) {
+        debugPrint(
+          '🛠️ [SQLite Self-Heal] Detected missing is_liked, migrating...',
+        );
+        await _syncSchema();
+        return getChannelPosts(channelId, offset: offset, limit: limit);
+      }
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getChannelPostComments(
+    String channelId,
+  ) async {
+    final rows =
+        await (_db.select(_db.channelPostComments)
+              ..where((t) => t.channelId.equals(channelId))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    return rows.map((r) => r.toJson()).toList();
+  }
+
+  Future<Map<String, dynamic>?> getSinglePost(String id) async {
+    final result = await (_db.select(
+      _db.posts,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    return result?.toJson();
+  }
+
+  Future<void> cacheManifestos(List<Map<String, dynamic>> items) async {
+    await _db.batch((batch) {
+      for (var item in items) {
+        final safeItem = Map<String, dynamic>.from(item);
+
+        // 👑 DRIFT SAFETY: Normalize keys and provide defaults for non-nullable fields
+        safeItem['id'] ??=
+            safeItem['ID'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+        safeItem['authorId'] ??= safeItem['author_id'] ?? '';
+        safeItem['channelId'] ??= safeItem['channel_id'] ?? '';
+        safeItem['videoUrls'] ??= safeItem['video_urls'] ?? '[]';
+        safeItem['likes'] ??= safeItem['likes'] ?? 0;
+        safeItem['comments'] ??= safeItem['comments'] ?? 0;
+        safeItem['isPublic'] ??= safeItem['is_public'] ?? 1;
+        safeItem['allowComments'] ??= safeItem['allow_comments'] ?? 1;
+        safeItem['isPending'] ??= safeItem['is_pending'] ?? 0;
+
+        batch.insert(
+          _db.manifestos,
+          Manifesto.fromJson(safeItem),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
   }
 
   Future<void> cachePosts(List<Map<String, dynamic>> posts) async {
-    final db = await database;
-    final batch = db.batch();
-    for (var post in posts) {
-      final safePost = Map<String, dynamic>.from(post);
-      if (safePost['imageUrls'] is List) {
-        safePost['imageUrls'] = jsonEncode(safePost['imageUrls']);
+    await _db.batch((batch) {
+      for (var post in posts) {
+        final safePost = Map<String, dynamic>.from(post);
+
+        // 👑 DRIFT SAFETY: Normalize keys and provide defaults for non-nullable fields
+        safePost['id'] ??=
+            safePost['ID'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+        safePost['authorId'] ??= safePost['author_id'] ?? '';
+        safePost['channelId'] ??= safePost['channel_id'] ?? '';
+        safePost['videoUrls'] ??= safePost['video_urls'] ?? '[]';
+        safePost['folderName'] ??= safePost['folder_name'] ?? 'public_posts';
+        safePost['postType'] ??= safePost['post_type'] ?? 'post';
+        safePost['linkChain'] ??= safePost['link_chain'] ?? '[]';
+        safePost['linkDepth'] ??= safePost['link_depth'] ?? 0;
+        safePost['isPublic'] ??= safePost['is_public'] ?? 1;
+        safePost['allowComments'] ??= safePost['allow_comments'] ?? 1;
+        safePost['isPending'] ??= safePost['is_pending'] ?? 0;
+        safePost['isLiked'] ??= safePost['is_liked'] ?? 0;
+
+        if (safePost['imageUrls'] is List) {
+          safePost['imageUrls'] = jsonEncode(safePost['imageUrls']);
+        }
+        if (safePost['thumbnailUrls'] is List) {
+          safePost['thumbnailUrls'] = jsonEncode(safePost['thumbnailUrls']);
+        }
+        batch.insert(
+          _db.posts,
+          Post.fromJson(safePost),
+          mode: InsertMode.insertOrReplace,
+        );
       }
-      if (safePost['thumbnailUrls'] is List) {
-        safePost['thumbnailUrls'] = jsonEncode(safePost['thumbnailUrls']);
-      }
-      batch.insert(
-        'posts',
-        safePost,
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-    await batch.commit(noResult: true);
+    });
   }
 
-  // 👑 NEW: Table-Aware Optimistic Caching
+  Future<void> cacheChannelPosts(List<Map<String, dynamic>> items) async {
+    await _db.batch((batch) {
+      for (final item in items) {
+        final safeItem = Map<String, dynamic>.from(item);
+
+        try {
+          // Robust key checking
+          safeItem['channelId'] ??= safeItem['channel_id'] ?? '';
+          safeItem['authorId'] ??= safeItem['author_id'] ?? '';
+          safeItem['profileImageUrl'] ??= safeItem['profile_image_url'] ?? '';
+          safeItem['videoUrl'] ??= safeItem['video_url'] ?? '';
+          safeItem['sdVideoUrl'] ??= safeItem['sd_video_url'] ?? '';
+          safeItem['audioUrl'] ??= safeItem['audio_url'] ?? '';
+          safeItem['postType'] ??= safeItem['post_type'] ?? 'post';
+          safeItem['createdAt'] ??=
+              safeItem['created_at'] ?? DateTime.now().toIso8601String();
+          safeItem['isLiked'] ??= safeItem['is_liked'] ?? 0;
+          safeItem['isSponsored'] ??= safeItem['is_sponsored'] ?? 0;
+          safeItem['isPublic'] ??= safeItem['is_public'] ?? 1;
+          safeItem['allowComments'] ??= safeItem['allow_comments'] ?? 1;
+          safeItem['id'] ??= DateTime.now().millisecondsSinceEpoch.toString();
+          safeItem['isPending'] ??= safeItem['is_pending'] ?? 0;
+          safeItem['videoUrls'] ??= safeItem['video_urls'] ?? '[]';
+
+          if (safeItem['imageUrls'] is List) {
+            safeItem['imageUrls'] = jsonEncode(safeItem['imageUrls']);
+          }
+          if (safeItem['thumbnailUrls'] is List) {
+            safeItem['thumbnailUrls'] = jsonEncode(safeItem['thumbnailUrls']);
+          }
+          if (safeItem['videoUrls'] is List) {
+            safeItem['videoUrls'] = jsonEncode(safeItem['videoUrls']);
+          }
+
+          batch.insert(
+            _db.channelPosts,
+            ChannelPost.fromJson(safeItem),
+            mode: InsertMode.insertOrReplace,
+          );
+        } catch (e) {
+          debugPrint('🚨 [ChartNativeDB Crash] Row mapping failed!');
+          debugPrint('🚨 Error: $e');
+          debugPrint('🚨 Row Data: $safeItem');
+          rethrow;
+        }
+      }
+    });
+  }
+
   Future<void> cacheOptimisticItem(
     String table,
     Map<String, dynamic> data,
   ) async {
-    final db = await database;
     final safeData = Map<String, dynamic>.from(data);
 
     // Auto-encode JSON lists if present
-    if (safeData['image_urls'] is List)
+    if (safeData['image_urls'] is List) {
       safeData['image_urls'] = jsonEncode(safeData['image_urls']);
-    if (safeData['thumbnail_urls'] is List)
+    }
+    if (safeData['thumbnail_urls'] is List) {
       safeData['thumbnail_urls'] = jsonEncode(safeData['thumbnail_urls']);
-    if (safeData['imageUrls'] is List)
+    }
+    if (safeData['imageUrls'] is List) {
       safeData['imageUrls'] = jsonEncode(safeData['imageUrls']);
-    if (safeData['thumbnailUrls'] is List)
+    }
+    if (safeData['thumbnailUrls'] is List) {
       safeData['thumbnailUrls'] = jsonEncode(safeData['thumbnailUrls']);
-    if (safeData['link_chain'] is List)
+    }
+    if (safeData['link_chain'] is List) {
       safeData['link_chain'] = jsonEncode(safeData['link_chain']);
-    if (safeData['video_urls'] is List)
+    }
+    if (safeData['video_urls'] is List) {
       safeData['video_urls'] = jsonEncode(safeData['video_urls']);
+    }
 
-    await db.insert(
-      table,
-      safeData,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    // 👑 DRIFT SAFETY: Ensure non-nullable fields have defaults
+    safeData['id'] ??= DateTime.now().millisecondsSinceEpoch.toString();
+    safeData['author_id'] ??= '';
+    safeData['channel_id'] ??= '';
+    safeData['post_type'] ??= 'post';
+    safeData['isPending'] ??= 0;
+    safeData['is_liked'] ??= 0;
+    safeData['is_video'] ??= 0;
+    safeData['likes'] ??= 0;
+    safeData['comments'] ??= 0;
+    safeData['shares'] ??= 0;
+
+    try {
+      if (table == 'posts') {
+        await _db
+            .into(_db.posts)
+            .insert(Post.fromJson(safeData), mode: InsertMode.insertOrReplace);
+      } else if (table == 'manifestos') {
+        safeData['videoUrls'] ??= safeData['video_urls'] ?? '[]';
+        safeData['authorId'] ??= safeData['author_id'] ?? '';
+        safeData['channelId'] ??= safeData['channel_id'] ?? '';
+        safeData['isPublic'] ??= safeData['is_public'] ?? 1;
+        safeData['allowComments'] ??= safeData['allow_comments'] ?? 1;
+        safeData['isLiked'] ??= safeData['is_liked'] ?? 0;
+        safeData['isPending'] ??= 0;
+        safeData['likes'] ??= 0;
+        safeData['comments'] ??= 0;
+
+        if (safeData['videoUrls'] is List) {
+          safeData['videoUrls'] = jsonEncode(safeData['videoUrls']);
+        }
+        if (safeData['imageUrls'] is List) {
+          safeData['imageUrls'] = jsonEncode(safeData['imageUrls']);
+        }
+
+        await _db
+            .into(_db.manifestos)
+            .insert(
+              Manifesto.fromJson(safeData),
+              mode: InsertMode.insertOrReplace,
+            );
+      } else if (table == 'manifesto_comments') {
+        safeData['authorId'] ??= safeData['author_id'] ?? '';
+        safeData['channelId'] ??= safeData['channel_id'] ?? '';
+        safeData['isPending'] ??= 0;
+        safeData['isLiked'] ??= safeData['is_liked'] ?? 0;
+        safeData['likes'] ??= 0;
+
+        await _db
+            .into(_db.manifestoComments)
+            .insert(
+              ManifestoComment.fromJson(safeData),
+              mode: InsertMode.insertOrReplace,
+            );
+      } else if (table == 'channel_posts') {
+        await _db
+            .into(_db.channelPosts)
+            .insert(
+              ChannelPost.fromJson(safeData),
+              mode: InsertMode.insertOrReplace,
+            );
+      } else if (table == 'channel_post_comments') {
+        await _db
+            .into(_db.channelPostComments)
+            .insert(
+              ChannelPostComment.fromJson(safeData),
+              mode: InsertMode.insertOrReplace,
+            );
+      }
+    } catch (e) {
+      debugPrint('🚨 [SQLite Error] cacheOptimisticItem FAILED for $table: $e');
+    }
   }
 
   Future<void> cacheSinglePost(Map<String, dynamic> post) async {
-    final db = await database;
     final safePost = Map<String, dynamic>.from(post);
     if (safePost['imageUrls'] is List) {
       safePost['imageUrls'] = jsonEncode(safePost['imageUrls']);
@@ -418,214 +1007,368 @@ class ChartNativeDB {
     if (safePost['thumbnailUrls'] is List) {
       safePost['thumbnailUrls'] = jsonEncode(safePost['thumbnailUrls']);
     }
-    await db.insert(
-      'posts',
-      safePost,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _db
+        .into(_db.posts)
+        .insert(Post.fromJson(safePost), mode: InsertMode.insertOrReplace);
   }
 
   Future<void> cacheChannel(Map<String, dynamic> channel) async {
-    final db = await database;
-    await db.insert(
-      'channel_cache',
-      channel,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await _db
+        .into(_db.channels)
+        .insert(Channel.fromJson(channel), mode: InsertMode.insertOrReplace);
+  }
+
+  /// 🗑️ Removes all locally-cached invitation posts for a channel.
+  /// Called when the owner switches 'allow_invitations_by' to 'none'.
+  Future<void> deleteInvitationPostsForChannel(String channelId) async {
+    await (_db.delete(_db.channelPosts)..where(
+          (t) =>
+              t.channelId.equals(channelId) & t.postType.equals('invitation'),
+        ))
+        .go();
+  }
+
+  /// 👑 MODULAR CACHING: Distributes a ChannelEntity across the normalized tables
+  Future<void> cacheFullChannelProfile(ChannelEntity channel) async {
+    // 1. Core Identity
+    await _db
+        .into(_db.channels)
+        .insert(
+          ChannelsCompanion.insert(
+            id: channel.id,
+            name: Value(channel.name),
+            title: const Value.absent(),
+            subtitle: Value(channel.description),
+            imageUrl: Value(channel.avatarUrl),
+            isPrivate: Value(channel.isPrivate ? 1 : 0),
+            joinMethod: Value(channel.join_method ?? 'invite'),
+            ageRestriction: Value(channel.age_restriction ?? 'All Ages'),
+            visibleToOtherChannelMembers: Value(
+              channel.visible_to_other_channel_members ?? 0,
+            ),
+            visibleToFollowedUsers: Value(
+              channel.visible_to_followed_users ?? 1,
+            ),
+            preventLeaving: Value(channel.prevent_leaving ?? 0),
+            countryRestrictions: Value(
+              channel.country_restrictions ?? '["Global"]',
+            ),
+            allowCommentingBy: Value(channel.allow_commenting_by ?? 'all'),
+            allowStatusPostingBy: Value(
+              channel.allow_status_posting_by ?? 'all',
+            ),
+            allowInvitationsBy: Value(channel.allow_invitations_by ?? 'all'),
+            isDiscoverable: Value(channel.is_discoverable),
+            membersCount: Value(channel.memberCount),
+            followersCount: Value(channel.followersCount),
+            tagsCount: Value(channel.tagsCount),
+            likesCount: Value(channel.likesCount),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+
+    // 2. Metadata (Stats & Badges)
+    await _db
+        .into(_db.channelMetadata)
+        .insert(
+          ChannelMetadataCompanion.insert(
+            channelId: channel.id,
+            memberCount: Value(channel.memberCount),
+            unreadCount: Value(channel.unreadCount),
+            isCharted: Value(channel.isCharted ? 1 : 0),
+            isPending: const Value(0),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+
+    // 3. Branding (Aesthetics)
+    await _db
+        .into(_db.channelBranding)
+        .insert(
+          ChannelBrandingCompanion.insert(
+            channelId: channel.id,
+            creatorAvatarUrl: Value(channel.creatorAvatarUrl),
+            leaderAvatarUrl: Value(channel.leaderAvatarUrl),
+            creatorId: Value(channel.creatorId),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+
+    // 4. Creator Identity
+    await _db
+        .into(_db.channelCreator)
+        .insert(
+          ChannelCreatorCompanion.insert(
+            channelId: channel.id,
+            creatorId: channel.creatorId,
+            name: Value(channel.creatorName ?? 'Creator'),
+            isVerified: const Value(0),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
   }
 
   Future<void> updateChannel(String id, Map<String, dynamic> data) async {
-    final db = await database;
-    await db.update('channel_cache', data, where: 'id = ?', whereArgs: [id]);
+    final companion = Channel.fromJson(data).toCompanion(true);
+    await (_db.update(
+      _db.channels,
+    )..where((t) => t.id.equals(id))).write(companion);
   }
 
   Future<List<Map<String, dynamic>>> getCachedChannels() async {
-    final db = await database;
-    return await db.query('channel_cache');
+    final query = _db.select(_db.channels).join([
+      leftOuterJoin(
+        _db.channelMetadata,
+        _db.channelMetadata.channelId.equalsExp(_db.channels.id),
+      ),
+      leftOuterJoin(
+        _db.channelBranding,
+        _db.channelBranding.channelId.equalsExp(_db.channels.id),
+      ),
+      leftOuterJoin(
+        _db.channelCreator,
+        _db.channelCreator.channelId.equalsExp(_db.channels.id),
+      ),
+    ]);
+
+    final results = await query.get();
+    return results.map((row) {
+      final channel = row.readTable(_db.channels).toJson();
+      final metadata = row.readTableOrNull(_db.channelMetadata)?.toJson() ?? {};
+      final branding = row.readTableOrNull(_db.channelBranding)?.toJson() ?? {};
+      final creator = row.readTableOrNull(_db.channelCreator)?.toJson() ?? {};
+
+      return {
+        ...channel,
+        'memberCount': channel['members_count'] ?? metadata['memberCount'],
+        'followersCount': channel['followers_count'],
+        'tagsCount': channel['tags_count'],
+        'likesCount': channel['likes_count'],
+        'postsCount':
+            metadata['postsBadgeCount'], // Mapping local badge count or similar
+        'unreadCount': metadata['unreadCount'],
+        'isCharted': metadata['isCharted'],
+        'isDiscoverable': channel['is_discoverable'],
+        'creatorAvatarUrl': branding['creatorAvatarUrl'],
+        'leaderAvatarUrl': branding['leaderAvatarUrl'],
+        'creator_id': branding['creatorId'],
+        'creatorName': creator['name'],
+      };
+    }).toList();
   }
 
   Future<List<Map<String, dynamic>>> getCachedPosts({String? authorId}) async {
-    final db = await database;
+    final query = _db.select(_db.posts);
     if (authorId != null) {
-      return await db.query(
-        'posts',
-        where: 'author_id = ?',
-        whereArgs: [authorId],
-        orderBy: 'createdAt DESC',
-      );
+      query.where((t) => t.authorId.equals(authorId));
     }
-    return await db.query('posts', orderBy: 'createdAt DESC');
+    query.orderBy([
+      (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+    ]);
+    final results = await query.get();
+    return results.map((row) => row.toJson()).toList();
   }
 
   Future<List<Map<String, dynamic>>> getOwnerPosts(String authorId) async {
-    final db = await database;
-    return await db.query(
-      'posts',
-      where: 'author_id = ?',
-      whereArgs: [authorId],
-      orderBy: 'createdAt DESC',
-    );
+    final results =
+        await (_db.select(_db.posts)
+              ..where((t) => t.authorId.equals(authorId))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    return results.map((row) => row.toJson()).toList();
   }
 
   Future<void> markPostSynced(String id) async {
-    final db = await database;
-    await db.update(
-      'posts',
-      {'isPending': 0},
-      where: 'id = ?',
-      whereArgs: [id],
+    await (_db.update(_db.posts)..where((t) => t.id.equals(id))).write(
+      const PostsCompanion(isPending: Value(0)),
     );
-    await db.update(
-      'manifestos',
-      {'isPending': 0},
-      where: 'id = ?',
-      whereArgs: [id],
+    await (_db.update(_db.manifestos)..where((t) => t.id.equals(id))).write(
+      const ManifestosCompanion(isPending: Value(0)),
     );
-    await db.update(
-      'manifesto_comments',
-      {'isPending': 0},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await (_db.update(_db.manifestoComments)..where((t) => t.id.equals(id)))
+        .write(const ManifestoCommentsCompanion(isPending: Value(0)));
   }
 
-  /// 👑 ATOMIC INCREMENT: Manifesto Comment Count
   Future<void> incrementManifestoCommentCount(String manifestoId) async {
-    final db = await database;
-    await db.execute(
+    await _db.customStatement(
       'UPDATE manifestos SET comments = comments + 1 WHERE id = ?',
       [manifestoId],
     );
   }
 
-  Future<List<Map<String, dynamic>>> getPendingPosts(String? channelId) async {
-    final db = await database;
-
-    if (channelId == null || channelId == 'general' || channelId.isEmpty) {
-      return await db.query(
-        'posts',
-        where: 'isPending = 1 AND (channelId IS NULL OR channelId = ?)',
-        whereArgs: ['general'],
-      );
-    }
-
-    // 👑 UNION ALL equivalent for local channel view
-    final manifestos = await db.query(
-      'manifestos',
-      where: 'isPending = 1 AND channel_id = ?',
-      whereArgs: [channelId],
+  Future<void> incrementChannelPostCommentCount(String postId) async {
+    await _db.customStatement(
+      'UPDATE channel_posts SET comments = comments + 1 WHERE id = ?',
+      [postId],
     );
-
-    final comments = await db.query(
-      'manifesto_comments',
-      where: 'isPending = 1 AND channel_id = ?',
-      whereArgs: [channelId],
-    );
-
-    return [...manifestos, ...comments];
   }
 
-  /// 👑 CACHE INVALIDATION: Clears old synced data to prevent "Zombie Posts"
-  /// Only deletes posts that have already been synced (isPending = 0).
-  Future<void> clearSyncedPosts({String? channelId}) async {
-    final db = await database;
-
+  Future<List<Map<String, dynamic>>> getPendingPosts(String? channelId) async {
     if (channelId == null || channelId == 'general' || channelId.isEmpty) {
-      // Clear general feed zombies
-      await db.delete(
-        'posts', 
-        where: 'isPending = 0 AND (channelId IS NULL OR channelId = ?)', 
-        whereArgs: ['general']
-      );
-      debugPrint('🧹 [SQLite] Cleared old synced posts for General Feed');
-    } else {
-      // Clear channel-specific zombies
-      await db.delete(
-        'manifestos', 
-        where: 'channel_id = ? AND isPending = 0', 
-        whereArgs: [channelId]
-      );
-      await db.delete(
-        'manifesto_comments', 
-        where: 'channel_id = ? AND isPending = 0', 
-        whereArgs: [channelId]
-      );
-      debugPrint('🧹 [SQLite] Cleared old synced manifestos for Channel: $channelId');
+      final posts =
+          await (_db.select(_db.posts)..where(
+                (t) =>
+                    t.isPending.equals(1) &
+                    (t.channelId.isNull() | t.channelId.equals('general')),
+              ))
+              .get();
+      return posts.map((row) => row.toJson()).toList();
     }
+
+    final manifestos =
+        await (_db.select(_db.manifestos)..where(
+              (t) => t.isPending.equals(1) & t.channelId.equals(channelId),
+            ))
+            .get();
+
+    final comments =
+        await (_db.select(_db.manifestoComments)..where(
+              (t) => t.isPending.equals(1) & t.channelId.equals(channelId),
+            ))
+            .get();
+
+    return [
+      ...manifestos.map((e) => e.toJson()),
+      ...comments.map((e) => e.toJson()),
+    ];
   }
 
   Future<void> clearAll() async {
-    final db = await database;
-    await db.delete('posts');
-    await db.delete('channel_cache');
+    await _db.delete(_db.posts).go();
+    await _db.delete(_db.channels).go();
   }
 
-  /// 👑 GLOBAL CACHE SWEEP: Enforces a strict maximum size for the ENTIRE app cache.
-  /// No matter how many channels the user joins, the DB never holds more than [maxTotalPosts].
-  /// Call this after a successful feed refresh or on app launch.
   Future<void> globalCacheSweep({int maxTotalPosts = 200}) async {
-    final db = await database;
-
-    // 1. Keep only the newest N manifestos across the ENTIRE app
-    await db.execute('''
+    // Basic implementation using custom statements for complex LIMIT subqueries
+    await _db.customStatement(
+      '''
       DELETE FROM manifestos 
-      WHERE isPending = 0 AND id NOT IN (
+      WHERE is_pending = 0 AND id NOT IN (
         SELECT id FROM manifestos 
         ORDER BY created_at DESC 
         LIMIT ?
       )
-    ''', [maxTotalPosts]);
+    ''',
+      [maxTotalPosts],
+    );
 
-    // 2. Same for manifesto comments
-    await db.execute('''
+    await _db.customStatement(
+      '''
       DELETE FROM manifesto_comments 
-      WHERE isPending = 0 AND id NOT IN (
+      WHERE is_pending = 0 AND id NOT IN (
         SELECT id FROM manifesto_comments 
         ORDER BY created_at DESC 
         LIMIT ?
       )
-    ''', [maxTotalPosts]);
+    ''',
+      [maxTotalPosts],
+    );
 
-    // 3. Same for general posts (👑 FIXED: Uses legacy camelCase createdAt)
-    await db.execute('''
+    await _db.customStatement(
+      '''
       DELETE FROM posts 
-      WHERE isPending = 0 AND id NOT IN (
+      WHERE is_pending = 0 AND id NOT IN (
         SELECT id FROM posts 
         ORDER BY createdAt DESC 
         LIMIT ?
       )
-    ''', [maxTotalPosts]);
-
-    debugPrint('✂️ [SQLite] Global Sweep: Cache limited to newest $maxTotalPosts items per table.');
+    ''',
+      [maxTotalPosts],
+    );
   }
 
-  /// 👑 ATOMIC DECREMENT: Safely reduces comment count without dropping below zero
   Future<void> decrementManifestoCommentCount(String manifestoId) async {
-    final db = await database;
-    await db.execute(
+    await _db.customStatement(
       'UPDATE manifestos SET comments = MAX(0, comments - 1) WHERE id = ?',
       [manifestoId],
     );
   }
 
-  /// 🧨 THE NUKE: Wipes every single row from every table and shrinks the file.
-  /// Use this for testing or a "Clear Cache" button in settings.
+  Future<void> toggleLike(
+    String itemId,
+    bool isPost, {
+    bool isLiked = true,
+  }) async {
+    final operator = isLiked ? '+' : '-';
+    final isLikedValue = isLiked ? 1 : 0;
+
+    // 👑 Update all possible tables where this item might exist
+    final tables = isPost
+        ? ['manifestos', 'channel_posts', 'posts']
+        : ['manifesto_comments', 'channel_post_comments'];
+
+    for (final table in tables) {
+      try {
+        await _db.customStatement(
+          'UPDATE $table SET likes = MAX(0, likes $operator 1), is_liked = ? WHERE id = ?',
+          [isLikedValue, itemId],
+        );
+        debugPrint('💾 [SQLite Internal] Update success for $table ID $itemId');
+      } catch (e) {
+        if (e.toString().contains('no such column: is_liked')) {
+          debugPrint(
+            '🛠️ [SQLite Self-Heal] Missing is_liked in $table, migrating...',
+          );
+          await _syncSchema();
+          // Retry once
+          try {
+            await _db.customStatement(
+              'UPDATE $table SET likes = MAX(0, likes $operator 1), is_liked = ? WHERE id = ?',
+              [isLikedValue, itemId],
+            );
+          } catch (_) {}
+        } else {
+          debugPrint('🚨 [SQLite Error] toggleLike FAILED for $table: $e');
+        }
+      }
+    }
+  }
+
+  Future<void> deleteItem(String itemId, bool isManifesto) async {
+    try {
+      if (isManifesto) {
+        await (_db.delete(
+          _db.channelPosts,
+        )..where((t) => t.id.equals(itemId))).go();
+      } else {
+        await (_db.delete(
+          _db.channelPostComments,
+        )..where((t) => t.id.equals(itemId))).go();
+      }
+    } catch (e) {
+      debugPrint('🚨 [SQLite Error] deleteItem FAILED: $e');
+    }
+  }
+
+  Future<void> upsertChannelInvitation(Map<String, dynamic> data) async {
+    await _db
+        .into(_db.channelInvitations)
+        .insert(
+          ChannelInvitation.fromJson(data),
+          mode: InsertMode.insertOrReplace,
+        );
+  }
+
+  Future<Set<String>> getInvitedChannelIds(String targetChannelId) async {
+    final rows = await (_db.select(
+      _db.channelInvitations,
+    )..where((t) => t.targetChannelId.equals(targetChannelId))).get();
+    return rows.map((r) => r.sourceChannelId).toSet();
+  }
+
   Future<void> nukeLocalData() async {
-    final db = await database;
-    final batch = db.batch();
-    
-    batch.delete('manifestos');
-    batch.delete('manifesto_comments');
-    batch.delete('channel_comments');
-    batch.delete('posts');
-    batch.delete('channel_cache');
-    batch.delete('users');
-    
-    await batch.commit(noResult: true);
-    
-    // 🧹 VACUUM: Reclaims unused space and shrinks the physical .db file on Windows.
-    await db.execute('VACUUM');
-    
-    debugPrint('🧨 [SQLite] All local tables wiped and file vacuumed.');
+    await _db.transaction(() async {
+      await _db.delete(_db.manifestos).go();
+      await _db.delete(_db.manifestoComments).go();
+      await _db.delete(_db.posts).go();
+      await _db.delete(_db.channels).go();
+      await _db.delete(_db.users).go();
+    });
+    await _db.customStatement('VACUUM');
   }
 }

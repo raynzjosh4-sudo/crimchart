@@ -1,6 +1,5 @@
 import 'dart:ffi' as ffi;
 import 'dart:io' show Platform, File;
-import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
@@ -123,8 +122,8 @@ class ChartNativeFFI {
   _GetVideoInfoD? _getVideoInfoNative;
   _ExtractThumbnailD? _extractThumbnailNative;
   _PreviewStripD? _previewStripNative;
+  // ignore: unused_field
   _CompressImageD? _compressImageNative;
-  _FreeBufferD? _freeBufferNative;
   _CompressAudioD? _compressAudioNative;
   _OverlayImageDart? _overlayImageNative;
   _NativeMergeDart? _mergeVideosNative;
@@ -163,9 +162,6 @@ class ChartNativeFFI {
             .lookup<ffi.NativeFunction<_CompressImageC>>(
               'compress_image_to_jpeg',
             )
-            .asFunction();
-        _freeBufferNative = _lib!
-            .lookup<ffi.NativeFunction<_FreeBufferC>>('free_native_buffer')
             .asFunction();
         _compressAudioNative = _lib!
             .lookup<ffi.NativeFunction<_CompressAudioC>>('compress_audio')
@@ -313,14 +309,14 @@ class ChartNativeFFI {
     if (_extractThumbnailNative != null) {
       final inPtr = inputPath.toNativeUtf8();
       final outPtr = outputPath.toNativeUtf8();
-      
+
       print('🎬 [C++] Extracting thumbnail natively...');
       final ret = _extractThumbnailNative!(inPtr, outPtr, timeSec, thumbWidth);
       print('🎬 [C++] Native thumbnail extraction returned: $ret');
 
       malloc.free(inPtr);
       malloc.free(outPtr);
-      
+
       if (ret == 0 && File(outputPath).existsSync()) {
         return true;
       } else {

@@ -20,12 +20,14 @@ class ChannelSettingsPage extends StatelessWidget {
   final List<Member> members;
   final DateTime createdAt;
   final String? ageRestriction;
-  final bool membersOtherChannels;
-  final bool membersFollowing;
+  final bool visibleToOtherChannelMembers;
+  final bool visibleToFollowedUsers;
   final String joinMethod;
   final bool preventLeaving;
   final List<String> countryRestrictions;
   final String allowCommentingBy;
+  final String allowStatusPostingBy;
+  final String allowInvitationsBy;
 
   const ChannelSettingsPage({
     super.key,
@@ -37,12 +39,14 @@ class ChannelSettingsPage extends StatelessWidget {
     this.description,
     this.members = const [],
     this.ageRestriction,
-    this.membersOtherChannels = false,
-    this.membersFollowing = true,
+    this.visibleToOtherChannelMembers = false,
+    this.visibleToFollowedUsers = true,
     this.joinMethod = 'invite',
     this.preventLeaving = false,
     this.countryRestrictions = const ['Global'],
     this.allowCommentingBy = 'all',
+    this.allowStatusPostingBy = 'all',
+    this.allowInvitationsBy = 'all',
   });
 
   @override
@@ -170,12 +174,14 @@ class ChannelSettingsPage extends StatelessWidget {
                         builder: (context) => ChannelSettingsDetailedPage(
                           channelId: channelId,
                           initialAge: ageRestriction ?? 'All Ages',
-                          initialMembersOtherChannels: membersOtherChannels,
-                          initialMembersFollowing: membersFollowing,
+                          initialVisibleToOtherChannelMembers: visibleToOtherChannelMembers,
+                          initialVisibleToFollowedUsers: visibleToFollowedUsers,
                           initialJoinMethod: joinMethod,
                           initialPreventLeaving: preventLeaving,
                           initialCountryRestrictions: countryRestrictions,
                           initialAllowCommentingBy: allowCommentingBy,
+                          initialAllowStatusPostingBy: allowStatusPostingBy,
+                          initialAllowInvitationsBy: allowInvitationsBy,
                         ),
                       ),
                     );

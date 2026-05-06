@@ -209,7 +209,7 @@ class _EmailSignupPageState extends ConsumerState<EmailSignupPage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Image.network(
-                                  'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                                  'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
                                   width: 18.w,
                                   height: 18.w,
                                 ),

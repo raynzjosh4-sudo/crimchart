@@ -14,13 +14,7 @@ class FeedRepository {
 
   /// Fetch all cached posts from the C++ database (Fast O(1) path)
   Future<List<PostEntity>> getCachedPosts({String? authorId}) async {
-    final db = await _db.database;
-    final rows = await db.query(
-      'posts',
-      where: authorId != null ? 'author_id = ?' : null,
-      whereArgs: authorId != null ? [authorId] : null,
-      orderBy: 'createdAt DESC',
-    );
+    final rows = await _db.getPosts(authorId: authorId);
     return rows.map((row) => PostEntity.fromMap(row)).toList();
   }
 
@@ -32,64 +26,49 @@ class FeedRepository {
 
   /// Search local database (Lightning fast index search)
   Future<List<PostEntity>> searchPosts(String query) async {
-    final db = await _db.database;
-    final rows = await db.query(
-      'posts',
-      where: 'username LIKE ? OR caption LIKE ?',
-      whereArgs: ['%$query%', '%$query%'],
-    );
+    final rows = await _db.searchPosts(query);
     return rows.map((row) => PostEntity.fromMap(row)).toList();
   }
 
   /// 👑 High-performance unified feed fetch utilizing C++ and strict Dart models.
   Future<List<ChannelItem>> getUnifiedChannelFeed(String channelId) async {
-    final db = await _db.database;
-
-    // 1. Fetch raw maps from SQLite
-    final rawManifestos = await db.query(
-      'manifestos', 
-      where: 'channel_id = ?', 
-      whereArgs: [channelId]
-    );
-    
-    final rawComments = await db.query(
-      'manifesto_comments', 
-      where: 'channel_id = ?', 
-      whereArgs: [channelId]
-    );
+    // 1. Fetch raw maps from SQLite (Drift Engine)
+    final rawChannelPosts = await _db.getChannelPosts(channelId);
+    final rawChannelComments = await _db.getChannelPostComments(channelId);
 
     // 2. Map them to our strict Dart objects with legacy bridge synthesized
     final List<ChannelItem> unsortedItems = [
-      ...rawManifestos.map((m) {
+      ...rawChannelPosts.map((m) {
         final legacyMap = {
           'id': m['id'],
-          'author_id': m['author_id'],
+          'authorId': m['authorId'],
           'username': m['username'],
-          'userProfileImageUrl': m['profile_image_url'],
-          'channelId': m['channel_id'],
+          'userProfileImageUrl': m['profileImageUrl'],
+          'channelId': m['channelId'],
           'caption': m['caption'],
-          'videoUrl': m['video_url'],
-          'imageUrls': m['image_urls'],
-          'thumbnailUrls': m['thumbnail_urls'],
+          'videoUrl': m['videoUrl'],
+          'videoUrls': m['videoUrls'],
+          'imageUrls': m['imageUrls'],
+          'thumbnailUrls': m['thumbnailUrls'],
           'likes': m['likes'],
           'comments': m['comments'],
-          'createdAt': m['created_at'],
+          'createdAt': m['createdAt'],
           'post_type': 'manifesto',
         };
         return ManifestoItem.fromMap(m, originalPost: PostEntity.fromMap(legacyMap));
       }),
-      ...rawComments.map((c) {
+      ...rawChannelComments.map((c) {
         final legacyMap = {
           'id': c['id'],
-          'author_id': c['author_id'],
+          'authorId': c['authorId'],
           'username': c['username'],
-          'userProfileImageUrl': c['profile_image_url'],
-          'channelId': c['channel_id'],
+          'userProfileImageUrl': c['profileImageUrl'],
+          'channelId': c['channelId'],
           'caption': c['message'], // 👑 Map 'message' back to 'caption'
-          'imageUrls': c['image_urls'],
+          'imageUrls': c['imageUrls'],
           'likes': c['likes'],
-          'createdAt': c['created_at'],
-          'linked_post_id': c['manifesto_id'], // 👑 The link
+          'createdAt': c['createdAt'],
+          'linkedPostId': c['postId'], // 👑 The link
           'post_type': 'post' // Default to normal post comment
         };
         return ChannelCommentItem.fromMap(c, originalPost: PostEntity.fromMap(legacyMap));

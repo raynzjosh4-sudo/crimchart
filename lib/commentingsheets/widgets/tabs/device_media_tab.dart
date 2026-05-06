@@ -110,12 +110,16 @@ class _DeviceMediaTabState extends State<DeviceMediaTab> {
     if (file == null) return;
 
     final type = asset.type == AssetType.video ? MediaType.video : MediaType.image;
+    final double aspectRatio = (asset.width > 0 && asset.height > 0) 
+        ? asset.width / asset.height 
+        : 1.0;
     
     widget.onMediaTap(
       1000 + index, 
       MediaData(
         type: type,
         contentUrl: file.path, 
+        aspectRatio: aspectRatio,
       ),
     );
   }

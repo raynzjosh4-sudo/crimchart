@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import '../../domain/entities/post_entity.dart';
 import '../../../../core/db/chart_native_db.dart';
@@ -15,23 +16,23 @@ class FeedLocalSource {
   Future<void> cacheFeed(List<PostEntity> posts) async {
     try {
       final List<Map<String, dynamic>> maps = posts.map((post) {
-        // We use the same map structure as ChartNativeDB expects
         return {
           'id': post.id,
-          'author_id': post.authorId,
+          'authorId': post.authorId,
           'username': post.authorUsername,
           'userProfileImageUrl': post.authorAvatarUrl ?? '',
           'channelName': post.channelName,
           'channelId': post.channelId,
           'caption': post.caption,
           'videoUrl': post.videoUrl ?? '',
+          'videoUrls': jsonEncode(post.videoUrls),
           'sdVideoUrl': post.sdVideoUrl ?? '',
           'audioUrl': post.audioUrl ?? '',
-          'imageUrls': jsonEncode(post.imageUrls),
-          'thumbnailUrls': jsonEncode(post.thumbnailUrls),
+          'imageUrls': post.imageUrls, // ChartNativeDB will encode this
+          'thumbnailUrls': post.thumbnailUrls, // ChartNativeDB will encode this
           'isVideo': post.isVideo ? 1 : 0,
           'isAudio': post.isAudio ? 1 : 0,
-          'folder_name': post.folderName ?? 'public_posts',
+          'folderName': post.folderName ?? 'public_posts',
           'aspectRatio': post.aspectRatio ?? 1.0,
           'likes': post.likes,
           'comments': post.comments,
@@ -39,7 +40,12 @@ class FeedLocalSource {
           'isLiked': post.isLiked ? 1 : 0,
           'timeAgo': post.timeAgo,
           'createdAt': post.createdAt.toIso8601String(),
-          'isPending': 0, // remote fetched posts are not pending
+          'isPending': 0,
+          'postType': post.postType,
+          'linkChain': jsonEncode(post.linkChain),
+          'linkDepth': post.linkDepth,
+          'isPublic': post.isPublic ? 1 : 0,
+          'allowComments': post.allowComments ? 1 : 0,
         };
       }).toList();
 
@@ -49,70 +55,112 @@ class FeedLocalSource {
     }
   }
 
+  /// Caches a list of posts into the modular 'channel_posts' table.
+  Future<void> cacheChannelPosts(List<PostEntity> posts) async {
+    debugPrint('💾 [SQLite Save] Attempting to cache ${posts.length} channel posts...');
+    try {
+      final List<Map<String, dynamic>> maps = [];
+      for (final post in posts) {
+        try {
+          maps.add({
+            'id': post.id,
+            'authorId': post.authorId,
+            'username': post.authorUsername,
+            'profileImageUrl': post.authorAvatarUrl ?? '',
+            'channelId': post.channelId,
+            'caption': post.caption,
+            'videoUrl': post.videoUrl ?? '',
+            'videoUrls': jsonEncode(post.videoUrls),
+            'sdVideoUrl': post.sdVideoUrl ?? '',
+            'audioUrl': post.audioUrl ?? '',
+            'imageUrls': post.imageUrls,
+            'thumbnailUrls': post.thumbnailUrls,
+            'isVideo': post.isVideo ? 1 : 0,
+            'isSponsored': 0,
+            'likes': post.likes,
+            'comments': post.comments,
+            'shares': post.shares,
+            'isPublic': post.isPublic ? 1 : 0,
+            'allowComments': post.allowComments ? 1 : 0,
+            'createdAt': post.createdAt.toIso8601String(),
+            'isPending': 0,
+            'postType': post.postType,
+            'metadata': jsonEncode(post.metadata),
+            'isLiked': post.isLiked ? 1 : 0,
+          });
+        } catch (e) {
+          debugPrint('🚨 [SQLite Save Error] Mapping failed for post ${post.id}: $e');
+          rethrow;
+        }
+      }
+
+      await _db.cacheChannelPosts(maps);
+      debugPrint('💾 [SQLite Save] Successfully cached ${maps.length} rows.');
+    } catch (e) {
+      debugPrint('🚨 [SQLite Save Error] Batch insert FAILED: $e');
+      throw CacheException('Failed to cache channel posts in SQLite: $e');
+    }
+  }
+
   /// Retrieves cached posts from SQLite.
   /// Supports optional filtering by channel or author.
-  Future<List<PostEntity>> getCachedFeed({String? channelId, String? authorId, int offset = 0, int limit = 10}) async {
+  Future<List<PostEntity>> getCachedFeed({
+    String? channelId,
+    String? authorId,
+    int offset = 0,
+    int limit = 10,
+  }) async {
     try {
-      final db = await _db.database;
-      
-      String whereClause = '1=1';
-      List<dynamic> whereArgs = [];
-
       if (channelId != null && channelId != 'global') {
-        whereClause += ' AND channelId = ?';
-        whereArgs.add(channelId);
-      }
-      if (authorId != null) {
-        whereClause += ' AND author_id = ?';
-        whereArgs.add(authorId);
+        final rows = await _db.getChannelPosts(
+          channelId,
+          offset: offset,
+          limit: limit,
+        );
+        debugPrint(
+          '⚡ [SQLite Load] Found ${rows.length} rows for channel $channelId',
+        );
+
+        final List<PostEntity> entities = [];
+        for (final row in rows) {
+          try {
+            entities.add(PostEntity.fromMap(row));
+          } catch (e) {
+            debugPrint('🚨 [SQLite Mapper Error] Failed on ID: ${row['id']}');
+            debugPrint('🚨 Error: $e');
+            debugPrint('🚨 Row Data: $row');
+            rethrow;
+          }
+        }
+        return entities;
       }
 
-      final rows = await db.query(
-        'posts',
-        where: whereClause,
-        whereArgs: whereArgs,
-        orderBy: 'createdAt DESC',
-        limit: limit,
+      final rows = await _db.getPosts(
+        channelId: channelId,
+        authorId: authorId,
         offset: offset,
+        limit: limit,
+      );
+      debugPrint(
+        '⚡ [SQLite Load] Found ${rows.length} rows from general posts',
       );
 
-      return rows.map((row) => PostEntity.fromMap(row)).toList();
+      return rows.map((row) {
+        try {
+          return PostEntity.fromMap(row);
+        } catch (e) {
+          debugPrint('🚨 [SQLite Mapper Error] General Feed Failed: $e');
+          debugPrint('🚨 Row: $row');
+          rethrow;
+        }
+      }).toList();
     } catch (e) {
-      throw const CacheException('Failed to read cached feed from SQLite');
+      debugPrint('🚨 [LocalSource] getCachedFeed FAILED: $e');
+      throw CacheException('Failed to read cached feed from SQLite: $e');
     }
   }
 
   Future<void> clearFeedCache() async {
-    final db = await _db.database;
-    await db.delete('posts', where: 'isPending = 0');
+    await _db.clearSyncedPosts();
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

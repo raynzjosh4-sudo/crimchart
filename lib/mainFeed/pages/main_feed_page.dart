@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crown/core/utils/responsive_size.dart';
 
 import 'package:crown/chartappbar/chart_app_bar.dart';
 import 'package:crown/features/newinsidechartstartpage/widgets/pagination_indicators.dart';
@@ -219,10 +220,10 @@ class _MainFeedPageState extends State<MainFeedPage> {
                     showBack: false,
                     centerTitle: false,
                     showBorder: false,
-                    titleStyle: const TextStyle(
-                      fontSize: 32,
+                    titleStyle: TextStyle(
+                      fontSize: 32.sp,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFFFFB800), // Super gold
+                      color: const Color(0xFFFFB800), // Super gold
                     ),
                     actions: [
                       IconButton(
@@ -280,6 +281,7 @@ class _MainFeedPageState extends State<MainFeedPage> {
                                 firstPageErrorIndicatorBuilder: (_) =>
                                     ErrorIndicator(
                                       onRetry: _pagingController.refresh,
+                                      message: 'We couldn\'t load your feed. Please check your connection.',
                                     ),
                                 newPageErrorIndicatorBuilder: (_) =>
                                     ErrorIndicator(

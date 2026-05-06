@@ -29,6 +29,13 @@ abstract class FeedRepository {
     bool isPublicFeed = true,
     bool allowComments = true,
     bool shareToStatus = false,
+    bool shareToMoment = false, // 👑 ADDED
+  });
+
+  Future<Either<Failure, List<PostEntity>>> getChannelVideos(
+    String channelId, {
+    int limit = 20,
+    int offset = 0,
   });
 
   /// Fetch posts customized by user logic (e.g. for profile tabs).
@@ -51,13 +58,17 @@ abstract class FeedRepository {
   Future<Either<Failure, List<PostEntity>>> getChannelPosts(
     String channelId, {
     int page = 1,
-    int limit = 15,
+    int limit = 10,
   });
 
   /// 🛰️ DELTA INJECTION: Emits ONE new PostEntity per INSERT event.
   /// The notifier surgically prepends it — no full-list re-fetch needed.
   Stream<PostEntity> watchChannelPosts(String channelId);
 
-  /// 👑 THREADED DISCUSSION: Fetch comments for a specific manifesto
-  Future<Either<Failure, List<PostEntity>>> getManifestoComments(String manifestoId);
+  /// 👑 THREADED DISCUSSION: Fetch paginated comments for a specific manifesto
+  Future<Either<Failure, List<PostEntity>>> getManifestoComments(
+    String manifestoId, {
+    int limit = 10,
+    int offset = 0,
+  });
 }

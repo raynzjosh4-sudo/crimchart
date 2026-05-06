@@ -10,6 +10,7 @@ sealed class ChannelItem {
   final bool authorHasStatus;  // 👑 Snapshot presence
   final DateTime createdAt;
   final int likes;
+  final bool isLiked;
   final PostEntity? originalPost; // Bridge to legacy features
 
   ChannelItem({
@@ -20,6 +21,7 @@ sealed class ChannelItem {
     this.authorHasStatus = false,
     required this.createdAt,
     required this.likes,
+    this.isLiked = false,
     this.originalPost,
   });
 }
@@ -30,6 +32,7 @@ class ManifestoItem extends ChannelItem {
   final List<String> imageUrls;
   final String? videoUrl;
   final int commentCount;
+  final double? aspectRatio;
 
   ManifestoItem({
     required super.id,
@@ -39,11 +42,13 @@ class ManifestoItem extends ChannelItem {
     super.authorHasStatus,
     required super.createdAt,
     required super.likes,
+    super.isLiked,
     super.originalPost,
     required this.caption,
     required this.imageUrls,
     this.videoUrl,
     required this.commentCount,
+    this.aspectRatio,
   });
 
   factory ManifestoItem.fromMap(
@@ -62,8 +67,8 @@ class ManifestoItem extends ChannelItem {
     }
 
     return ManifestoItem(
-      id: map['id'],
-      authorUsername: map['username'] ?? 'Anonymous',
+      id: map['id']?.toString() ?? '',
+      authorUsername: map['username']?.toString() ?? 'Anonymous',
       authorAvatarUrl: map['profile_image_url'],
       authorIsOnline: map['is_online'] == true || map['is_online'] == 1,
       authorHasStatus: map['has_status'] == true || map['has_status'] == 1,
@@ -71,10 +76,12 @@ class ManifestoItem extends ChannelItem {
           DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.now(),
       likes: map['likes'] ?? 0,
+      isLiked: map['is_liked'] == true || map['is_liked'] == 1 || (originalPost?.isLiked ?? false),
       caption: map['caption'] ?? '',
       imageUrls: parseImages(map['image_urls']),
       videoUrl: map['video_url'],
       commentCount: map['comments'] ?? 0,
+      aspectRatio: (map['aspect_ratio'] as num?)?.toDouble(),
       originalPost: originalPost,
     );
   }
@@ -93,6 +100,7 @@ class ChannelCommentItem extends ChannelItem {
     super.authorHasStatus,
     required super.createdAt,
     required super.likes,
+    super.isLiked,
     super.originalPost,
     required this.message,
     this.manifestoId,
@@ -103,8 +111,8 @@ class ChannelCommentItem extends ChannelItem {
     PostEntity? originalPost,
   }) {
     return ChannelCommentItem(
-      id: map['id'],
-      authorUsername: map['username'] ?? 'Anonymous',
+      id: map['id']?.toString() ?? '',
+      authorUsername: map['username']?.toString() ?? 'Anonymous',
       authorAvatarUrl: map['profile_image_url'],
       authorIsOnline: map['is_online'] == true || map['is_online'] == 1,
       authorHasStatus: map['has_status'] == true || map['has_status'] == 1,
@@ -112,8 +120,66 @@ class ChannelCommentItem extends ChannelItem {
           DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.now(),
       likes: map['likes'] ?? 0,
+      isLiked: map['is_liked'] == true || map['is_liked'] == 1 || (originalPost?.isLiked ?? false),
       message: map['message'] ?? '',
       manifestoId: map['manifesto_id'],
+      originalPost: originalPost,
+    );
+  }
+}
+
+// 👑 CROSS-CHANNEL INVITATION DATA
+class InvitationItem extends ChannelItem {
+  final String targetChannelId;
+  final String targetChannelName;
+  final String? targetChannelImage;
+  final String? targetChannelTitle;
+  final String? authorTitle;
+  final String? caption;
+
+  InvitationItem({
+    required super.id,
+    required super.authorUsername,
+    super.authorAvatarUrl,
+    super.authorIsOnline,
+    super.authorHasStatus,
+    required super.createdAt,
+    required super.likes,
+    super.isLiked,
+    super.originalPost,
+    required this.targetChannelId,
+    required this.targetChannelName,
+    this.targetChannelImage,
+    this.targetChannelTitle,
+    this.authorTitle,
+    this.caption,
+  });
+
+  factory InvitationItem.fromMap(
+    Map<String, dynamic> map, {
+    PostEntity? originalPost,
+  }) {
+    // 👑 Extract target channel info from metadata if present
+    final metadata = originalPost?.metadata ?? {};
+
+    return InvitationItem(
+      id: map['id']?.toString() ?? '',
+      authorUsername: map['username']?.toString() ?? 'Anonymous',
+      authorAvatarUrl: map['profile_image_url'],
+      authorIsOnline: map['is_online'] == true || map['is_online'] == 1,
+      authorHasStatus: map['has_status'] == true || map['has_status'] == 1,
+      createdAt:
+          DateTime.tryParse(map['created_at']?.toString() ?? '') ??
+          DateTime.now(),
+      likes: map['likes'] ?? 0,
+      isLiked: map['is_liked'] == true || map['is_liked'] == 1 || (originalPost?.isLiked ?? false),
+      targetChannelId: metadata['target_channel_id']?.toString() ?? '',
+      targetChannelName:
+          metadata['target_channel_name']?.toString() ?? 'Unknown Channel',
+      targetChannelImage: metadata['target_channel_image']?.toString(),
+      targetChannelTitle: metadata['target_channel_title']?.toString(),
+      authorTitle: originalPost?.authorTitle,
+      caption: originalPost?.caption,
       originalPost: originalPost,
     );
   }

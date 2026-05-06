@@ -25,6 +25,9 @@ class CommentingSheet extends ConsumerStatefulWidget {
   final VoidCallback? onCommentPosted;
   final Function(legacy.MediaData)? onMediaSelected;
   final bool showInputField;
+  final bool isStatus;
+  final bool isMoment; // 👑 ADDED
+  final bool showPostSettings; // 👑 NEW: Show toggles for channel posts
 
   const CommentingSheet({
     super.key,
@@ -34,6 +37,9 @@ class CommentingSheet extends ConsumerStatefulWidget {
     this.onCommentPosted,
     this.onMediaSelected,
     this.showInputField = true,
+    this.isStatus = false,
+    this.isMoment = false, // 👑
+    this.showPostSettings = false, // 👑
     this.linkedPostId,
     this.linkedAuthorUsername,
     this.linkedCaption,
@@ -57,6 +63,12 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
   final List<int> _selectedIndices = [];
   List<legacy.MediaData> _selectedMediaItems = [];
 
+  // 👑 Post Settings State
+  bool _allowComments = true;
+  bool _isPublic = true;
+  bool _shareToMoment = false;
+  late bool _shareToStatus; // 👑 ADDED
+
   // 🎙️ Audio Recording State (Modern Record Package)
   AudioRecorder? _audioRecorder;
   bool _isRecording = false;
@@ -65,6 +77,7 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
   void initState() {
     super.initState();
     _audioRecorder = AudioRecorder();
+    _shareToStatus = widget.isStatus; // 👑 Initialize from widget flag
   }
 
   @override
@@ -163,6 +176,7 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
           thumbnailUrl: mediaItem.thumbnailUrl,
           source: isLocal ? MediaSource.device : MediaSource.gallery,
           linkedPostId: isLocal ? null : mediaItem.postId,
+          aspectRatio: mediaItem.aspectRatio,
         ),
       );
     }
@@ -182,9 +196,13 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
     // 1. If there is a linkedPostId, it's ALWAYS a comment (reply).
     // 2. If it's in 'general', it's a standard channel_post.
     // 3. If it's a new post in a specific channel, it's a MANIFESTO.
-    String determinedType = PostType.channel; 
+    String determinedType = PostType.channel;
 
-    if (widget.linkedPostId != null) {
+    if (widget.isMoment) {
+      determinedType = 'moment';
+    } else if (widget.isStatus) {
+      determinedType = PostType.status;
+    } else if (widget.linkedPostId != null) {
       determinedType = PostType.comment; // It's a reply!
     } else if (widget.channelId != null && widget.channelId != 'general') {
       determinedType = PostType.manifesto; // It's a top-level announcement!
@@ -199,6 +217,10 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
           channelName: widget.channelName,
           isMyChannel: false,
           postType: determinedType,
+          shareToStatus: _shareToStatus, // 👑 USE STATE VARIABLE
+          allowComments: _allowComments, // 👑
+          isPublicFeed: _isPublic, // 👑
+          shareToMoment: _shareToMoment, // 👑
           linkedPostId: widget.linkedPostId,
           linkedAuthorUsername: widget.linkedAuthorUsername,
           linkedCaption: widget.linkedCaption,
@@ -206,6 +228,7 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
           linkedThumbnailUrls: widget.linkedThumbnailUrl != null
               ? [widget.linkedThumbnailUrl!]
               : null,
+          aspectRatio: items.isNotEmpty ? items.first.aspectRatio : null,
         );
 
     if (widget.linkedPostId != null) {
@@ -216,6 +239,131 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
 
     widget.onCommentPosted?.call();
     if (mounted) Navigator.pop(context);
+  }
+
+  Widget _buildSettingsDropdown(ColorScheme colorScheme) {
+    return PopupMenuButton<void>(
+      offset: const Offset(0, 40),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+      icon: Container(
+        padding: EdgeInsets.all(8.w),
+        decoration: BoxDecoration(
+          color: colorScheme.onSurface.withValues(alpha: 0.05),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.tune_rounded,
+          size: 20.sp,
+          color: colorScheme.primary,
+        ),
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem<void>(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          enabled: false,
+          child: StatefulBuilder(
+            builder: (context, setMenuState) {
+              return SizedBox(
+                width: 240.w, // 👑 Stretches wider
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildSettingSwitch(
+                      title: 'Allow Comments',
+                      value: _allowComments,
+                      onChanged: (v) {
+                        setState(() => _allowComments = v);
+                        setMenuState(() {});
+                      },
+                      icon: Icons.chat_bubble_outline_rounded,
+                      colorScheme: colorScheme,
+                    ),
+                    SizedBox(height: 12.h),
+                    _buildSettingSwitch(
+                      title: 'Public Post',
+                      value: _isPublic,
+                      onChanged: (v) {
+                        setState(() => _isPublic = v);
+                        setMenuState(() {});
+                      },
+                      icon: Icons.public_rounded,
+                      colorScheme: colorScheme,
+                    ),
+                    SizedBox(height: 12.h),
+                    _buildSettingSwitch(
+                      title: 'Share as Moment',
+                      value: _shareToMoment,
+                      onChanged: (v) {
+                        setState(() => _shareToMoment = v);
+                        setMenuState(() {});
+                      },
+                      icon: Icons.auto_awesome_rounded,
+                      colorScheme: colorScheme,
+                      isMoment: true,
+                    ),
+                    SizedBox(height: 12.h),
+                    _buildSettingSwitch(
+                      title: 'Share to Status',
+                      value: _shareToStatus,
+                      onChanged: (v) {
+                        setState(() => _shareToStatus = v);
+                        setMenuState(() {});
+                      },
+                      icon: Icons.history_toggle_off_rounded,
+                      colorScheme: colorScheme,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettingSwitch({
+    required String title,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required IconData icon,
+    required ColorScheme colorScheme,
+    bool isMoment = false,
+  }) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      highlightColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 18.sp,
+            color: isMoment ? colorScheme.primary : colorScheme.onSurface,
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+          Transform.scale(
+            scale: 0.65, // 👑 Very small switch
+            child: Switch.adaptive(
+              value: value,
+              onChanged: onChanged,
+              activeColor: colorScheme.primary,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -232,7 +380,7 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
         ),
         child: Column(
@@ -259,16 +407,26 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
                   Text(
                     _isRecording
                         ? context.tr('recording')
-                        : context.tr('select_media'),
+                        : (widget.isStatus
+                              ? 'Post Status'
+                              : context.tr('select_media')),
                     style: TextStyle(
                       color: _isRecording ? Colors.red : colorScheme.onSurface,
                       fontSize: 18.sp,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close, color: colorScheme.onSurface),
+                  Row(
+                    children: [
+                      if (widget.showPostSettings) ...[
+                        _buildSettingsDropdown(colorScheme),
+                        SizedBox(width: 8.w),
+                      ],
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close, color: colorScheme.onSurface),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -389,17 +547,15 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
 
             // ── INPUT FIELD ──
             // ── INPUT FIELD ──
-            if (widget.showInputField)
-              CommentInputField(
-                controller: _commentController,
-                userImageUrl: currentUser?.profileImageUrl,
-                hasMedia: _selectedMediaItems.isNotEmpty,
-                onSend: _handlePost,
-                onLongPressStart: _startRecording,
-                onLongPressEnd: _stopRecording,
-              )
-            else
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 16.h),
+            CommentInputField(
+              controller: _commentController,
+              userImageUrl: currentUser?.profileImageUrl,
+              hasMedia: _selectedMediaItems.isNotEmpty,
+              onSend: _handlePost,
+              onLongPressStart: _startRecording,
+              onLongPressEnd: _stopRecording,
+              showTextField: widget.showInputField, // 👑 USE THE FLAG HERE
+            ),
           ],
         ),
       ),

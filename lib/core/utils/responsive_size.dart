@@ -6,9 +6,9 @@ class SizeConfig {
   static late double widthMultiplier;
   static late double heightMultiplier;
 
-  // Baseline dimensions (e.g., standard Android/iPhone size)
-  static const double _designWidth = 360.0;
-  static const double _designHeight = 800.0;
+  // Change from 360 / 800 to a modern baseline (iPhone 13/14)
+  static const double _designWidth = 390.0;
+  static const double _designHeight = 844.0;
 
   static void init(BuildContext context, {double userScaleFactor = 1.0}) {
     if (context.mounted) {
@@ -16,7 +16,12 @@ class SizeConfig {
       screenWidth = size.width;
       screenHeight = size.height;
 
-      widthMultiplier = (screenWidth / _designWidth) * userScaleFactor;
+      // Calculate the raw multiplier
+      double rawWidthMultiplier = (screenWidth / _designWidth);
+
+      // Clamp the multiplier so it doesn't get ridiculously huge on tablets/large phones.
+      // E.g., it can shrink infinitely, but won't grow larger than 1.1x the normal size.
+      widthMultiplier = rawWidthMultiplier.clamp(0.0, 1.1) * userScaleFactor;
 
       // Calculate true height multiplier
       double rawHeightMultiplier = (screenHeight / _designHeight);

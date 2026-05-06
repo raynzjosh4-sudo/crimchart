@@ -17,7 +17,7 @@ import 'package:crown/features/channel/pages/widgets/channelinfosheet/widgets/vi
 import 'package:crown/features/channel/pages/widgets/channelinfosheet/widgets/imageviewer/image_viewer_page.dart';
 import '../../mainFeed/features/cardwidgets/storychacrdwidget/status_page.dart';
 import '../../profile/pages/profile_page.dart';
-import 'channelmemberdata/manifesto_comments_sheet.dart';
+import 'channelmemberdata/thread_discussion_sheet.dart';
 import '../../posting/application/posting_progress_provider.dart';
 
 class MessagesSection extends ConsumerStatefulWidget {
@@ -220,26 +220,24 @@ class _MessagesSectionState extends ConsumerState<MessagesSection> {
       Navigator.push(
         context,
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              VideoViewerPage(
-                initialVideos: allVideos,
-                initialIndex: localIndex != -1 ? localIndex : 0,
-                channelId: widget.channelId,
-              ),
+          transitionDuration: const Duration(milliseconds: 600),
+          reverseTransitionDuration: const Duration(milliseconds: 400),
+          pageBuilder: (context, animation, secondaryAnimation) => VideoViewerPage(
+            initialVideos: allVideos,
+            initialIndex: localIndex != -1 ? localIndex : 0,
+            channelId: widget.channelId,
+          ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            const begin = Offset(0.0, 1.0); // FROM BOTTOM
-            const end = Offset.zero;
-            const curve = Curves.easeOutCubic;
-            final tween = Tween(
-              begin: begin,
-              end: end,
-            ).chain(CurveTween(curve: curve));
-            return SlideTransition(
-              position: animation.drive(tween),
-              child: child,
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                ),
+                child: child,
+              ),
             );
           },
-          transitionDuration: const Duration(milliseconds: 350),
         ),
       );
     } else {
@@ -269,6 +267,7 @@ class _MessagesSectionState extends ConsumerState<MessagesSection> {
             // 👑 Dynamic Status Image logic or placeholder
             statusImageUrl:
                 'https://picsum.photos/seed/status${item.id}/800/1200',
+            heroTag: 'status_hero_${item.id}',
             isChartable: true,
             isPublic: true,
           ),
@@ -438,19 +437,10 @@ class _MessagesSectionState extends ConsumerState<MessagesSection> {
                         context: context,
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
-                        builder: (_) => ManifestoCommentsSheet(
-                          manifestoId: m.id,
+                        builder: (_) => ThreadDiscussionSheet(
+                          threadId: m.id,
                           channelId: widget.channelId,
                           channelName: widget.channelId?.toUpperCase(),
-                          themeColor: currentColor,
-                          attachmentUrls: m.imageUrls,
-                          videoUrls: post.videoUrls,
-                          thumbnailUrls: post.thumbnailUrls,
-                          authorAvatarUrl: m.authorAvatarUrl,
-                          authorUsername: m.authorUsername,
-                          authorCategory: post.authorCategory,
-                          initialLikes: m.likes,
-                          initialComments: m.commentCount,
                         ),
                       );
                     },

@@ -45,6 +45,7 @@ class ChannelPostModel {
   final int comments;
   final String timeAgo;
   final bool isLiked;
+  final bool isSponsored; // ✅ Support for 'Sponsored' label
   final List<CharterModel> chartedContestants;
   final int chartedCount;
   final double? aspectRatio;
@@ -78,6 +79,7 @@ class ChannelPostModel {
     required this.comments,
     required this.timeAgo,
     this.isLiked = false,
+    this.isSponsored = false,
     this.chartedContestants = const [],
     this.chartedCount = 0,
     this.aspectRatio,

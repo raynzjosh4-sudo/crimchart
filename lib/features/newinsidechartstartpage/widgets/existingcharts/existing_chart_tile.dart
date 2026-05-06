@@ -22,12 +22,13 @@ class ExistingChartTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         decoration: BoxDecoration(
+          color: isUnread ? colorScheme.primary.withValues(alpha: 0.05) : Colors.transparent,
           border: Border(
             bottom: BorderSide(
-              color: colorScheme.onSurface.withOpacity(0.05),
-              width: 0.5.h,
+              color: colorScheme.onSurface.withValues(alpha: 0.05),
+              width: 0.5,
             ),
           ),
         ),
@@ -43,39 +44,50 @@ class ExistingChartTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // SENDER + DATE + UNREAD DOT
+                  // Row 1: Sender Name + Date/Time + Unread Dot
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        chart.staterName ?? 'Unnamed Sender',
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: 16.sp,
-                          fontWeight: isUnread ? FontWeight.w900 : FontWeight.w600,
+                      Expanded(
+                        child: Text(
+                          chart.staterName ?? 'Unnamed Sender',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontSize: 16.sp,
+                            fontWeight: isUnread ? FontWeight.w900 : FontWeight.w500,
+                          ),
                         ),
                       ),
                       Row(
                         children: [
-                          if (isUnread) ...[
-                            _buildUnreadBadge(chart.unreadCount),
-                            SizedBox(width: 8.w),
-                          ],
                           Text(
-                            '10:30 AM',
+                            '3:44 AM', // Mocked for design, could use chart.createdAt
                             style: TextStyle(
-                              color: isUnread ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.5),
+                              color: isUnread ? colorScheme.primary : colorScheme.onSurface.withValues(alpha: 0.5),
                               fontSize: 12.sp,
-                              fontWeight: isUnread ? FontWeight.w700 : FontWeight.w400,
+                              fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),
+                          if (isUnread) ...[
+                            SizedBox(width: 6.w),
+                            Container(
+                              width: 8.w,
+                              height: 8.w,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],
                   ),
                   SizedBox(height: 2.h),
 
-                  // SUBJECT (TITLE)
+                  // Row 2: Subject (Channel Title)
                   Text(
                     chart.title,
                     maxLines: 1,
@@ -88,7 +100,7 @@ class ExistingChartTile extends StatelessWidget {
                   ),
                   SizedBox(height: 2.h),
 
-                  // SNIPPET (DESCRIPTION)
+                  // Row 3: Snippet (Description) + Star Icon
                   Row(
                     children: [
                       Expanded(
@@ -97,9 +109,9 @@ class ExistingChartTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: colorScheme.onSurface.withOpacity(0.5),
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                             fontSize: 14.sp,
-                            fontWeight: FontWeight.w400,
+                            fontWeight: FontWeight.normal,
                           ),
                         ),
                       ),
@@ -107,7 +119,7 @@ class ExistingChartTile extends StatelessWidget {
                       Icon(
                         Icons.star_border,
                         size: 20.sp,
-                        color: colorScheme.onSurface.withOpacity(0.3),
+                        color: colorScheme.onSurface.withValues(alpha: 0.3),
                       ),
                     ],
                   ),
@@ -123,7 +135,7 @@ class ExistingChartTile extends StatelessWidget {
   Widget _buildAvatar(ColorScheme colorScheme) {
     if (chart.staterAvatarUrl != null) {
       return MemberImage(
-        size: 44.w,
+        size: 40.w,
         imageUrl: chart.staterAvatarUrl,
         showStatusRing: false,
         showActiveDot: false,
@@ -135,8 +147,8 @@ class ExistingChartTile extends StatelessWidget {
         : '?';
 
     return Container(
-      width: 44.w,
-      height: 44.w,
+      width: 40.w,
+      height: 40.w,
       decoration: BoxDecoration(
         color: _getAvatarColor(initial),
         shape: BoxShape.circle,
@@ -146,8 +158,8 @@ class ExistingChartTile extends StatelessWidget {
           initial,
           style: TextStyle(
             color: Colors.white,
-            fontSize: 20.sp,
-            fontWeight: FontWeight.w500,
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -168,30 +180,10 @@ class ExistingChartTile extends StatelessWidget {
       const Color(0xFF4CAF50), // Green
       const Color(0xFF8BC34A), // Light Green
       const Color(0xFFCDDC39), // Lime
-      const Color(0xFFCDDC39), // Amber
+      const Color(0xFFFFC107), // Amber
       const Color(0xFFFF9800), // Orange
       const Color(0xFFFF5722), // Deep Orange
     ];
     return colors[initial.codeUnitAt(0) % colors.length];
-  }
-
-  Widget _buildUnreadBadge(int count) {
-    if (count <= 0) return const SizedBox.shrink();
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-      decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1.w),
-      ),
-      child: Text(
-        '$count+ new',
-        style: TextStyle(
-          color: Colors.orange,
-          fontSize: 10.sp,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
   }
 }

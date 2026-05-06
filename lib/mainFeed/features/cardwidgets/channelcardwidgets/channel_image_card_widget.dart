@@ -12,6 +12,7 @@ import 'widgets/channel_chart_slide.dart';
 import '../../../menu/main_feed_menu.dart';
 import '../../../../../features/widgets/chartcard/card/media/image_media.dart';
 import '../../../../../core/utils/responsive_size.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class ChannelImageCardWidget extends StatefulWidget {
   final ChannelPostModel data;
@@ -243,17 +244,18 @@ class _ChannelImageCardWidgetState extends State<ChannelImageCardWidget> {
               ),
               const SizedBox(width: 20),
               CommentAction(
-                icon: Icons.share_outlined,
-                label: 'Share',
+                icon: LucideIcons.tag,
+                label: 'Tag',
                 onTap: () {},
               ),
               const Spacer(),
-              // Time ago matching the clean feel but kept out of the circles row
+              // Sponsored label or Time ago
               Text(
-                data.timeAgo,
+                data.isSponsored ? "Sponsored" : data.timeAgo,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                  fontSize: 11,
+                  fontSize: 12.sp,
+                  fontWeight: data.isSponsored ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
             ],

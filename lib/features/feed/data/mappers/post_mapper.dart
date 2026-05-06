@@ -25,27 +25,52 @@ class PostMapper {
     return PostEntity(
       id: json['id']?.toString() ?? '',
       authorId: json['author_id']?.toString() ?? '',
-      authorUsername: authorData?['username']?.toString() ?? json['username']?.toString() ?? '',
-      authorDisplayName: authorData?['display_name']?.toString() ?? authorData?['displayName']?.toString() ?? json['display_name']?.toString() ?? '',
-      authorAvatarUrl: authorData?['profile_image_url']?.toString() ?? authorData?['profileImageUrl']?.toString() ?? json['profile_image_url']?.toString(),
+      authorUsername:
+          authorData?['username']?.toString() ??
+          json['username']?.toString() ??
+          '',
+      authorDisplayName:
+          authorData?['display_name']?.toString() ??
+          authorData?['displayName']?.toString() ??
+          json['display_name']?.toString() ??
+          '',
+      authorAvatarUrl:
+          authorData?['profile_image_url']?.toString() ??
+          authorData?['profileImageUrl']?.toString() ??
+          json['profile_image_url']?.toString(),
       channelId: json['channel_id']?.toString() ?? '',
       channelName: json['channel_name']?.toString() ?? '',
-      caption: json['caption']?.toString() ?? '',
+      caption: json['caption']?.toString() ?? json['message']?.toString() ?? '',
       videoUrl: json['video_url']?.toString(),
       videoUrls: parseList(json['video_urls']),
       audioUrl: json['audio_url']?.toString(),
       imageUrls: parseList(json['image_urls'] ?? json['image_url']),
       thumbnailUrls: parseList(json['thumbnail_urls']),
-      isVideo: json['is_video'] is bool ? (json['is_video'] as bool) : (json['is_video'] == 1),
-      isAudio: json['is_audio'] is bool ? (json['is_audio'] as bool) : (json['is_audio'] == 1),
-      isLiked: json['is_liked'] is bool ? (json['is_liked'] as bool) : (json['is_liked'] == 1),
-      isPublic: json['is_public'] is bool ? (json['is_public'] as bool) : (json['is_public'] == 1 || json['is_public'] == null),
-      allowComments: json['allow_comments'] is bool ? (json['allow_comments'] as bool) : (json['allow_comments'] == 1 || json['allow_comments'] == null),
-      authorIsOnline: json['is_online'] is bool ? (json['is_online'] as bool) : (json['is_online'] == 1),
-      authorHasStatus: json['has_status'] is bool ? (json['has_status'] as bool) : (json['has_status'] == 1),
+      isVideo: json['is_video'] is bool
+          ? (json['is_video'] as bool)
+          : (json['is_video'] == 1),
+      isAudio: json['is_audio'] is bool
+          ? (json['is_audio'] as bool)
+          : (json['is_audio'] == 1),
+      isLiked: json['is_liked'] == true || 
+               (json['channel_post_likes'] != null && (json['channel_post_likes'] as List).isNotEmpty) ||
+               (json['post_likes'] != null && (json['post_likes'] as List).isNotEmpty),
+      isPublic: json['is_public'] is bool
+          ? (json['is_public'] as bool)
+          : (json['is_public'] == 1 || json['is_public'] == null),
+      allowComments: json['allow_comments'] is bool
+          ? (json['allow_comments'] as bool)
+          : (json['allow_comments'] == 1 || json['allow_comments'] == null),
+      authorIsOnline: json['is_online'] is bool
+          ? (json['is_online'] as bool)
+          : (json['is_online'] == 1),
+      authorHasStatus: json['has_status'] is bool
+          ? (json['has_status'] as bool)
+          : (json['has_status'] == 1),
       folderName: json['folder_name']?.toString(),
       likes: (json['likes_count'] as int?) ?? (json['likes'] as int?) ?? 0,
-      comments: (json['comments_count'] as int?) ?? (json['comments'] as int?) ?? 0,
+      comments:
+          (json['comments_count'] as int?) ?? (json['comments'] as int?) ?? 0,
       shares: (json['shares_count'] as int?) ?? (json['shares'] as int?) ?? 0,
       timeAgo: json['time_ago']?.toString() ?? '',
       createdAt: json['created_at'] != null
@@ -56,17 +81,28 @@ class PostMapper {
           : ThumbnailLink.original(
               contentId: json['id']?.toString() ?? '',
               authorId: json['author_id']?.toString() ?? '',
-              authorUsername: authorData?['username']?.toString() ?? json['username']?.toString() ?? '',
+              authorUsername:
+                  authorData?['username']?.toString() ??
+                  json['username']?.toString() ??
+                  '',
               contentType: 'post',
             ),
-      authorTitle: authorData?['author_title']?.toString() ?? authorData?['ChartTitle']?.toString() ?? json['author_title']?.toString(),
+      authorTitle:
+          authorData?['author_title']?.toString() ??
+          authorData?['ChartTitle']?.toString() ??
+          json['author_title']?.toString(),
       authorCategory: json['author_category']?.toString(),
       aspectRatio: (json['aspect_ratio'] as num?)?.toDouble(),
       linkedPostId: json['linked_post_id']?.toString(),
-      postType:     json['post_type']?.toString() ?? 'post',
+      postType: json['post_type']?.toString() ?? 'post',
       parentPostId: json['parent_post_id']?.toString(),
-      linkDepth:    json['link_depth'] as int? ?? 0,
-      linkChain:    parseList(json['link_chain']),
+      linkDepth: json['link_depth'] as int? ?? 0,
+      linkChain: parseList(json['link_chain']),
+      metadata: json['metadata'] is String && (json['metadata'] as String).isNotEmpty
+          ? Map<String, dynamic>.from(jsonDecode(json['metadata'] as String) as Map)
+          : json['metadata'] is Map
+          ? Map<String, dynamic>.from(json['metadata'] as Map)
+          : {},
     );
   }
 
@@ -75,12 +111,17 @@ class PostMapper {
     return ThumbnailLink(
       originalContentId: json['original_content_id']?.toString() ?? '',
       originalAuthorId: json['original_author_id']?.toString() ?? '',
-      originalAuthorUsername: json['original_author_username']?.toString() ?? '',
+      originalAuthorUsername:
+          json['original_author_username']?.toString() ?? '',
       originalContentType: json['original_content_type']?.toString(),
-      linkChain: (json['link_chain'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      linkChain:
+          (json['link_chain'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
       linkDepth: json['link_depth'] as int? ?? 0,
       parentContentId: json['parent_content_id']?.toString(),
-      createdAt: json['created_at'] != null 
+      createdAt: json['created_at'] != null
           ? (DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now())
           : DateTime.now(),
     );
@@ -111,39 +152,11 @@ class PostMapper {
       'created_at': entity.createdAt.toIso8601String(),
       'aspect_ratio': entity.aspectRatio,
       'linked_post_id': entity.linkedPostId,
-      'post_type':      entity.postType,
+      'post_type': entity.postType,
       'parent_post_id': entity.parentPostId,
-      'link_chain':     entity.linkChain,
-      'link_depth':     entity.linkDepth,
+      'link_chain': entity.linkChain,
+      'link_depth': entity.linkDepth,
+      'metadata': entity.metadata,
     };
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

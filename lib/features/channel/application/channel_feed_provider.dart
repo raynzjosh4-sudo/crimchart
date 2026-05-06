@@ -8,7 +8,6 @@ import '../../feed/domain/repositories/feed_repository.dart';
 import '../../feed/data/mappers/post_mapper.dart';
 import '../../feed/application/feed_controller.dart';
 import '../../../core/db/chart_native_db.dart';
-import 'package:sqflite/sqflite.dart';
 import '../domain/entities/channel_item.dart';
 
 /// The Feed State for a Channel
@@ -63,6 +62,11 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
   /// 👑 PRO: In-memory profile cache keyed by author_id.
   /// Populated from existing posts so we never fetch the same profile twice.
   final Map<String, PostEntity> _profileCache = {};
+  RealtimeChannel?
+  _likesChannel; // 👑 NEW: For syncing "isLiked" status across devices
+
+  /// 👑 LOCK: Prevents rapid-fire clicks on the same item
+  final Set<String> _processingIds = {};
 
   ChannelFeedNotifier(this._repository, this.channelId)
     : super(ChannelFeedState()) {
@@ -86,6 +90,7 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
           imageUrls: item.imageUrls,
           videoUrl: item.videoUrl,
           commentCount: item.commentCount + 1, // 🚀 The Increment!
+          aspectRatio: item.aspectRatio,
         );
       }
       return item;
@@ -107,11 +112,28 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
 
     // 3. 💾 PERSIST LOCALLY: Update the manifesto row in local SQLite immediately
     // so the count survives a restart even if offline.
-    ChartNativeDB.instance.incrementManifestoCommentCount(postId);
+    ChartNativeDB.instance.incrementManifestoCommentCount(postId).catchError((
+      e,
+    ) {
+      debugPrint(
+        '🚨 [SQLite Error] Failed to increment comment count for $postId: $e',
+      );
+    });
   }
 
   // 👑 HELPER: Bridges the gap between old entities and new UI items
   ChannelItem _mapPostToChannelItem(PostEntity post) {
+    if (post.postType == 'invitation') {
+      return InvitationItem.fromMap({
+        'id': post.id,
+        'author_id': post.authorId,
+        'username': post.authorUsername,
+        'profile_image_url': post.authorAvatarUrl,
+        'likes': post.likes,
+        'created_at': post.createdAt.toIso8601String(),
+      }, originalPost: post);
+    }
+
     bool isManifesto =
         post.postType == 'manifesto' ||
         post.postType == 'channel' ||
@@ -131,6 +153,7 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
         'video_url': post.videoUrl,
         'likes': post.likes,
         'comments': post.comments,
+        'aspect_ratio': post.aspectRatio,
         'created_at': post.createdAt.toIso8601String(),
       }, originalPost: post);
     } else {
@@ -167,7 +190,7 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
     localResult.fold(
       (failure) {
         debugPrint(
-          '🕒 [ChannelFeedNotifier] _initOfflineFirst: local fetch FAILED. setting isLoading=false',
+          '🚨 [Offline-First Error] Local fetch FAILED for $channelId: $failure',
         );
         state = state.copyWith(isLoading: false); // 👈 Stop if local fails
       },
@@ -178,8 +201,12 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
           );
           // 👑 Debug: Log the IDs to see if they are zombies
           for (var p in localPosts.take(3)) {
-            final shortCaption = p.caption.length > 20 ? '${p.caption.substring(0, 20)}...' : p.caption;
-            debugPrint('   ├─ Post: ${p.id} (Type: ${p.postType}, Caption: $shortCaption)');
+            final shortCaption = p.caption.length > 20
+                ? '${p.caption.substring(0, 20)}...'
+                : p.caption;
+            debugPrint(
+              '   ├─ Post: ${p.id} (Type: ${p.postType}, Caption: $shortCaption)',
+            );
           }
 
           debugPrint(
@@ -208,6 +235,9 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
     // This solves the "Infinite Shimmer" if Realtime is slow or disabled.
     refresh(isInitial: true);
 
+    // 4. 👑 PERSONAL SYNC: Listens for our own likes/unlikes on other devices
+    _initLikesSync();
+
     // 4. DELTA STREAM: Surgically inject ONE new post at a time.
     // No full-list refetch — the server pushes the row, we patch and prepend it.
     _subscription = _repository
@@ -223,19 +253,41 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
             final patchedPost = await _reconcileProfile(newPost);
 
             // Guard: don't inject a true duplicate (already confirmed in remote)
-            final alreadyInRemote = state.remotePosts.any((p) => p.id == patchedPost.id);
-            if (alreadyInRemote) {
-              debugPrint('⚠️ [DELTA] Skipping duplicate remote post ${patchedPost.id}');
+            final existingIndex = state.remotePosts.indexWhere(
+              (p) => p.id == patchedPost.id,
+            );
+
+            if (existingIndex != -1) {
+              debugPrint(
+                '🔄 [DELTA UPDATE] Patching existing post ${patchedPost.id} (Likes: ${patchedPost.likes})',
+              );
+              // 👑 PRESERVE LOCAL STATE: Don't let a generic server update wipe out our "isLiked" status
+              final existingPost = state.remotePosts[existingIndex];
+              final mergedPost = patchedPost.copyWith(
+                isLiked: existingPost.isLiked, // Keep what we have in UI
+              );
+
+              // Update the post in remotePosts
+              final newRemote = [...state.remotePosts];
+              newRemote[existingIndex] = mergedPost;
+
+              // Re-map to channelItems to reflect the change (likes, comments, etc)
+              state = state.copyWith(remotePosts: newRemote);
+              _updateUIState();
               return;
             }
 
             // 👑 PENDING PROMOTION: If this is our own optimistic post coming back
             // from the server, move it from pendingPosts → remotePosts so the
             // pending overlay clears and the post stays in its correct position.
-            final isPendingPromotion = state.pendingPosts.any((p) => p.id == patchedPost.id);
+            final isPendingPromotion = state.pendingPosts.any(
+              (p) => p.id == patchedPost.id,
+            );
 
             if (isPendingPromotion) {
-              debugPrint('✅ [DELTA] Promoting pending → confirmed: ${patchedPost.id}');
+              debugPrint(
+                '✅ [DELTA] Promoting pending → confirmed: ${patchedPost.id}',
+              );
               final newPending = state.pendingPosts
                   .where((p) => p.id != patchedPost.id)
                   .toList();
@@ -243,9 +295,13 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
               final newRemote = [patchedPost, ...state.remotePosts];
               // Rebuild channelItems from scratch so ordering is correct
               final remoteItems = newRemote.map(_mapPostToChannelItem).toList();
-              final pendingItems = newPending.map(_mapPostToChannelItem).toList();
+              final pendingItems = newPending
+                  .map(_mapPostToChannelItem)
+                  .toList();
               final remoteIds = remoteItems.map((e) => e.id).toSet();
-              final missingPending = pendingItems.where((p) => !remoteIds.contains(p.id)).toList();
+              final missingPending = pendingItems
+                  .where((p) => !remoteIds.contains(p.id))
+                  .toList();
               state = state.copyWith(
                 pendingPosts: newPending,
                 remotePosts: newRemote,
@@ -254,21 +310,12 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
               return;
             }
 
-            // 🚀 SURGICAL INJECTION: Brand new post from another user
-            debugPrint('🚀 [DELTA] Direct injection of MANIFESTO: ${patchedPost.id}');
+            // 🚀 SURGICAL INJECTION: Direct mapping to the correct UI item type
+            debugPrint(
+              '🚀 [DELTA] Direct injection of ${patchedPost.postType}: ${patchedPost.id}',
+            );
 
-            final newItem = ManifestoItem.fromMap({
-              'id': patchedPost.id,
-              'author_id': patchedPost.authorId,
-              'username': patchedPost.authorUsername,
-              'profile_image_url': patchedPost.authorAvatarUrl,
-              'caption': patchedPost.caption,
-              'image_urls': patchedPost.imageUrls,
-              'video_url': patchedPost.videoUrl,
-              'likes': patchedPost.likes,
-              'comments': patchedPost.comments,
-              'created_at': patchedPost.createdAt.toIso8601String(),
-            }, originalPost: patchedPost);
+            final newItem = _mapPostToChannelItem(patchedPost);
 
             state = state.copyWith(
               remotePosts: [patchedPost, ...state.remotePosts],
@@ -276,7 +323,14 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
             );
           },
           onError: (err) {
-            debugPrint('📡 [Delta Stream] Error: $err');
+            debugPrint(
+              '🚨 [Supabase Realtime Error] Delta stream failed for $channelId: $err',
+            );
+            if (err is PostgrestException) {
+              debugPrint('   ├─ Message: ${err.message}');
+              debugPrint('   ├─ Code: ${err.code}');
+              debugPrint('   └─ Details: ${err.details}');
+            }
           },
         );
   }
@@ -300,33 +354,13 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
         cached.authorUsername.isNotEmpty &&
         cached.authorUsername != 'unknown') {
       debugPrint('🗃️ [PROFILE CACHE] Hit for ${rawPost.authorId}');
-      return PostMapper.fromJson({
-        // Merge the raw post fields with the cached profile fields
-        'id': rawPost.id,
-        'author_id': rawPost.authorId,
-        'channel_id': rawPost.channelId,
-        'channel_name': rawPost.channelName,
-        'caption': rawPost.caption,
-        'image_urls': rawPost.imageUrls,
-        'thumbnail_urls': rawPost.thumbnailUrls,
-        'video_url': rawPost.videoUrl,
-        'audio_url': rawPost.audioUrl,
-        'sd_video_url': rawPost.sdVideoUrl,
-        'is_video': rawPost.isVideo,
-        'is_audio': rawPost.isAudio,
-        'aspect_ratio': rawPost.aspectRatio,
-        'post_type': rawPost.postType,
-        'parent_post_id': rawPost.parentPostId,
-        'linked_post_id': rawPost.linkedPostId,
-        'link_chain': rawPost.linkChain,
-        'link_depth': rawPost.linkDepth,
-        'created_at': rawPost.createdAt.toIso8601String(),
-        // 👇 Profile data from cache — the reconciliation magic
-        'username': cached.authorUsername,
-        'display_name': cached.authorDisplayName,
-        'profile_image_url': cached.authorAvatarUrl,
-        'author_title': cached.authorTitle,
-      });
+      return rawPost.copyWith(
+        // Enhance with cached profile data
+        authorUsername: cached.authorUsername,
+        authorDisplayName: cached.authorDisplayName,
+        authorAvatarUrl: cached.authorAvatarUrl,
+        authorTitle: cached.authorTitle,
+      );
     }
 
     // Cache MISS: fetch this profile exactly once from Supabase
@@ -398,13 +432,16 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
 
       result.fold(
         (failure) {
-          debugPrint('⚠️ [ChannelFeedNotifier] Network Sync Failed for $channelId: $failure');
+          debugPrint(
+            '⚠️ [ChannelFeedNotifier] Network Sync Failed for $channelId: $failure',
+          );
           debugPrint(
             '🕒 [ChannelFeedNotifier] refresh: network failed. setting isLoading=false',
           );
           state = state.copyWith(isLoading: false); // 👑 KILL SPINNER
         },
-        (posts) async { // 👑 Make sure this callback is async!
+        (posts) async {
+          // 👑 Make sure this callback is async!
           // 👑 WARM THE PROFILE CACHE from fresh results.
           for (final p in posts) {
             if (p.authorUsername.isNotEmpty && p.authorUsername != 'unknown') {
@@ -426,13 +463,18 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
 
           // 👑 THE ZOMBIE FIX: Wipe old synced data from this channel...
           await ChartNativeDB.instance.clearSyncedPosts(channelId: channelId);
-          
+
           // 👑 ...then save the fresh Truth from the server!
           _persistToNativeDB(posts);
         },
       );
     } catch (e) {
-      debugPrint('🚨 Critical Refresh Error: $e');
+      debugPrint('🚨 [CRITICAL] Refresh Error for $channelId: $e');
+      if (e is PostgrestException) {
+        debugPrint('   ├─ Table: channel_feed_view');
+        debugPrint('   ├─ Message: ${e.message}');
+        debugPrint('   └─ Hint: ${e.hint}');
+      }
       state = state.copyWith(isLoading: false); // 👑 EMERGENCY STOP
     }
 
@@ -446,9 +488,10 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
     debugPrint(
       '🕒 [ChannelFeedNotifier] loadMore() triggered for page ${state.page}',
     );
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
 
     try {
+      debugPrint('📡 [Pagination] Fetching more for channel: $channelId, page: ${state.page}');
       final result = await _repository.getChannelPosts(
         channelId,
         page: state.page,
@@ -457,19 +500,10 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
       result.fold(
         (failure) {
           debugPrint('⚠️ [ChannelFeedNotifier] loadMore failed: $failure');
-          // 👑 FIX THE INFINITE SPINNER LOOP ELEGANTLY
-          // Setting hasMore to false wiped the UI list! Instead, we set an ERROR.
-          // This tells PagingController to stop fetching and optionally show a retry button, without dropping existing data.
-          state = ChannelFeedState(
-            channelItems: state.channelItems,
-            remotePosts: state.remotePosts,
-            pendingPosts: state.pendingPosts,
+          state = state.copyWith(
             isLoading: false,
-            hasMore: state.hasMore,
-            page: state.page,
-            error: failure.toString(),
+            error: 'No internet connection. Please try again.',
           );
-          // _updateUIState(); // Not needed since we preserve channelItems explicitly.
         },
         (posts) {
           debugPrint(
@@ -480,14 +514,18 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
             isLoading: false,
             hasMore: posts.length >= 10,
             page: state.page + 1,
+            error: null,
           );
 
-          _updateUIState(); // 👑 Sync UI here!
+          _updateUIState();
         },
       );
     } catch (e) {
       debugPrint('🚨 [ChannelFeedNotifier] Critical loadMore Error: $e');
-      state = state.copyWith(isLoading: false, hasMore: false);
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Connection lost. Please try again.',
+      );
       _updateUIState();
     }
   }
@@ -495,14 +533,10 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
   /// 👑 INSTANT UI MERGER: Maps our memory state directly to the strict UI classes
   void _updateUIState() {
     // 1. Map whatever we got from the network (Source: channel_feed_view)
-    final remoteItems = state.remotePosts
-        .map(_mapPostToChannelItem)
-        .toList();
+    final remoteItems = state.remotePosts.map(_mapPostToChannelItem).toList();
 
     // 2. Map whatever is pending locally (Source: SQLite pending manifestos)
-    final pendingItems = state.pendingPosts
-        .map(_mapPostToChannelItem)
-        .toList();
+    final pendingItems = state.pendingPosts.map(_mapPostToChannelItem).toList();
 
     // 3. Deduplicate
     final remoteIds = remoteItems.map((e) => e.id).toSet();
@@ -532,29 +566,37 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
   /// This is what makes cold-start offline work — next launch reads from here instead of waiting for network.
   Future<void> _persistToNativeDB(List<PostEntity> posts) async {
     try {
-      final db = await ChartNativeDB.instance.database;
-      final batch = db.batch();
+      final List<Map<String, dynamic>> items = posts
+          .map(
+            (post) => {
+              'id': post.id,
+              'authorId': post.authorId,
+              'username': post.authorUsername,
+              'profileImageUrl': post.authorAvatarUrl,
+              'channelId': channelId,
+              'caption': post.caption,
+              'videoUrl': post.videoUrl,
+              'imageUrls': post.imageUrls,
+              'thumbnailUrls': post.thumbnailUrls,
+              'likes': post.likes,
+              'comments': post.comments,
+              'aspectRatio': post.aspectRatio,
+              'createdAt': post.createdAt.toIso8601String(),
+              'isLiked': post.isLiked ? 1 : 0,
+              'videoUrls': post.videoUrls, // 👑 Non-nullable safety
+            },
+          )
+          .toList();
 
-      for (final post in posts) {
-        debugPrint('💾 [SQLite Sync] Persisting MANIFESTO: ${post.id}');
-        batch.insert('manifestos', {
-          'id': post.id,
-          'author_id': post.authorId,
-          'username': post.authorUsername,
-          'profile_image_url': post.authorAvatarUrl,
-          'channel_id': channelId,
-          'caption': post.caption,
-          'video_url': post.videoUrl,
-          'image_urls': jsonEncode(post.imageUrls),
-          'thumbnail_urls': jsonEncode(post.thumbnailUrls),
-          'likes': post.likes,
-          'comments': post.comments,
-          'created_at': post.createdAt.toIso8601String(),
-        }, conflictAlgorithm: ConflictAlgorithm.replace);
-      }
-
-      await batch.commit(noResult: true);
+      await ChartNativeDB.instance.cacheManifestos(items);
       debugPrint('💾 [SQLite Sync] Synchronized ${posts.length} items.');
+
+      // 👑 ROLLING CACHE: Keeps only the newest 10 posts on disk.
+      // Everything older than index 10 is deleted from SQLite but stays in memory.
+      await ChartNativeDB.instance.trimChannelPosts(
+        channelId: channelId,
+        keepCount: 10,
+      );
 
       // 👑 ROLLING CACHE: Quietly trim the DB so it never bloats over time.
       // Fire-and-forget: runs in background, never blocks the UI.
@@ -567,6 +609,54 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
   /// Force a refresh of pending posts (called after a new post is created)
   void notifyPostCreated() {
     _loadPending();
+  }
+
+  /// 👑 PERSONAL SYNC: Listens for our own likes/unlikes on other devices
+  void _initLikesSync() {
+    final supabase = Supabase.instance.client;
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final filterKey = 'likes_sync_$userId';
+    debugPrint('📡 [LIKE SYNC] Subscribing to likes for user: $userId');
+
+    _likesChannel = supabase
+        .channel('public:channel_post_likes:$filterKey')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'channel_post_likes',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: userId,
+          ),
+          callback: (payload) {
+            final postId =
+                (payload.newRecord['post_id'] ?? payload.oldRecord['post_id'])
+                    as String?;
+            if (postId == null) return;
+
+            final isLiked = payload.eventType != PostgresChangeEvent.delete;
+            debugPrint(
+              '❤️ [LIKE SYNC] ${isLiked ? "Liking" : "Unliking"} $postId (Event: ${payload.eventType})',
+            );
+
+            // Update state instantly
+            final updatedRemote = state.remotePosts.map((p) {
+              if (p.id == postId) return p.copyWith(isLiked: isLiked);
+              return p;
+            }).toList();
+
+            state = state.copyWith(remotePosts: updatedRemote);
+            _updateUIState();
+          },
+        );
+
+    _likesChannel?.subscribe((status, [error]) {
+      debugPrint('📡 [LIKE SYNC] Status: $status');
+      if (error != null) debugPrint('🚨 [LIKE SYNC Error] $error');
+    });
   }
 
   /// 🚀 INSTANT UI: Injects a new post at the top of the feed instantly before server confirms
@@ -584,79 +674,93 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
   }
 
   /// 👑 OPTIMISTIC UI: Toggle Like instantly, then save to C++ DB and Cloud
-  void toggleLike(String itemId, bool isManifesto, {bool isLiked = true}) async {
-    final int change = isLiked ? 1 : -1;
-    // 1. Instantly update the UI state
-    final updatedChannelItems = state.channelItems.map((item) {
-      if (item.id == itemId) {
-        if (item is ManifestoItem) {
-          return ManifestoItem(
-            id: item.id,
-            authorUsername: item.authorUsername,
-            authorAvatarUrl: item.authorAvatarUrl,
-            createdAt: item.createdAt,
-            caption: item.caption,
-            imageUrls: item.imageUrls,
-            videoUrl: item.videoUrl,
-            commentCount: item.commentCount,
-            originalPost: item.originalPost,
-            likes: (item.likes + change).clamp(0, 999999), 
-          );
-        } else if (item is ChannelCommentItem) {
-          return ChannelCommentItem(
-            id: item.id,
-            authorUsername: item.authorUsername,
-            authorAvatarUrl: item.authorAvatarUrl,
-            createdAt: item.createdAt,
-            message: item.message,
-            manifestoId: item.manifestoId,
-            originalPost: item.originalPost,
-            likes: (item.likes + change).clamp(0, 999999), 
-          );
-        }
+  void toggleLike(
+    String itemId,
+    bool isManifesto, {
+    bool isLiked = true,
+  }) async {
+    // 👑 0. DEBOUNCE: Stop if we are already processing this specific item
+    if (_processingIds.contains(itemId)) {
+      debugPrint('⏳ [LOCK] Still processing like for $itemId, ignoring click.');
+      return;
+    }
+    _processingIds.add(itemId);
+
+    // 👑 1. SYNC BOTH: Update UI Items AND Remote Posts simultaneously
+    // This prevents the "Realtime Snap-back" where the UI reverts to old counts.
+    bool currentIsLiked = false;
+
+    final updatedRemote = state.remotePosts.map((p) {
+      if (p.id == itemId) {
+        currentIsLiked = !p.isLiked;
+        final change = currentIsLiked ? 1 : -1;
+        return p.copyWith(
+          isLiked: currentIsLiked,
+          likes: (p.likes + change).clamp(0, 999999),
+        );
       }
-      return item;
+      return p;
     }).toList();
 
-    state = state.copyWith(channelItems: updatedChannelItems);
+    state = state.copyWith(remotePosts: updatedRemote);
+    _updateUIState(); // This instantly pushes the changes to the UI items
 
     // 2. Instantly update the Local C++ SQLite DB so it survives a restart
-    final table = isManifesto ? 'manifestos' : 'manifesto_comments';
-    final db = await ChartNativeDB.instance.database;
-    final operator = isLiked ? '+' : '-';
-    await db.rawUpdate('UPDATE $table SET likes = MAX(0, likes $operator 1) WHERE id = ?', [
-      itemId,
-    ]);
+    ChartNativeDB.instance
+        .toggleLike(itemId, isManifesto, isLiked: currentIsLiked)
+        .then((_) {
+          debugPrint('💾 [SQLite] Toggle Like success for $itemId');
+        })
+        .catchError((e) {
+          debugPrint('🚨 [SQLite Error] Toggle like failed for $itemId: $e');
+        });
 
-    // 3. 👑 SMART RPC: Supabase finds the ID across all tables automatically
+    // 3. 👑 SMART RPC: Toggles Like/Unlike and handles counters
     try {
-      debugPrint('👍 LIKING post (Change: $change): $itemId');
+      debugPrint('👍 [Supabase] TOGGLE Like for $itemId');
       final supabase = Supabase.instance.client;
-      await supabase.rpc(
-        'increment_like',
-        params: {
-          'target_id': itemId, 
-          'change_amount': change, // 👑 PASS THE +1 OR -1 HERE!
-        },
+      final response = await supabase.rpc(
+        'toggle_channel_post_like',
+        params: {'target_post_id': itemId},
       );
+
+      if (response is Map) {
+        final newIsLiked = response['is_liked'] as bool;
+        final newLikes = response['new_likes'] as int;
+        debugPrint(
+          '☁️ [Supabase] Toggle success for $itemId: isLiked=$newIsLiked, likes=$newLikes',
+        );
+      }
     } catch (e) {
-      debugPrint('⚠️ Network fail on like: $e'); // UI stays optimistic
+      debugPrint('🚨 [Supabase Error] Network fail on like for $itemId: $e');
+      if (e is PostgrestException) {
+        debugPrint('   ├─ Message: ${e.message}');
+        debugPrint('   ├─ Code: ${e.code}');
+        debugPrint('   └─ Hint: ${e.hint}');
+      }
+    } finally {
+      // 👑 UNLOCK: Allow the next click after a short cool-down
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _processingIds.remove(itemId);
+      });
     }
   }
 
   /// 👑 THE TRIPLE WIPE: Deletes from UI, SQLite, and Supabase
   Future<void> deleteItem(String itemId, bool isManifesto) async {
-    final table = isManifesto ? 'manifestos' : 'manifesto_comments';
+    final table = isManifesto ? 'channel_posts' : 'channel_post_comments';
     final previousState = state;
-    
+
     String? parentManifestoId;
 
     // 1. 🔍 PRE-FLIGHT: If deleting a comment, find its parent Manifesto ID first
     if (!isManifesto) {
       try {
-        final targetComment = state.channelItems.firstWhere(
-          (item) => item.id == itemId && item is ChannelCommentItem
-        ) as ChannelCommentItem;
+        final targetComment =
+            state.channelItems.firstWhere(
+                  (item) => item.id == itemId && item is ChannelCommentItem,
+                )
+                as ChannelCommentItem;
         parentManifestoId = targetComment.manifestoId;
       } catch (_) {} // Ignored if not found in current UI state
     }
@@ -677,29 +781,33 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
               caption: item.caption,
               imageUrls: item.imageUrls,
               videoUrl: item.videoUrl,
-              commentCount: (item.commentCount - 1).clamp(0, 999999), // ➖ UI DECREMENT
+              aspectRatio: item.aspectRatio,
+              commentCount: (item.commentCount - 1).clamp(
+                0,
+                999999,
+              ), // ➖ UI DECREMENT
             );
           }
           return item;
-        }).toList();
+        })
+        .toList();
 
     state = state.copyWith(
       channelItems: updatedItems,
-      remotePosts: state.remotePosts.where((p) => p.id != itemId && p.linkedPostId != itemId).toList(),
+      remotePosts: state.remotePosts
+          .where((p) => p.id != itemId && p.linkedPostId != itemId)
+          .toList(),
       pendingPosts: state.pendingPosts.where((p) => p.id != itemId).toList(),
     );
 
     try {
       // 3. 💾 SQLite WIPE & DECREMENT
-      final db = await ChartNativeDB.instance.database;
-      await db.delete(
-        table, 
-        where: 'id = ?', 
-        whereArgs: [itemId]
-      );
-      
+      await ChartNativeDB.instance.deleteItem(itemId, isManifesto);
+
       if (parentManifestoId != null) {
-        ChartNativeDB.instance.decrementManifestoCommentCount(parentManifestoId);
+        ChartNativeDB.instance.decrementManifestoCommentCount(
+          parentManifestoId,
+        );
       }
 
       // 4. ☁️ SUPABASE WIPE
@@ -711,7 +819,9 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
           .select();
 
       if (response.isEmpty) {
-        throw Exception("Delete rejected by server (Permission or ID mismatch)");
+        throw Exception(
+          "Delete rejected by server (Permission or ID mismatch)",
+        );
       }
       debugPrint('✅ [Supabase] Permanent wipe confirmed for: $itemId');
     } catch (e) {
@@ -723,14 +833,13 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
   @override
   void dispose() {
     _subscription?.cancel(); // 🛑 Always clean up the stream
+    _likesChannel?.unsubscribe(); // 🛑 Clean up likes sync
     super.dispose();
   }
 }
 
-final channelFeedProvider =
-    StateNotifierProvider.autoDispose.family<ChannelFeedNotifier, ChannelFeedState, String>(
-      (ref, channelId) {
-        final repo = ref.watch(feedRepositoryProvider);
-        return ChannelFeedNotifier(repo, channelId);
-      },
-    );
+final channelFeedProvider = StateNotifierProvider.autoDispose
+    .family<ChannelFeedNotifier, ChannelFeedState, String>((ref, channelId) {
+      final repo = ref.watch(feedRepositoryProvider);
+      return ChannelFeedNotifier(repo, channelId);
+    });

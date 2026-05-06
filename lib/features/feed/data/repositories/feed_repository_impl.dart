@@ -53,7 +53,7 @@ class FeedRepositoryImpl implements FeedRepository {
         '♻️ [Repository] Background sync complete for feed page $page',
       );
     } catch (e) {
-      debugPrint('⚠️ [Repository] Background sync failed: $e');
+      debugPrint('❌ [FeedRemoteSource] Error fetching channel videos: $e');
     }
   }
 
@@ -88,15 +88,10 @@ class FeedRepositoryImpl implements FeedRepository {
   @override
   Future<Either<Failure, PostEntity>> getPost(String postId) async {
     try {
-      // 1. Try local
-      final db = await ChartNativeDB.instance.database;
-      final rows = await db.query(
-        'posts',
-        where: 'id = ?',
-        whereArgs: [postId],
-      );
-      if (rows.isNotEmpty) {
-        final post = PostEntity.fromMap(rows.first);
+      // 1. Try local (Drift Engine)
+      final row = await ChartNativeDB.instance.getSinglePost(postId);
+      if (row != null) {
+        final post = PostEntity.fromMap(row);
         // Sync in bg
         _syncSinglePost(postId);
         return Right(post);
@@ -118,6 +113,24 @@ class FeedRepositoryImpl implements FeedRepository {
   }
 
   @override
+  Future<Either<Failure, List<PostEntity>>> getChannelVideos(
+    String channelId, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final videos = await _remote.getChannelVideos(
+        channelId,
+        limit: limit,
+        offset: offset,
+      );
+      return Right(videos);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, PostEntity>> createPost(
     PostEntity post, {
     String folderName = 'public_posts',
@@ -126,6 +139,7 @@ class FeedRepositoryImpl implements FeedRepository {
     bool isPublicFeed = true,
     bool allowComments = true,
     bool shareToStatus = false,
+    bool shareToMoment = false, // 👑 ADDED
   }) async {
     try {
       final created = await _remote.createPost(
@@ -136,6 +150,7 @@ class FeedRepositoryImpl implements FeedRepository {
         isPublicFeed: isPublicFeed,
         allowComments: allowComments,
         shareToStatus: shareToStatus,
+        shareToMoment: shareToMoment, // 👑
       );
       // Local sync happens in PostingService after background process completes,
       // but we can update local here too to be safe.
@@ -234,7 +249,7 @@ class FeedRepositoryImpl implements FeedRepository {
   Future<Either<Failure, List<PostEntity>>> getChannelPosts(
     String channelId, {
     int page = 1,
-    int limit = 15,
+    int limit = 10,
   }) async {
     try {
       final offset = (page - 1) * limit;
@@ -254,7 +269,7 @@ class FeedRepositoryImpl implements FeedRepository {
         page: page,
         limit: limit,
       );
-      await _local.cacheFeed(posts);
+      await _local.cacheChannelPosts(posts);
       return Right(posts);
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
@@ -268,7 +283,7 @@ class FeedRepositoryImpl implements FeedRepository {
         page: page,
         limit: limit,
       );
-      await _local.cacheFeed(posts);
+      await _local.cacheChannelPosts(posts);
     } catch (_) {}
   }
 
@@ -278,14 +293,22 @@ class FeedRepositoryImpl implements FeedRepository {
   }
 
   @override
-  Future<Either<Failure, List<PostEntity>>> getManifestoComments(String manifestoId) async {
+  Future<Either<Failure, List<PostEntity>>> getManifestoComments(
+    String manifestoId, {
+    int limit = 10,
+    int offset = 0,
+  }) async {
     try {
       // 1. Fetch from remote (threaded comments are generally dynamic)
-      final posts = await _remote.getManifestoComments(manifestoId);
-      
+      final posts = await _remote.getManifestoComments(
+        manifestoId,
+        limit: limit,
+        offset: offset,
+      );
+
       // 2. Cache them locally for offline view
       await _local.cacheFeed(posts);
-      
+
       return Right(posts);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

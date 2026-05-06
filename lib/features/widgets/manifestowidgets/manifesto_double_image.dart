@@ -20,17 +20,20 @@ class ManifestoDoubleImage extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16.r),
       child: SizedBox(
-        height: 520.h, // 👑 Aggressive vertical (was 420.h)
+        height: 520.h,
         child: Row(
           children: [
             Expanded(
               child: GestureDetector(
                 onTap: () => onTap?.call(0),
-                child: ChartImage(
-                  url: imageUrls[0],
-                  thumbnailUrl: thumbnailUrls.isNotEmpty ? thumbnailUrls[0] : null,
-                  fit: BoxFit.cover,
-                  height: double.infinity,
+                child: Hero(
+                  tag: 'image_hero_${imageUrls[0]}',
+                  child: ChartImage(
+                    url: imageUrls[0],
+                    thumbnailUrl: thumbnailUrls.isNotEmpty ? thumbnailUrls[0] : null,
+                    fit: BoxFit.cover,
+                    height: double.infinity,
+                  ),
                 ),
               ),
             ),
@@ -38,11 +41,14 @@ class ManifestoDoubleImage extends StatelessWidget {
             Expanded(
               child: GestureDetector(
                 onTap: () => onTap?.call(1),
-                child: ChartImage(
-                  url: imageUrls[1],
-                  thumbnailUrl: thumbnailUrls.length >= 2 ? thumbnailUrls[1] : null,
-                  fit: BoxFit.cover,
-                  height: double.infinity,
+                child: Hero(
+                  tag: 'image_hero_${imageUrls[1]}',
+                  child: ChartImage(
+                    url: imageUrls[1],
+                    thumbnailUrl: thumbnailUrls.length >= 2 ? thumbnailUrls[1] : null,
+                    fit: BoxFit.cover,
+                    height: double.infinity,
+                  ),
                 ),
               ),
             ),

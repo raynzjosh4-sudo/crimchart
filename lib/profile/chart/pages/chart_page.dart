@@ -5,6 +5,7 @@ import 'package:crown/features/widgets/memberimage/starter_image.dart';
 import 'package:crown/profile/chart/dummydata/dummy_chart_data.dart';
 import 'package:flutter/material.dart';
 import '../widgets/chart_list_item.dart';
+import '../widgets/poll_carousel.dart';
 
 class ChartPage extends StatelessWidget {
   const ChartPage({super.key});
@@ -13,6 +14,32 @@ class ChartPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     // colorScheme removed as requested by lint
+
+    final List<PollItem> pollItems = [
+      const PollItem(
+        id: 'poll1',
+        title: 'Mulago is the best hospital in Uganda',
+        mediaUrl: 'https://picsum.photos/seed/hospital/600/400',
+        type: PollMediaType.image,
+        points: 450,
+        suggestedBy: 'Dr. Moses',
+      ),
+      const PollItem(
+        id: 'poll2',
+        title: 'Who was the most influential president?',
+        mediaUrl: 'https://picsum.photos/seed/politics/600/400',
+        type: PollMediaType.image,
+        points: 820,
+        suggestedBy: 'Sarah',
+      ),
+      const PollItem(
+        id: 'poll3',
+        title: 'New Health Policy Update',
+        type: PollMediaType.text,
+        points: 120,
+        suggestedBy: 'Admin',
+      ),
+    ];
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -33,6 +60,7 @@ class ChartPage extends StatelessWidget {
         children: [
           _buildActiveStories(),
           const Divider(height: 1, thickness: 0.1, color: Colors.grey),
+          PollCarousel(items: pollItems, title: 'User Suggestions'),
           Expanded(
             child: ListView.builder(
               itemCount: dummyCharts.length,

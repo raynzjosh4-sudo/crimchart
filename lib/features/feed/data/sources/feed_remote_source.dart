@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:injectable/injectable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/network_exception_mapper.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -17,7 +18,7 @@ class FeedRemoteSource {
 
   const FeedRemoteSource(this._client);
 
-  Future<List<PostEntity>> getFeed({int page = 1, int limit = 15}) async {
+  Future<List<PostEntity>> getFeed({int page = 1, int limit = 10}) async {
     final supabase = Supabase.instance.client;
     final startIndex = (page - 1) * limit;
     final endIndex = startIndex + limit - 1;
@@ -32,6 +33,7 @@ class FeedRemoteSource {
 
       return _mapResponseToEntities(response as List);
     } catch (e) {
+      debugPrint('🚨 [FeedRemoteSource] getFeed FAILED: $e');
       throw ServerException('Failed to get main feed: $e');
     }
   }
@@ -62,6 +64,31 @@ class FeedRemoteSource {
     }
   }
 
+  Future<List<PostEntity>> getChannelVideos(
+    String channelId, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final supabase = Supabase.instance.client;
+
+    try {
+      final response = await supabase
+          .from('channel_posts')
+          .select()
+          .eq('channel_id', channelId)
+          .eq('is_video', true)
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+
+      return (response as List)
+          .map((row) => PostEntity.fromMap(Map<String, dynamic>.from(row)))
+          .toList();
+    } catch (e) {
+      debugPrint('❌ [FeedRemoteSource] Error fetching channel videos: $e');
+      throw ServerException(e.toString());
+    }
+  }
+
   Future<PostEntity> createPost(
     PostEntity post, {
     String folderName = 'public_posts',
@@ -70,6 +97,7 @@ class FeedRemoteSource {
     bool isPublicFeed = true,
     bool allowComments = true,
     bool shareToStatus = false,
+    bool shareToMoment = false, // 👑 ADDED
   }) async {
     final supabase = Supabase.instance.client;
 
@@ -109,54 +137,139 @@ class FeedRemoteSource {
     debugPrint('   ├─ is_public   : $isPublicFeed');
     debugPrint('   ├─ channel_id  : ${payload['channel_id']}');
     debugPrint('   ├─ allow_comm  : $allowComments');
-    debugPrint('   └─ shareStatus : $shareToStatus');
+    debugPrint('   ├─ shareStatus : $shareToStatus');
+    debugPrint('   └─ shareMoment : $shareToMoment');
 
     try {
       final List<Future> operations = [];
-      
-      // 👑 STRICT MUTUALLY EXCLUSIVE ROUTING
-      final bool isChannelContent = payload['channel_id'] != null && payload['channel_id'] != 'general';
 
-      if (isChannelContent) {
-        // 🛣️ ROUTE A: CHANNEL TABLES ONLY
-        if (post.postType == 'manifesto' || post.postType == 'channel' || post.linkedPostId == null) {
-           final manifestoPayload = {
-              'id': post.id,
-              'author_id': payload['author_id'],
-              'channel_id': payload['channel_id'],
-              'caption': post.caption,
-              'video_url': post.videoUrl,
-              'video_urls': post.videoUrls,
-              'image_urls': post.imageUrls,
-              'thumbnail_urls': post.thumbnailUrls,
-              'is_video': post.isVideo,
-              'is_audio': post.isAudio,
-              'audio_url': post.audioUrl,
-              'is_public': isPublicFeed, 
-              'allow_comments': allowComments,
-           };
-           operations.add(supabase.from('manifestos').insert(manifestoPayload));
+      // 👑 STRICT MUTUALLY EXCLUSIVE ROUTING
+      final bool isChannelContent =
+          payload['channel_id'] != null && payload['channel_id'] != 'general';
+
+      if (post.postType == 'moment') {
+        final momentPayload = {
+          'id': post.id,
+          'channel_id': payload['channel_id'],
+          'author_id': payload['author_id'],
+          'media_url':
+              payload['video_url'] ??
+              (post.imageUrls.isNotEmpty ? post.imageUrls.first : ''),
+          'media_type': post.isVideo ? 'video' : 'photo',
+          'thumbnail_url': post.thumbnailUrls.isNotEmpty
+              ? post.thumbnailUrls.first
+              : null,
+          'caption': post.caption,
+          'created_at': DateTime.now().toIso8601String(),
+        };
+        operations.add(supabase.from('channel_moments').insert(momentPayload));
+      } else if (post.postType == 'status') {
+        // 🛣️ ROUTE: STATUSES ONLY
+        if (isChannelContent) {
+          final channelStatusPayload = {
+            'id': post.id,
+            'author_id': payload['author_id'],
+            'channel_id': payload['channel_id'],
+            'caption': payload['caption'],
+            'image_urls': payload['image_urls'],
+            'video_url': payload['video_url'],
+            'audio_url': payload['audio_url'],
+            'is_video': payload['is_video'],
+            'is_audio': payload['is_audio'],
+            'expires_at': DateTime.now()
+                .add(const Duration(hours: 24))
+                .toIso8601String(),
+          };
+          operations.add(
+            supabase.from('channel_statuses').insert(channelStatusPayload),
+          );
         } else {
-           final commentPayload = {
-              'id': post.id,
-              'author_id': payload['author_id'],
-              'channel_id': payload['channel_id'],
-              'manifesto_id': post.linkedPostId, 
-              'message': post.caption,
-              'image_urls': post.imageUrls,
-           };
-           operations.add(supabase.from('manifesto_comments').insert(commentPayload));
+          final personalStatusPayload = {
+            'id': post.id,
+            'author_id': payload['author_id'],
+            'caption': payload['caption'],
+            'image_urls': payload['image_urls'],
+            'video_url': payload['video_url'],
+            'audio_url': payload['audio_url'],
+            'is_video': payload['is_video'],
+            'is_audio': payload['is_audio'],
+            'privacy': payload['privacy'],
+            'allow_comments': payload['allow_comments'],
+            'expires_at': DateTime.now()
+                .add(const Duration(hours: 24))
+                .toIso8601String(),
+          };
+          operations.add(
+            supabase.from('statuses').insert(personalStatusPayload),
+          );
+        }
+      } else if (isChannelContent) {
+        // 🛣️ ROUTE A: CHANNEL TABLES ONLY
+        if (post.postType == 'manifesto' ||
+            post.postType == 'channel' ||
+            post.linkedPostId == null) {
+          final manifestoPayload = {
+            'id': post.id,
+            'author_id': payload['author_id'],
+            'channel_id': payload['channel_id'],
+            'caption': post.caption,
+            'video_url': post.videoUrl,
+            'video_urls': post.videoUrls,
+            'image_urls': post.imageUrls,
+            'thumbnail_urls': post.thumbnailUrls,
+            'is_video': post.isVideo,
+            'is_audio': post.isAudio,
+            'audio_url': post.audioUrl,
+            'aspect_ratio': post.aspectRatio ?? 1.0,
+            'is_public': isPublicFeed,
+            'allow_comments': allowComments,
+          };
+          operations.add(
+            supabase.from('channel_posts').insert(manifestoPayload),
+          );
+        } else {
+          final commentPayload = {
+            'id': post.id,
+            'author_id': payload['author_id'],
+            'channel_id': payload['channel_id'],
+            'post_id': post.linkedPostId,
+            'message': post.caption,
+            'image_urls': post.imageUrls,
+          };
+          operations.add(
+            supabase.from('channel_post_comments').insert(commentPayload),
+          );
         }
       } else {
-        // 🛣️ ROUTE B: GENERAL POSTS TABLE ONLY
-        // Only hits this if there is NO channel_id attached
         operations.add(supabase.from('posts').insert(payload));
       }
 
-      // 👑 Statuses Table (Independent Route)
+      // 👑 ADDITIONAL: Also Share to Moment if flag is on
+      if (shareToMoment && isChannelContent) {
+        final momentPayload = {
+          'id': const Uuid().v4(), // Different ID for the moment
+          'channel_id': payload['channel_id'],
+          'author_id': payload['author_id'],
+          'media_url':
+              payload['video_url'] ??
+              (post.imageUrls.isNotEmpty ? post.imageUrls.first : ''),
+          'media_type': post.isVideo ? 'video' : 'photo',
+          'thumbnail_url': post.thumbnailUrls.isNotEmpty
+              ? post.thumbnailUrls.first
+              : null,
+          'caption': post.caption,
+          'created_at': DateTime.now().toIso8601String(),
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 24))
+              .toIso8601String(),
+        };
+        operations.add(supabase.from('channel_moments').insert(momentPayload));
+      }
+
+      // 👑 ADDITIONAL: Also Share to Status if flag is on
       if (shareToStatus) {
-        final statusPayload = {
-          'id': post.id,
+        final personalStatusPayload = {
+          'id': const Uuid().v4(), // Different ID
           'author_id': payload['author_id'],
           'caption': payload['caption'],
           'image_urls': payload['image_urls'],
@@ -164,16 +277,21 @@ class FeedRemoteSource {
           'audio_url': payload['audio_url'],
           'is_video': payload['is_video'],
           'is_audio': payload['is_audio'],
-          'privacy': payload['privacy'],
-          'allow_comments': payload['allow_comments'],
-          'expires_at': DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
+          'privacy': payload['privacy'] ?? 'public',
+          'allow_comments': payload['allow_comments'] ?? true,
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 24))
+              .toIso8601String(),
+          'created_at': DateTime.now().toIso8601String(),
         };
-        operations.add(supabase.from('statuses').insert(statusPayload));
+        operations.add(supabase.from('statuses').insert(personalStatusPayload));
       }
 
       await Future.wait(operations);
 
-      debugPrint('✅ [SUPABASE] Post routing SUCCESS! (Strict Separation applied)');
+      debugPrint(
+        '✅ [SUPABASE] Post routing SUCCESS! (Strict Separation applied)',
+      );
       debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       return post;
     } catch (e) {
@@ -189,7 +307,7 @@ class FeedRemoteSource {
     bool? isAudio,
     String? folderName,
     int page = 1,
-    int limit = 12,
+    int limit = 10,
   }) async {
     final supabase = Supabase.instance.client;
     final startIndex = (page - 1) * limit;
@@ -250,7 +368,8 @@ class FeedRemoteSource {
     try {
       if (channelId == 'general' || channelId.isEmpty) {
         // Fallback for general feed
-        final response = await supabase.from('posts')
+        final response = await supabase
+            .from('posts')
             .select('*, author:profiles(*)')
             .isFilter('channel_id', null)
             .order('created_at', ascending: false)
@@ -259,17 +378,16 @@ class FeedRemoteSource {
       }
 
       // 👑 PRO LEVEL: Query the View (Selective for Manifestos Only)
-      // Restoring all columns as confirmed by the user. 
+      // Restoring all columns as confirmed by the user.
       // This includes profile data, audio urls, and link threading metadata.
       final response = await supabase
           .from('channel_feed_view')
           .select('''
             id, 
             author_id, 
-            username, 
+            username,
             display_name, 
             profile_image_url, 
-            author_title, 
             channel_id, 
             caption, 
             video_url,
@@ -283,7 +401,8 @@ class FeedRemoteSource {
             comments, 
             created_at, 
             post_type, 
-            linked_post_id
+            metadata,
+            is_liked
           ''')
           .eq('channel_id', channelId)
           .order('created_at', ascending: false)
@@ -297,15 +416,22 @@ class FeedRemoteSource {
   }
 
   /// 👑 THREADED DISCUSSION: Fetches comments for a specific manifesto
-  Future<List<PostEntity>> getManifestoComments(String manifestoId) async {
+  Future<List<PostEntity>> getManifestoComments(
+    String manifestoId, {
+    int limit = 10,
+    int offset = 0,
+  }) async {
     final supabase = Supabase.instance.client;
     try {
-      debugPrint('🌐 [FeedRemoteSource] Fetching comments for manifesto: $manifestoId');
+      debugPrint(
+        '🌐 [FeedRemoteSource] Fetching comments for manifesto: $manifestoId (limit: $limit, offset: $offset)',
+      );
       final response = await supabase
           .from('manifesto_comments_view')
           .select('*')
           .eq('manifesto_id', manifestoId)
-          .order('created_at', ascending: true);
+          .order('created_at', ascending: true)
+          .range(offset, offset + limit - 1);
       return _mapResponseToEntities(response as List);
     } catch (e) {
       debugPrint('❌ [FeedRemoteSource] Failed to get manifesto comments: $e');
@@ -316,10 +442,10 @@ class FeedRemoteSource {
   /// 🛰️ DELTA INJECTION: Listens to BOTH Manifestos and Comments!
   Stream<PostEntity> watchChannelPosts(String channelId) {
     final supabase = Supabase.instance.client;
-    
+
     if (channelId == 'general' || channelId.isEmpty) {
-       // ... existing general table logic ...
-       return Stream.empty(); // Keep your old general logic if needed
+      // ... existing general table logic ...
+      return Stream.empty(); // Keep your old general logic if needed
     }
 
     final filterKey = 'public:channel_$channelId';
@@ -332,22 +458,45 @@ class FeedRemoteSource {
       },
     );
 
-    // 👑 Strictly Manifestos Only: Separating comments completely.
-    realtimeChannel = supabase.channel(filterKey)
-      .onPostgresChanges(
-        event: PostgresChangeEvent.insert,
-        schema: 'public',
-        table: 'manifestos',
-        filter: PostgresChangeFilter(type: PostgresChangeFilterType.eq, column: 'channel_id', value: channelId),
-        callback: (payload) {
-          final newRecord = Map<String, dynamic>.from(payload.newRecord);
-          newRecord['post_type'] = 'manifesto'; // Force identification
-          debugPrint('📡 [Network Realtime] New raw MANIFESTO row: ${newRecord['id']}');
-          if (!controller.isClosed) controller.add(PostMapper.fromJson(newRecord));
-        },
-      );
-      
-    realtimeChannel.subscribe();
+    // 👑 Strictly Channel Posts: Listening to the real source table
+    realtimeChannel = supabase
+        .channel(filterKey)
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all, // 👑 Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'channel_posts',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'channel_id',
+            value: channelId,
+          ),
+          callback: (payload) {
+            if (payload.eventType == PostgresChangeEvent.insert) {
+              final newRecord = Map<String, dynamic>.from(payload.newRecord);
+              debugPrint(
+                '📡 [Network Realtime] New raw post row: ${newRecord['id']} (Type: ${newRecord['post_type']})',
+              );
+              if (!controller.isClosed)
+                controller.add(PostMapper.fromJson(newRecord));
+            } else if (payload.eventType == PostgresChangeEvent.update) {
+              final updatedRecord = Map<String, dynamic>.from(
+                payload.newRecord,
+              );
+              debugPrint(
+                '📡 [Network Realtime] Post UPDATED: ${updatedRecord['id']} (Likes: ${updatedRecord['likes']})',
+              );
+              if (!controller.isClosed)
+                controller.add(PostMapper.fromJson(updatedRecord));
+            }
+          },
+        );
+
+    realtimeChannel.subscribe((status, [error]) {
+      debugPrint('📡 [DELTA] Subscription status for $filterKey: $status');
+      if (error != null) {
+        debugPrint('🚨 [Supabase Realtime Error] Subscription FAILED: $error');
+      }
+    });
     return controller.stream;
   }
 
@@ -391,7 +540,10 @@ class FeedRemoteSource {
             var fixed = url.toString();
 
             // 👑 REBRAND: channel-profiles was the old folder, channel_avatars is working!
-            fixed = fixed.replaceFirst('/channel-profiles/', '/channel_avatars/');
+            fixed = fixed.replaceFirst(
+              '/channel-profiles/',
+              '/channel_avatars/',
+            );
 
             // Re-add the /users/ prefix if it was missing
             if (fixed.contains('crown.nexassearch.com/') &&
@@ -428,7 +580,25 @@ class FeedRemoteSource {
       }
     }
 
-    return deduped.values.map((json) => PostMapper.fromJson(json)).toList();
+    debugPrint('🌐 [Step 1: Dedup] Processing ${response.length} raw rows...');
+    
+    // ... grouping logic ...
+    
+    debugPrint('🌐 [Step 2: Mapping] Converting ${deduped.length} unique items to entities...');
+    final List<PostEntity> results = [];
+    for (final entry in deduped.entries) {
+      try {
+        results.add(PostMapper.fromJson(entry.value));
+      } catch (e) {
+        debugPrint('🚨 [Mapper Crash] Failed on item ID: ${entry.key}');
+        debugPrint('🚨 Error Detail: $e');
+        debugPrint('🚨 Raw JSON: ${entry.value}');
+        rethrow;
+      }
+    }
+
+    debugPrint('🌐 [Step 3: Complete] Successfully mapped ${results.length} entities.');
+    return results;
   }
 
   /// Fetches the unique folder names for a user's posts.

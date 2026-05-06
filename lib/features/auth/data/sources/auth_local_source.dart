@@ -1,7 +1,6 @@
 import 'package:injectable/injectable.dart';
 import '../../../../core/db/chart_native_db.dart';
 import '../../domain/entities/user_entity.dart';
-import 'package:sqflite/sqflite.dart';
 
 /// Elite Native Auth Source that stores user sessions in the C++ SQLite engine.
 @injectable
@@ -16,8 +15,7 @@ class AuthLocalSource {
     String? accessToken,
     String? refreshToken,
   }) async {
-    final db = await _dbProvider.database;
-    await db.insert('users', {
+    await _dbProvider.saveUser({
       'id': user.id,
       'username': user.username,
       'displayName': user.displayName,
@@ -35,17 +33,15 @@ class AuthLocalSource {
       'createdAt': user.createdAt.toIso8601String(),
       'accessToken': accessToken,
       'refreshToken': refreshToken,
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    });
     print("Native Auth: User '${user.username}' session saved to C++ DB.");
   }
 
   /// Retrieves the current user profile from the native engine.
   Future<UserEntity?> getUser() async {
-    final db = await _dbProvider.database;
-    final res = await db.query('users', limit: 1);
+    final row = await _dbProvider.getUser();
 
-    if (res.isEmpty) return null;
-    final row = res.first;
+    if (row == null) return null;
 
     return UserEntity(
       id: row['id'] as String,
@@ -54,12 +50,14 @@ class AuthLocalSource {
       profileImageUrl: row['profileImageUrl'] as String?,
       bio: row['bio'] as String?,
       ChartTitle: row['ChartTitle'] as String?,
-      birthday: row['birthday'] != null ? DateTime.parse(row['birthday'] as String) : null,
+      birthday: row['birthday'] != null
+          ? DateTime.parse(row['birthday'] as String)
+          : null,
       gender: row['gender'] as String?,
-      isVerified: (row['isVerified'] as int) == 1,
-      followersCount: row['followersCount'] as int,
-      followingCount: row['followingCount'] as int,
-      postsCount: row['postsCount'] as int,
+      isVerified: ((row['isVerified'] as int?) ?? 0) == 1,
+      followersCount: (row['followersCount'] as int?) ?? 0,
+      followingCount: (row['followingCount'] as int?) ?? 0,
+      postsCount: (row['postsCount'] as int?) ?? 0,
       ChartsCount: (row['ChartsCount'] as int?) ?? 0,
       channelsCount: (row['channelsCount'] as int?) ?? 0,
       createdAt: DateTime.parse(row['createdAt'] as String),
@@ -68,51 +66,16 @@ class AuthLocalSource {
 
   /// Extracts the cached auth tokens from the DB.
   Future<Map<String, String?>?> getTokens() async {
-    final db = await _dbProvider.database;
-    final res = await db.query(
-      'users',
-      columns: ['accessToken', 'refreshToken'],
-      limit: 1,
-    );
-    if (res.isEmpty) return null;
+    final row = await _dbProvider.getUser();
+    if (row == null) return null;
     return {
-      'access': res.first['accessToken'] as String?,
-      'refresh': res.first['refreshToken'] as String?,
+      'access': row['accessToken'] as String?,
+      'refresh': row['refreshToken'] as String?,
     };
   }
 
   /// Wipes all native sessions (Logout).
   Future<void> clearAll() async {
-    final db = await _dbProvider.database;
-    await db.delete('users');
+    await _dbProvider.deleteUser();
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

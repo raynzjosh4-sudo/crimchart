@@ -12,6 +12,7 @@ import '../../../../../features/widgets/chartcard/card/media/video_media.dart';
 import 'widgets/channel_chart_slide.dart';
 import '../../../../../core/utils/responsive_size.dart';
 import '../../../menu/main_feed_menu.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class ChannelVideoCardWidget extends StatefulWidget {
   final ChannelPostModel data;
@@ -241,16 +242,17 @@ class _ChannelVideoCardWidgetState extends State<ChannelVideoCardWidget> {
                 ),
                 SizedBox(width: 20.w),
                 CommentAction(
-                  icon: Icons.share_outlined,
-                  label: 'Share',
+                  icon: LucideIcons.tag,
+                  label: 'Tag',
                   onTap: () {},
                 ),
                 const Spacer(),
                 Text(
-                  widget.data.timeAgo,
+                  widget.data.isSponsored ? "Sponsored" : widget.data.timeAgo,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                    fontSize: 11.sp,
+                    fontSize: 12.sp,
+                    fontWeight: widget.data.isSponsored ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
               ],

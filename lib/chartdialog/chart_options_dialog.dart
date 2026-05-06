@@ -258,6 +258,15 @@ class _ChartOptionsDialogState extends State<ChartOptionsDialog> {
                     ),
                     _buildAction(
                       context,
+                      context.tr('report_post'),
+                      isDestructive: true,
+                      onTap: () {
+                        Navigator.pop(context);
+                        // TODO: Implement report post logic
+                      },
+                    ),
+                    _buildAction(
+                      context,
                       context.tr(
                         'report_user',
                         args: {'username': widget.username},
@@ -281,12 +290,13 @@ class _ChartOptionsDialogState extends State<ChartOptionsDialog> {
     BuildContext context,
     String title, {
     bool isDestructive = false,
+    VoidCallback? onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: InkWell(
-        onTap: () => Navigator.pop(context),
+        onTap: onTap ?? () => Navigator.pop(context),
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: double.infinity,
@@ -337,14 +347,3 @@ class _ChartOptionsDialogState extends State<ChartOptionsDialog> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-

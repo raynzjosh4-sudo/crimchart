@@ -23,16 +23,34 @@ class StoryListWidget extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: GestureDetector(
               onTap: () {
+                final String heroTag = 'story_hero_${story.username}_$index';
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => StatusPage(
+                  PageRouteBuilder(
+                    transitionDuration: const Duration(milliseconds: 600),
+                    reverseTransitionDuration: const Duration(milliseconds: 400),
+                    pageBuilder: (context, animation, secondaryAnimation) => StatusPage(
                       username: story.username,
                       userProfileImageUrl: story.userProfileImageUrl,
-                      statusImageUrl: story.userProfileImageUrl, // For dummy purposes, using profile as status
+                      statusImageUrl: story.userProfileImageUrl, 
                       isChartable: story.isChartable,
                       isPublic: story.isPublic,
+                      heroTag: heroTag,
                     ),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(
+                          scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            ),
+                          ),
+                          child: child,
+                        ),
+                      );
+                    },
                   ),
                 );
               },
@@ -40,12 +58,15 @@ class StoryListWidget extends StatelessWidget {
                 children: [
                   Stack(
                     children: [
-                      MemberImage(
-                        size: 90,
-                        imageUrl: story.userProfileImageUrl,
-                        showStatusRing: story.hasUnviewedStatus,
-                        showActiveDot: true,
-                        useHexagon: false,
+                      Hero(
+                        tag: 'story_hero_${story.username}_$index',
+                        child: MemberImage(
+                          size: 90,
+                          imageUrl: story.userProfileImageUrl,
+                          showStatusRing: story.hasUnviewedStatus,
+                          showActiveDot: true,
+                          useHexagon: false,
+                        ),
                       ),
                       if (index == 0) // "Your story" add button badge
                         Positioned(

@@ -24,6 +24,8 @@ class CharterModel {
   final String? folderName;
   final int isPending;
   final String localFileCache;
+  final String role; // e.g. 'admin', 'member', 'owner'
+  final bool isMe;
 
   const CharterModel({
     required this.id,
@@ -50,6 +52,8 @@ class CharterModel {
     this.folderName,
     this.isPending = 0,
     this.localFileCache = '',
+    this.role = '',
+    this.isMe = false,
   });
 
   CharterModel copyWith({
@@ -77,6 +81,8 @@ class CharterModel {
     String? folderName,
     int? isPending,
     String? localFileCache,
+    String? role,
+    bool? isMe,
   }) {
     return CharterModel(
       id: id ?? this.id,
@@ -103,6 +109,8 @@ class CharterModel {
       folderName: folderName ?? this.folderName,
       isPending: isPending ?? this.isPending,
       localFileCache: localFileCache ?? this.localFileCache,
+      role: role ?? this.role,
+      isMe: isMe ?? this.isMe,
     );
   }
 }

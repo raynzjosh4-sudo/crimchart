@@ -109,25 +109,21 @@ class CommentCard extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
           child: Row(
-            mainAxisAlignment: isMe
-                ? MainAxisAlignment.end
-                : MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 👑 Left Avatar (Other People)
-              if (!isMe) ...[
-                MemberImage(
-                  size: 32.w,
-                  borderWidth: 1.w,
-                  imageUrl:
-                      avatarUrl ??
-                      'https://picsum.photos/seed/user${memberName.hashCode}/100',
-                  showActiveDot: isOnline,
-                  showStatusRing: hasStatus,
-                  onTap: onTapAvatar,
-                ),
-                SizedBox(width: 8.w),
-              ],
+              // 👑 Left Avatar (Always on the Left)
+              MemberImage(
+                size: 32.w,
+                borderWidth: 1.w,
+                imageUrl:
+                    avatarUrl ??
+                    'https://picsum.photos/seed/user${memberName.hashCode}/100',
+                showActiveDot: isOnline,
+                showStatusRing: hasStatus,
+                onTap: onTapAvatar,
+              ),
+              SizedBox(width: 8.w),
 
               // ── THE MESSAGE BUBBLE ──
               Flexible(
@@ -277,20 +273,6 @@ class CommentCard extends StatelessWidget {
                 ),
               ),
 
-              // 👑 Right Avatar (Me)
-              if (isMe) ...[
-                SizedBox(width: 8.w),
-                MemberImage(
-                  size: 32.w,
-                  borderWidth: 1.w,
-                  imageUrl:
-                      avatarUrl ??
-                      'https://picsum.photos/seed/user${memberName.hashCode}/100',
-                  showActiveDot: isOnline,
-                  showStatusRing: hasStatus,
-                  onTap: onTapAvatar,
-                ),
-              ],
             ],
           ),
         ),

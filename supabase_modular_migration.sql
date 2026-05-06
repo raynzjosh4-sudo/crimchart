@@ -1,0 +1,150 @@
+-- ==============================================================================
+-- CROWN APP - SUPABASE MIGRATION SCRIPT
+-- ==============================================================================
+-- Run this script in your Supabase SQL Editor to create the new backend tables 
+-- required for the Modular Channel Architecture.
+-- ==============================================================================
+
+-- 1. Channel Metadata (Stats & Badges)
+CREATE TABLE public.channel_metadata (
+  channel_id uuid NOT NULL,
+  member_count integer DEFAULT 0,
+  unread_count integer DEFAULT 0,
+  posts_badge_count integer DEFAULT 0,
+  members_badge_count integer DEFAULT 0,
+  messages_badge_count integer DEFAULT 0,
+  is_charted boolean DEFAULT false,
+  is_pending boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  last_message_at timestamp with time zone,
+  CONSTRAINT channel_metadata_pkey PRIMARY KEY (channel_id),
+  CONSTRAINT channel_metadata_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.channels(id) ON DELETE CASCADE
+);
+
+-- 2. Channel Branding (Custom Aesthetics)
+CREATE TABLE public.channel_branding (
+  channel_id uuid NOT NULL,
+  theme_color text,
+  cover_image_url text,
+  leader_avatar_url text,
+  is_animated boolean DEFAULT false,
+  has_border boolean DEFAULT false,
+  CONSTRAINT channel_branding_pkey PRIMARY KEY (channel_id),
+  CONSTRAINT channel_branding_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.channels(id) ON DELETE CASCADE
+);
+
+-- 3. Channel Creator (Creator Contact Bar)
+CREATE TABLE public.channel_creator (
+  channel_id uuid NOT NULL,
+  creator_id uuid NOT NULL,
+  name text,
+  is_verified boolean DEFAULT false,
+  is_following boolean DEFAULT false,
+  role_title text,
+  CONSTRAINT channel_creator_pkey PRIMARY KEY (channel_id),
+  CONSTRAINT channel_creator_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.channels(id) ON DELETE CASCADE,
+  CONSTRAINT channel_creator_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+
+-- 4. Channel Presence (Typing & Online Status)
+CREATE TABLE public.channel_presence (
+  channel_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  is_typing boolean DEFAULT false,
+  is_online boolean DEFAULT false,
+  last_seen_at timestamp with time zone,
+  last_known_name text,
+  last_known_avatar text,
+  CONSTRAINT channel_presence_pkey PRIMARY KEY (channel_id, user_id),
+  CONSTRAINT channel_presence_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.channels(id) ON DELETE CASCADE,
+  CONSTRAINT channel_presence_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+
+-- 5. Channel Messages (Group Chat, Voice Notes)
+CREATE TABLE public.channel_messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  channel_id uuid NOT NULL,
+  sender_id uuid NOT NULL,
+  text_content text,
+  media_url text,
+  media_type text,
+  voice_note_url text,
+  reply_to_id uuid,
+  is_read boolean DEFAULT false,
+  is_pending boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT channel_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT channel_messages_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.channels(id) ON DELETE CASCADE,
+  CONSTRAINT channel_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+
+-- 6. Common Channels (Shared Memberships)
+CREATE TABLE public.common_channels (
+  user_id uuid NOT NULL,
+  other_user_id uuid NOT NULL,
+  channel_id uuid NOT NULL,
+  CONSTRAINT common_channels_pkey PRIMARY KEY (user_id, other_user_id, channel_id),
+  CONSTRAINT common_channels_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.channels(id) ON DELETE CASCADE,
+  CONSTRAINT common_channels_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
+  CONSTRAINT common_channels_other_user_id_fkey FOREIGN KEY (other_user_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+
+-- 7. Channel Posts (Feed Content)
+CREATE TABLE public.channel_posts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  channel_id uuid NOT NULL,
+  author_id uuid NOT NULL,
+  caption text,
+  image_urls jsonb DEFAULT '[]'::jsonb,
+  video_url text,
+  is_video boolean DEFAULT false,
+  is_sponsored boolean DEFAULT false,
+  aspect_ratio double precision,
+  likes_count integer DEFAULT 0,
+  comments_count integer DEFAULT 0,
+  shares_count integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  is_pending boolean DEFAULT false,
+  CONSTRAINT channel_posts_pkey PRIMARY KEY (id),
+  CONSTRAINT channel_posts_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.channels(id) ON DELETE CASCADE,
+  CONSTRAINT channel_posts_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+
+-- 8. Channel Post Tags (Feed Tags)
+CREATE TABLE public.channel_post_tags (
+  id integer GENERATED BY DEFAULT AS IDENTITY,
+  post_id uuid NOT NULL,
+  tag_name text NOT NULL,
+  tag_value text,
+  tag_color text,
+  CONSTRAINT channel_post_tags_pkey PRIMARY KEY (id),
+  CONSTRAINT channel_post_tags_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.channel_posts(id) ON DELETE CASCADE
+);
+
+-- 9. Channel Moments (Expiring Photos/Highlights)
+CREATE TABLE public.channel_moments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  channel_id uuid NOT NULL,
+  author_id uuid NOT NULL,
+  image_url text NOT NULL,
+  caption text,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  expires_at timestamp with time zone,
+  CONSTRAINT channel_moments_pkey PRIMARY KEY (id),
+  CONSTRAINT channel_moments_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.channels(id) ON DELETE CASCADE,
+  CONSTRAINT channel_moments_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.profiles(id) ON DELETE CASCADE
+);
+
+-- ==============================================================================
+-- Enable Row Level Security (RLS) for the new tables
+-- You can define explicit policies later, but this enables the baseline security.
+-- ==============================================================================
+ALTER TABLE public.channel_metadata ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.channel_branding ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.channel_creator ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.channel_presence ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.channel_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.common_channels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.channel_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.channel_post_tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.channel_moments ENABLE ROW LEVEL SECURITY;

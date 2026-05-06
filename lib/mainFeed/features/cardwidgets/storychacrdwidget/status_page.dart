@@ -2,21 +2,30 @@ import 'package:crown/chartdialog/chart_options_dialog.dart';
 import 'package:flutter/material.dart';
 import '../../../../features/widgets/memberimage/starter_image.dart';
 import '../../../../profile/pages/profile_page.dart';
+import '../../../../features/channel/domain/entities/channel_status_entity.dart';
+import '../../../../features/inforsheet/info_sheet.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../video/core/widgets/video_player_widget.dart';
+import 'package:crown/core/utils/responsive_size.dart';
 
 class StatusPage extends StatefulWidget {
-  final String username;
-  final String userProfileImageUrl;
-  final String statusImageUrl;
+  final ChannelStatusEntity? status;
+  final String? username;
+  final String? userProfileImageUrl;
+  final String? statusImageUrl;
   final bool isChartable;
   final bool isPublic;
+  final String? heroTag;
 
   const StatusPage({
     super.key,
-    required this.username,
-    required this.userProfileImageUrl,
-    required this.statusImageUrl,
+    this.status,
+    this.username,
+    this.userProfileImageUrl,
+    this.statusImageUrl,
     this.isChartable = true,
     this.isPublic = true,
+    this.heroTag,
   });
 
   @override
@@ -26,15 +35,49 @@ class StatusPage extends StatefulWidget {
 class _StatusPageState extends State<StatusPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 5))
-          ..forward().then((_) {
-            if (mounted) Navigator.pop(context);
-          });
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    );
+
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _nextMedia();
+      }
+    });
+
+    _controller.forward();
+  }
+
+  void _nextMedia() {
+    final imagesCount = widget.status?.imageUrls.length ?? 1;
+    if (_currentIndex < imagesCount - 1) {
+      setState(() {
+        _currentIndex++;
+        _controller.reset();
+        _controller.forward();
+      });
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  void _previousMedia() {
+    if (_currentIndex > 0) {
+      setState(() {
+        _currentIndex--;
+        _controller.reset();
+        _controller.forward();
+      });
+    } else {
+      _controller.reset();
+      _controller.forward();
+    }
   }
 
   @override
@@ -45,11 +88,17 @@ class _StatusPageState extends State<StatusPage>
 
   void _showChartOptions(BuildContext context) {
     _controller.stop();
+
+    final String displayImageUrl = (widget.status?.imageUrls.isNotEmpty == true)
+        ? widget.status!.imageUrls[_currentIndex]
+        : (widget.statusImageUrl ?? '');
+
     ChartOptionsDialog.show(
       context,
-      username: widget.username,
-      userProfileImageUrl: widget.userProfileImageUrl,
-      statusImageUrl: widget.statusImageUrl,
+      username: widget.status?.authorUsername ?? widget.username ?? 'Member',
+      userProfileImageUrl:
+          widget.status?.authorAvatarUrl ?? widget.userProfileImageUrl ?? '',
+      statusImageUrl: displayImageUrl,
       isChartable: widget.isChartable,
       themeColor: Theme.of(context).primaryColor,
       onChartTap: () {
@@ -116,15 +165,58 @@ class _StatusPageState extends State<StatusPage>
 
   @override
   Widget build(BuildContext context) {
+    final List<String> mediaList = widget.status != null
+        ? (widget.status!.imageUrls.isNotEmpty
+              ? widget.status!.imageUrls
+              : [widget.status!.authorAvatarUrl ?? ''])
+        : [widget.statusImageUrl ?? ''];
+
+    final String? currentImageUrl = mediaList.isNotEmpty
+        ? mediaList[_currentIndex]
+        : null;
+    final String displayUsername =
+        widget.status?.authorUsername ?? widget.username ?? 'Member';
+    final String displayProfileImage =
+        widget.status?.authorAvatarUrl ?? widget.userProfileImageUrl ?? '';
+    final bool isVideo = widget.status?.isVideo ?? false;
+    final String? videoUrl = widget.status?.videoUrl;
+    final String? caption = widget.status?.caption;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
-        onLongPress: () => _showChartOptions(context),
+        onLongPressStart: (_) => _controller.stop(),
+        onLongPressEnd: (_) => _controller.forward(),
+        onTapDown: (details) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          if (details.globalPosition.dx < screenWidth / 3) {
+            _previousMedia();
+          } else {
+            _nextMedia();
+          }
+        },
         child: Stack(
           children: [
-            // Background Image
+            // 👑 MEDIA CONTENT (Image or Video)
             Positioned.fill(
-              child: Image.network(widget.statusImageUrl, fit: BoxFit.cover),
+              child: isVideo && videoUrl != null
+                  ? VideoPlayerWidget(videoUrl: videoUrl)
+                  : Hero(
+                      tag: _currentIndex == 0 && widget.heroTag != null
+                          ? widget.heroTag!
+                          : 'none',
+                      child: currentImageUrl != null
+                          ? CachedNetworkImage(
+                              imageUrl: currentImageUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.white24,
+                                ),
+                              ),
+                            )
+                          : Container(color: Colors.black),
+                    ),
             ),
 
             // Top Gradient
@@ -156,18 +248,35 @@ class _StatusPageState extends State<StatusPage>
                 ),
                 child: Column(
                   children: [
-                    AnimatedBuilder(
-                      animation: _controller,
-                      builder: (context, child) {
-                        return LinearProgressIndicator(
-                          value: _controller.value,
-                          backgroundColor: Colors.white24,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                    // Segmented Progress Bar
+                    Row(
+                      children: List.generate(mediaList.length, (index) {
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: AnimatedBuilder(
+                              animation: _controller,
+                              builder: (context, child) {
+                                double value = 0;
+                                if (index < _currentIndex) {
+                                  value = 1.0;
+                                } else if (index == _currentIndex) {
+                                  value = _controller.value;
+                                }
+                                return LinearProgressIndicator(
+                                  value: value,
+                                  backgroundColor: Colors.white24,
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                  minHeight: 2,
+                                );
+                              },
+                            ),
                           ),
-                          minHeight: 2,
                         );
-                      },
+                      }),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -182,7 +291,7 @@ class _StatusPageState extends State<StatusPage>
                             );
                           },
                           size: 40,
-                          imageUrl: widget.userProfileImageUrl,
+                          imageUrl: displayProfileImage,
                           showStatusRing: false,
                           showActiveDot: false,
                         ),
@@ -193,22 +302,30 @@ class _StatusPageState extends State<StatusPage>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                widget.username,
+                                displayUsername,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
                               ),
-                              const Text(
-                                'Just now',
-                                style: TextStyle(
+                              Text(
+                                '${_currentIndex + 1} of ${mediaList.length}',
+                                style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.more_horiz,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          onPressed: () => _showChartOptions(context),
                         ),
                         IconButton(
                           icon: const Icon(
@@ -224,20 +341,49 @@ class _StatusPageState extends State<StatusPage>
                 ),
               ),
             ),
+
+            // 👑 CAPTION LAYER
+            if (caption?.isNotEmpty == true)
+              Positioned(
+                bottom: 60.h,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 24.w,
+                    vertical: 20.h,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.8),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Text(
+                    caption!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          offset: const Offset(0, 1),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-

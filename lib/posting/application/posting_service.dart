@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:sqflite/sqflite.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:path_provider/path_provider.dart';
@@ -39,51 +38,65 @@ class PostingService {
     String? linkedCaption,
     String? linkedChannelId,
     List<String>? linkedThumbnailUrls,
-    bool isPublicFeed = true, // 👑 
+    bool isPublicFeed = true, // 👑
     bool allowComments = true, // 👑
-    bool shareToStatus = false, // 👑
+    bool shareToStatus = false,
+    bool shareToMoment = false, // 👑 ADDED
+    double? aspectRatio,
   }) async {
     // Resolve basic fields
     final linkedItem = media.where((m) => m.linkedPostId != null).firstOrNull;
     final resolvedLinkedPostId = linkedPostId ?? linkedItem?.linkedPostId;
-    final resolvedLinkedAuthorUsername = linkedAuthorUsername ?? linkedItem?.linkedAuthorUsername;
+    final resolvedLinkedAuthorUsername =
+        linkedAuthorUsername ?? linkedItem?.linkedAuthorUsername;
     final resolvedLinkedCaption = linkedCaption ?? linkedItem?.linkedCaption;
-    final resolvedLinkedChannelId = linkedChannelId ?? linkedItem?.linkedChannelId;
-    final resolvedThumbnailUrls = linkedThumbnailUrls ?? (linkedItem?.thumbnailUrl != null ? [linkedItem!.thumbnailUrl!] : []);
-    
+    final resolvedLinkedChannelId =
+        linkedChannelId ?? linkedItem?.linkedChannelId;
+    final resolvedThumbnailUrls =
+        linkedThumbnailUrls ??
+        (linkedItem?.thumbnailUrl != null ? [linkedItem!.thumbnailUrl!] : []);
+
     final existingChain = linkedItem?.linkChain ?? const [];
     final existingDepth = linkedItem?.linkDepth ?? 0;
-    
+
     // 👑 TABLE-BASED FOLDER ROUTING
     // Logic: Decide which R2 folder this media belongs to based on the primary destination table.
     String resolvedFolderName = 'posts'; // Global Feed
-    
-    final resolvedChannelId = channelId ?? (channels.isNotEmpty ? channels.first : 'general');
-    final resolvedChannelName = channelName ?? (channels.isNotEmpty ? channels.first : 'General');
-    
-    // 👑 ROUTING LOGIC: 
+
+    final resolvedChannelId =
+        channelId ?? (channels.isNotEmpty ? channels.first : 'general');
+    final resolvedChannelName =
+        channelName ?? (channels.isNotEmpty ? channels.first : 'General');
+
+    // 👑 ROUTING LOGIC:
     // Determine folder and type based on channel context
-    final isChannelContent = resolvedChannelId != 'general' && resolvedChannelId.isNotEmpty;
+    final isChannelContent =
+        resolvedChannelId != 'general' && resolvedChannelId.isNotEmpty;
     final isCommentOrReply = postType == 'comment' || postType == 'reply';
     final isManifesto = isChannelContent && !isCommentOrReply;
-    
-    if (isManifesto) {
+
+    if (postType == 'moment') {
+      resolvedFolderName = 'moments';
+    } else if (isManifesto) {
       resolvedFolderName = 'channel_posts';
     } else if (!isPublicFeed && shareToStatus) {
       resolvedFolderName = 'statuses';
     }
-    
+
     final folderName = resolvedFolderName;
 
     final newPostId = const Uuid().v4();
-    final finalChain = [...existingChain, if (resolvedLinkedPostId != null) resolvedLinkedPostId];
-    
+    final finalChain = [
+      ...existingChain,
+      if (resolvedLinkedPostId != null) resolvedLinkedPostId,
+    ];
+
     final isVideo = media.isNotEmpty && media.first.type == MediaType.video;
     final isAudio = media.isNotEmpty && media.last.type == MediaType.audio;
 
     // Scan for instant URLs
     List<String> instantImages = [];
-    List<String> instantThumbnails = resolvedThumbnailUrls; 
+    List<String> instantThumbnails = resolvedThumbnailUrls;
     List<String> instantVideos = []; // 👑 PLURAL VIDEOS
     String? instantAudio;
 
@@ -102,19 +115,19 @@ class PostingService {
         instantImages.add(item.path);
       } else if (item.type == MediaType.video) {
         instantVideos.add(item.path); // 👑 COLLECT ALL
-        
-        // 👑 C++ THUMBNAIL EXTRACTION: 
+
+        // 👑 C++ THUMBNAIL EXTRACTION:
         // If we don't have a thumbnail yet, run the engine to get a real .jpg frame!
         if (instantThumbnails.isEmpty) {
           final thumbPath = '${appDir.path}/t_opt_${newPostId}.jpg';
           debugPrint('🎬 [C++] Extracting optimistic thumbnail: $thumbPath');
           final success = await ChartNativeFFI().extractThumbnail(
-            inputPath: item.path, 
+            inputPath: item.path,
             outputPath: thumbPath,
             timeSec: 1.0, // Grab frame at 1 second mark
-            thumbWidth: 480, 
+            thumbWidth: 480,
           );
-          
+
           if (success && File(thumbPath).existsSync()) {
             instantThumbnails.add(thumbPath);
           } else {
@@ -139,13 +152,15 @@ class PostingService {
       caption: caption,
       imageUrls: instantImages,
       thumbnailUrls: instantThumbnails,
-      videoUrl: instantVideos.isNotEmpty ? instantVideos.first : null, // 👑 Fallback
+      videoUrl: instantVideos.isNotEmpty
+          ? instantVideos.first
+          : null, // 👑 Fallback
       videoUrls: instantVideos, // 👑 MULTI-VIDEO SUPPORT
       audioUrl: instantAudio,
       isVideo: isVideo,
       isAudio: isAudio,
       folderName: folderName,
-      aspectRatio: media.isNotEmpty ? (media.first.aspectRatio ?? 1.0) : 1.0,
+      aspectRatio: aspectRatio ?? (media.isNotEmpty ? (media.first.aspectRatio ?? 1.0) : 1.0),
       linkedPostId: resolvedLinkedPostId,
       linkedAuthorUsername: resolvedLinkedAuthorUsername,
       linkedCaption: resolvedLinkedCaption,
@@ -163,57 +178,83 @@ class PostingService {
     String targetTable;
     Map<String, dynamic> localDbMap;
 
-    if (isManifesto) {
-      targetTable = 'manifestos';
+    if (postType == 'moment') {
+      targetTable = 'channel_moments';
       localDbMap = {
         'id': newPostId,
-        'author_id': user.id,
-        'username': user.username,
-        'profile_image_url': user.profileImageUrl,
-        'channel_id': resolvedChannelId,
+        'channelId': resolvedChannelId,
+        'authorId': user.id,
+        'mediaUrl': instantVideos.isNotEmpty
+            ? instantVideos.first
+            : (instantImages.isNotEmpty ? instantImages.first : ''),
+        'mediaType': instantVideos.isNotEmpty ? 'video' : 'photo',
+        'thumbnailUrl':
+            instantThumbnails.isNotEmpty ? instantThumbnails.first : null,
         'caption': caption,
-        'video_url': instantVideos.isNotEmpty ? instantVideos.first : null,
-        'video_urls': jsonEncode(instantVideos),
-        'image_urls': instantImages,
-        'thumbnail_urls': instantThumbnails,
-        'likes': 0,
-        'comments': 0,
-        'is_public': isPublicFeed ? 1 : 0,
-        'allow_comments': allowComments ? 1 : 0,
+        'createdAt': DateTime.now().toIso8601String(),
         'isPending': 1,
       };
-    } else if (isChannelContent && isCommentOrReply) {
-      targetTable = 'manifesto_comments';
+    } else if (isManifesto) {
+      targetTable = 'channel_posts';
       localDbMap = {
         'id': newPostId,
-        'author_id': user.id,
-        'channel_id': resolvedChannelId,
-        'manifesto_id': resolvedLinkedPostId,
+        'authorId': user.id,
+        'username': user.username,
+        'profileImageUrl': user.profileImageUrl,
+        'channelId': resolvedChannelId,
+        'caption': caption,
+        'videoUrl': instantVideos.isNotEmpty ? instantVideos.first : null,
+        'videoUrls': jsonEncode(instantVideos),
+        'imageUrls': instantImages,
+        'thumbnailUrls': instantThumbnails,
+        'isVideo': instantVideos.isNotEmpty ? 1 : 0,
+        'shares': 0,
+        'likes': 0,
+        'comments': 0,
+        'isPublic': isPublicFeed ? 1 : 0,
+        'allowComments': allowComments ? 1 : 0,
+        'isSponsored': 0,
+        'aspectRatio': aspectRatio ?? (media.isNotEmpty ? (media.first.aspectRatio ?? 1.0) : 1.0),
+        'isPending': 1,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+    } else if (isChannelContent && isCommentOrReply) {
+      targetTable = 'channel_post_comments';
+      localDbMap = {
+        'id': newPostId,
+        'authorId': user.id,
+        'username': user.username,
+        'profileImageUrl': user.profileImageUrl,
+        'channelId': resolvedChannelId,
+        'postId': resolvedLinkedPostId,
         'message': caption,
-        'image_urls': instantImages,
+        'imageUrls': instantImages,
         'likes': 0,
         'isPending': 1,
+        'createdAt': DateTime.now().toIso8601String(),
       };
     } else {
       targetTable = 'posts';
       localDbMap = {
         'id': newPostId,
-        'author_id': user.id,
+        'authorId': user.id,
         'username': user.username,
         'userProfileImageUrl': user.profileImageUrl ?? '',
         'channelName': resolvedChannelName,
         'channelId': resolvedChannelId,
         'caption': caption,
         'videoUrl': instantVideos.isNotEmpty ? instantVideos.first : '',
-        'video_urls': jsonEncode(instantVideos),
+        'videoUrls': jsonEncode(instantVideos),
         'sdVideoUrl': '',
         'audioUrl': instantAudio ?? '',
         'imageUrls': instantImages,
         'thumbnailUrls': instantThumbnails,
         'isVideo': isVideo ? 1 : 0,
         'isAudio': isAudio ? 1 : 0,
-        'folder_name': folderName,
-        'aspectRatio': media.isNotEmpty ? (media.first.aspectRatio ?? 1.0) : 1.0,
+        'folderName': folderName,
+        'aspectRatio': media.isNotEmpty
+            ? (media.first.aspectRatio ?? 1.0)
+            : 1.0,
         'likes': 0,
         'comments': 0,
         'shares': 0,
@@ -221,16 +262,17 @@ class PostingService {
         'chartedCount': 0,
         'localFileCache': media.isNotEmpty ? media.first.path : '',
         'isPending': 1,
-        'linked_post_id': resolvedLinkedPostId,
-        'linked_author_username': resolvedLinkedAuthorUsername,
-        'linked_caption': resolvedLinkedCaption,
-        'linked_channel_id': resolvedLinkedChannelId,
-        'post_type': postType,
-        'parent_post_id': parentPostId,
-        'link_chain': finalChain,
-        'link_depth': existingDepth + (resolvedLinkedPostId != null ? 1 : 0),
-        'is_public': isPublicFeed ? 1 : 0,
-        'allow_comments': allowComments ? 1 : 0,
+        'linkedPostId': resolvedLinkedPostId,
+        'linkedAuthorUsername': resolvedLinkedAuthorUsername,
+        'linkedCaption': resolvedLinkedCaption,
+        'linkedChannelId': resolvedLinkedChannelId,
+        'postType': postType,
+        'parentPostId': parentPostId,
+        'linkChain': finalChain,
+        'linkDepth': existingDepth + (resolvedLinkedPostId != null ? 1 : 0),
+        'isPublic': isPublicFeed ? 1 : 0,
+        'allowComments': allowComments ? 1 : 0,
+        'createdAt': DateTime.now().toIso8601String(),
       };
     }
 
@@ -268,61 +310,125 @@ class PostingService {
         if (item.type == MediaType.audio) {
           isAudio = true;
           // Compression
-          final compressedPath = '${appDir.path}/v_${DateTime.now().millisecondsSinceEpoch}.m4a';
-          final success = await ChartNativeFFI().compressAudio(inputPath: item.path, outputPath: compressedPath);
+          final compressedPath =
+              '${appDir.path}/v_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          final success = await ChartNativeFFI().compressAudio(
+            inputPath: item.path,
+            outputPath: compressedPath,
+          );
           final fileExists = File(compressedPath).existsSync();
           final fileSize = fileExists ? File(compressedPath).lengthSync() : 0;
-          if (fileSize <= 1024) print('❌ CRITICAL: Audio Compression produced empty/invalid file. Reverting to original file!');
-          final finalPath = (success && fileExists && fileSize > 1024) ? compressedPath : item.path;
+          if (fileSize <= 1024)
+            print(
+              '❌ CRITICAL: Audio Compression produced empty/invalid file. Reverting to original file!',
+            );
+          final finalPath = (success && fileExists && fileSize > 1024)
+              ? compressedPath
+              : item.path;
           // Upload
-          final url = await _cloudService.uploadMedia(File(finalPath), userId: userId, folderName: folderName, onProgress: onProgress);
+          final url = await _cloudService.uploadMedia(
+            File(finalPath),
+            userId: userId,
+            folderName: folderName,
+            onProgress: onProgress,
+          );
           audioUrl ??= url;
           continue;
         }
 
         if (item.type == MediaType.video) {
           isVideo = true;
-          
-          final originalDb = (File(item.path).lengthSync() / (1024 * 1024)).toStringAsFixed(2);
-          print('🎬 [UploadMedia] Original video size: $originalDb MB ($item.path)');
-          
-          final hdOut = '${appDir.path}/hd_${DateTime.now().millisecondsSinceEpoch}.mp4';
-          final sdOut = '${appDir.path}/sd_${DateTime.now().millisecondsSinceEpoch}.mp4';
-          
+
+          final originalDb = (File(item.path).lengthSync() / (1024 * 1024))
+              .toStringAsFixed(2);
+          print(
+            '🎬 [UploadMedia] Original video size: $originalDb MB ($item.path)',
+          );
+
+          final hdOut =
+              '${appDir.path}/hd_${DateTime.now().millisecondsSinceEpoch}.mp4';
+          final sdOut =
+              '${appDir.path}/sd_${DateTime.now().millisecondsSinceEpoch}.mp4';
+
           print('⏳ [UploadMedia] Starting compression for HD output...');
-          await ChartNativeFFI().compressVideo(inputPath: item.path, outputPath: hdOut);
-          
-          print('⏳ [UploadMedia] Starting compression for SD (Data Saver) output...');
-          await ChartNativeFFI().compressVideo(inputPath: item.path, outputPath: sdOut, isDataSaver: true);
+          await ChartNativeFFI().compressVideo(
+            inputPath: item.path,
+            outputPath: hdOut,
+          );
+
+          print(
+            '⏳ [UploadMedia] Starting compression for SD (Data Saver) output...',
+          );
+          await ChartNativeFFI().compressVideo(
+            inputPath: item.path,
+            outputPath: sdOut,
+            isDataSaver: true,
+          );
 
           final originalFileStr = File(item.path).lengthSync();
-          final sdFileStr = File(sdOut).existsSync() ? File(sdOut).lengthSync() : originalFileStr + 1;
-          final hdFileStr = File(hdOut).existsSync() ? File(hdOut).lengthSync() : originalFileStr + 1;
+          final sdFileStr = File(sdOut).existsSync()
+              ? File(sdOut).lengthSync()
+              : originalFileStr + 1;
+          final hdFileStr = File(hdOut).existsSync()
+              ? File(hdOut).lengthSync()
+              : originalFileStr + 1;
 
           final int thresholdBytes = 10 * 1024; // 10 KB minimum
 
-          if (sdFileStr <= thresholdBytes) print('❌ CRITICAL: SD Compression produced empty/invalid file. Reverting to original!');
-          if (hdFileStr <= thresholdBytes) print('❌ CRITICAL: HD Compression produced empty/invalid file. Reverting to original!');
+          if (sdFileStr <= thresholdBytes)
+            print(
+              '❌ CRITICAL: SD Compression produced empty/invalid file. Reverting to original!',
+            );
+          if (hdFileStr <= thresholdBytes)
+            print(
+              '❌ CRITICAL: HD Compression produced empty/invalid file. Reverting to original!',
+            );
 
           // 👑 SMART GUARDRAIL: If compression bloated the file, or produced empty shell, use original!
-          final finalSd = (sdFileStr > thresholdBytes && sdFileStr <= originalFileStr) ? sdOut : item.path;
-          final finalHd = (hdFileStr > thresholdBytes && hdFileStr <= originalFileStr) ? hdOut : item.path;
+          final finalSd =
+              (sdFileStr > thresholdBytes && sdFileStr <= originalFileStr)
+              ? sdOut
+              : item.path;
+          final finalHd =
+              (hdFileStr > thresholdBytes && hdFileStr <= originalFileStr)
+              ? hdOut
+              : item.path;
 
-          final sdMb = (File(finalSd).lengthSync() / (1024 * 1024)).toStringAsFixed(2);
-          final hdMb = (File(finalHd).lengthSync() / (1024 * 1024)).toStringAsFixed(2);
-          
+          final sdMb = (File(finalSd).lengthSync() / (1024 * 1024))
+              .toStringAsFixed(2);
+          final hdMb = (File(finalHd).lengthSync() / (1024 * 1024))
+              .toStringAsFixed(2);
+
           print('✅ [UploadMedia] Compression fallback check complete.');
-          if (finalHd == item.path) print('⚠️ HD Fallback: Using original file because compression failed/bloated it ($hdMb MB)');
-          else print('📉 HD Compressed Size: $hdMb MB');
-          
-          if (finalSd == item.path) print('⚠️ SD Fallback: Using original file because compression failed/bloated it ($sdMb MB)');
-          else print('📉 SD Compressed Size: $sdMb MB');
+          if (finalHd == item.path)
+            print(
+              '⚠️ HD Fallback: Using original file because compression failed/bloated it ($hdMb MB)',
+            );
+          else
+            print('📉 HD Compressed Size: $hdMb MB');
+
+          if (finalSd == item.path)
+            print(
+              '⚠️ SD Fallback: Using original file because compression failed/bloated it ($sdMb MB)',
+            );
+          else
+            print('📉 SD Compressed Size: $sdMb MB');
 
           print('☁️ [UploadMedia] Uploading SD version...');
-          final resSd = await _cloudService.uploadMedia(File(finalSd), userId: userId, folderName: folderName, onProgress: onProgress);
+          final resSd = await _cloudService.uploadMedia(
+            File(finalSd),
+            userId: userId,
+            folderName: folderName,
+            onProgress: onProgress,
+          );
           print('☁️ [UploadMedia] Uploading HD version...');
-          final resHd = await _cloudService.uploadMedia(File(finalHd), userId: userId, folderName: folderName, onProgress: onProgress);
-          
+          final resHd = await _cloudService.uploadMedia(
+            File(finalHd),
+            userId: userId,
+            folderName: folderName,
+            onProgress: onProgress,
+          );
+
           if (resSd != null) sdVideoUrls.add(resSd);
           if (resHd != null) hdVideoUrls.add(resHd);
           continue;
@@ -333,37 +439,61 @@ class PostingService {
             uploadedImageUrls.add(item.path);
             continue;
           }
-          
+
           final finalPath;
           if (item.path.contains('baked_')) {
             finalPath = item.path;
           } else {
-            final crushedPath = '${appDir.path}/c_img_${DateTime.now().millisecondsSinceEpoch}.jpg';
-            final success = await ChartNativeFFI().compressPhoto(inputPath: item.path, outputPath: crushedPath, width: 720);
+            final crushedPath =
+                '${appDir.path}/c_img_${DateTime.now().millisecondsSinceEpoch}.jpg';
+            final success = await ChartNativeFFI().compressPhoto(
+              inputPath: item.path,
+              outputPath: crushedPath,
+              width: 720,
+            );
             final fileExists = File(crushedPath).existsSync();
             final fileSize = fileExists ? File(crushedPath).lengthSync() : 0;
-            if (fileSize <= 100) print('❌ CRITICAL: Photo Compression produced empty/invalid file. Reverting to original file!');
-            finalPath = (success && fileExists && fileSize > 100) ? crushedPath : item.path;
+            if (fileSize <= 100)
+              print(
+                '❌ CRITICAL: Photo Compression produced empty/invalid file. Reverting to original file!',
+              );
+            finalPath = (success && fileExists && fileSize > 100)
+                ? crushedPath
+                : item.path;
           }
-          
-          final url = await _cloudService.uploadMedia(File(finalPath), userId: userId, folderName: folderName, onProgress: onProgress);
+
+          final url = await _cloudService.uploadMedia(
+            File(finalPath),
+            userId: userId,
+            folderName: folderName,
+            onProgress: onProgress,
+          );
           if (url != null) uploadedImageUrls.add(url);
         }
       }
     } else {
       // Repost mapping
       for (var item in media) {
-        if (item.type == MediaType.photo) uploadedImageUrls.add(item.path);
-        else if (item.type == MediaType.video) { hdVideoUrls.add(item.path); isVideo = true; }
-        else if (item.type == MediaType.audio) { audioUrl = item.path; isAudio = true; }
+        if (item.type == MediaType.photo)
+          uploadedImageUrls.add(item.path);
+        else if (item.type == MediaType.video) {
+          hdVideoUrls.add(item.path);
+          isVideo = true;
+        } else if (item.type == MediaType.audio) {
+          audioUrl = item.path;
+          isAudio = true;
+        }
       }
     }
 
     // 👑 FIX: ACTUALLY UPLOAD THE THUMBNAILS TO CLOUDFLARE!
     List<String> uploadedThumbnails = [];
-    final rawThumbnails = existingThumbnails.isNotEmpty 
-        ? existingThumbnails 
-        : media.where((m) => m.thumbnailUrl != null).map((m) => m.thumbnailUrl!).toList();
+    final rawThumbnails = existingThumbnails.isNotEmpty
+        ? existingThumbnails
+        : media
+              .where((m) => m.thumbnailUrl != null)
+              .map((m) => m.thumbnailUrl!)
+              .toList();
 
     for (String thumbPath in rawThumbnails) {
       if (thumbPath.startsWith('http')) {
@@ -371,12 +501,21 @@ class PostingService {
       } else {
         // 👑 GUARDRAIL: Only upload actual image files as thumbnails!
         final lowerPath = thumbPath.toLowerCase();
-        if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg') || lowerPath.endsWith('.png')) {
+        if (lowerPath.endsWith('.jpg') ||
+            lowerPath.endsWith('.jpeg') ||
+            lowerPath.endsWith('.png')) {
           debugPrint('☁️ [Cloudflare] Uploading thumbnail: $thumbPath');
-          final thumbUrl = await _cloudService.uploadMedia(File(thumbPath), userId: userId, folderName: folderName, onProgress: onProgress);
+          final thumbUrl = await _cloudService.uploadMedia(
+            File(thumbPath),
+            userId: userId,
+            folderName: folderName,
+            onProgress: onProgress,
+          );
           if (thumbUrl != null) uploadedThumbnails.add(thumbUrl);
         } else {
-          debugPrint('⚠️ [Cloudflare] Skipping invalid thumbnail path: $thumbPath');
+          debugPrint(
+            '⚠️ [Cloudflare] Skipping invalid thumbnail path: $thumbPath',
+          );
         }
       }
     }
@@ -386,7 +525,7 @@ class PostingService {
       hdVideoUrls: hdVideoUrls,
       sdVideoUrls: sdVideoUrls,
       audioUrl: audioUrl,
-      thumbnails: uploadedThumbnails, 
+      thumbnails: uploadedThumbnails,
       isVideo: isVideo,
       isAudio: isAudio,
     );
@@ -399,16 +538,21 @@ class PostingService {
     required PostUploadResult uploadResults,
     required String privacy,
     required String customRole,
-    bool isPublicFeed = true, 
+    bool isPublicFeed = true,
     bool allowComments = true,
     bool shareToStatus = false,
+    bool shareToMoment = false, // 👑 ADDED
   }) async {
     // Merge base data with upload results
     final finalPost = basePost.copyWith(
       imageUrls: uploadResults.imageUrls,
-      videoUrl: uploadResults.hdVideoUrls.isNotEmpty ? uploadResults.hdVideoUrls.first : null,
+      videoUrl: uploadResults.hdVideoUrls.isNotEmpty
+          ? uploadResults.hdVideoUrls.first
+          : null,
       videoUrls: uploadResults.hdVideoUrls,
-      sdVideoUrl: uploadResults.sdVideoUrls.isNotEmpty ? uploadResults.sdVideoUrls.first : null,
+      sdVideoUrl: uploadResults.sdVideoUrls.isNotEmpty
+          ? uploadResults.sdVideoUrls.first
+          : null,
       audioUrl: uploadResults.audioUrl,
       thumbnailUrls: uploadResults.thumbnails,
       isVideo: uploadResults.isVideo,
@@ -423,6 +567,7 @@ class PostingService {
       isPublicFeed: isPublicFeed,
       allowComments: allowComments,
       shareToStatus: shareToStatus,
+      shareToMoment: shareToMoment, // 👑
     );
 
     await result.fold(
@@ -434,75 +579,168 @@ class PostingService {
         debugPrint('✅ [PostingService] Supabase insert SUCCESS');
         // Update local DB
         await ChartNativeDB.instance.markPostSynced(basePost.id);
-        final db = await ChartNativeDB.instance.database;
 
         // 👑 STRICT SQLITE ROUTING: Mutually Exclusive Tables
-        final bool isChannelContent = basePost.channelId.isNotEmpty && basePost.channelId != 'general';
+        final bool isChannelContent =
+            basePost.channelId.isNotEmpty && basePost.channelId != 'general';
 
-        if (isChannelContent) {
+        if (basePost.postType == 'moment') {
+          // 🛣️ ROUTE: MOMENTS ONLY
+          await ChartNativeDB.instance.upsertChannelMoment({
+            'id': basePost.id,
+            'channelId': basePost.channelId,
+            'authorId': basePost.authorId,
+            'mediaUrl': uploadResults.hdVideoUrls.isNotEmpty
+                ? uploadResults.hdVideoUrls.first
+                : (uploadResults.imageUrls.isNotEmpty
+                    ? uploadResults.imageUrls.first
+                    : basePost.imageUrls.first),
+            'mediaType': basePost.isVideo ? 'video' : 'photo',
+            'thumbnailUrl': uploadResults.thumbnails.isNotEmpty
+                ? uploadResults.thumbnails.first
+                : null,
+            'caption': basePost.caption,
+            'createdAt': basePost.createdAt.toIso8601String(),
+            'isPending': 0,
+          });
+        } else if (basePost.postType == 'status') {
+          // 🛣️ ROUTE: STATUSES ONLY
+          await ChartNativeDB.instance.upsertChannelStatus({
+            'id': basePost.id,
+            'channelId': basePost.channelId,
+            'authorId': basePost.authorId,
+            'caption': basePost.caption,
+            'imageUrls': jsonEncode(
+              uploadResults.imageUrls.isNotEmpty
+                  ? uploadResults.imageUrls
+                  : basePost.imageUrls,
+            ),
+            'videoUrl': uploadResults.hdVideoUrls.isNotEmpty
+                ? uploadResults.hdVideoUrls.first
+                : basePost.videoUrl,
+            'audioUrl': uploadResults.audioUrl,
+            'isVideo': basePost.isVideo ? 1 : 0,
+            'isAudio': basePost.isAudio ? 1 : 0,
+            'createdAt': basePost.createdAt.toIso8601String(),
+            'expiresAt': basePost.createdAt
+                .add(const Duration(hours: 24))
+                .toIso8601String(),
+          });
+        } else if (isChannelContent) {
           // 🛣️ ROUTE A: CHANNEL
-          final isCommentOrReply = basePost.postType == 'comment' || basePost.postType == 'reply';
-          
+          final isCommentOrReply =
+              basePost.postType == 'comment' || basePost.postType == 'reply';
+
           if (!isCommentOrReply) {
             // 👑 SYNC: If the row exists, we want to PRESERVE the current local comment count!
-            final existing = await db.query('manifestos', where: 'id = ?', whereArgs: [basePost.id]);
-            final int currentComments = existing.isNotEmpty ? (existing.first['comments'] as int? ?? 0) : 0;
+            final existing = await ChartNativeDB.instance.getChannelPost(
+              basePost.id,
+            );
+            final int currentComments =
+                existing != null ? (existing['comments'] as int? ?? 0) : 0;
 
-            await db.insert('manifestos', {
+            await ChartNativeDB.instance.upsertChannelPost({
               'id': basePost.id,
-              'author_id': basePost.authorId,
+              'authorId': basePost.authorId,
               'username': basePost.authorUsername,
-              'profile_image_url': basePost.authorAvatarUrl,
-              'channel_id': basePost.channelId,
+              'profileImageUrl': basePost.authorAvatarUrl,
+              'channelId': basePost.channelId,
               'caption': basePost.caption,
-              'video_url': uploadResults.hdVideoUrls.isNotEmpty ? uploadResults.hdVideoUrls.first : basePost.videoUrl,
-              'video_urls': jsonEncode(uploadResults.hdVideoUrls.isNotEmpty ? uploadResults.hdVideoUrls : basePost.videoUrls),
-              'image_urls': jsonEncode(uploadResults.imageUrls.isNotEmpty ? uploadResults.imageUrls : basePost.imageUrls),
-              'thumbnail_urls': jsonEncode(uploadResults.thumbnails.isNotEmpty ? uploadResults.thumbnails : basePost.thumbnailUrls),
+              'videoUrl': uploadResults.hdVideoUrls.isNotEmpty
+                  ? uploadResults.hdVideoUrls.first
+                  : basePost.videoUrl,
+              'videoUrls': jsonEncode(
+                uploadResults.hdVideoUrls.isNotEmpty
+                    ? uploadResults.hdVideoUrls
+                    : basePost.videoUrls,
+              ),
+              'imageUrls': jsonEncode(
+                uploadResults.imageUrls.isNotEmpty
+                    ? uploadResults.imageUrls
+                    : basePost.imageUrls,
+              ),
+              'thumbnailUrls': jsonEncode(
+                uploadResults.thumbnails.isNotEmpty
+                    ? uploadResults.thumbnails
+                    : basePost.thumbnailUrls,
+              ),
+              'isVideo': basePost.isVideo ? 1 : 0,
+              'shares': 0,
+              'isSponsored': 0,
               'likes': 0,
               'comments': currentComments, // 🚀 PRESERVED
-              'is_public': isPublicFeed ? 1 : 0, 
-              'allow_comments': allowComments ? 1 : 0, 
+              'isPublic': isPublicFeed ? 1 : 0,
+              'allowComments': allowComments ? 1 : 0,
+              'aspect_ratio': basePost.aspectRatio ?? 1.0,
               'isPending': 0,
-            }, conflictAlgorithm: ConflictAlgorithm.replace);
+              'createdAt': basePost.createdAt.toIso8601String(),
+            });
           } else {
-            await db.insert('manifesto_comments', {
+            await ChartNativeDB.instance.upsertChannelPostComment({
               'id': basePost.id,
-              'author_id': basePost.authorId,
-              'channel_id': basePost.channelId,
-              'manifesto_id': basePost.linkedPostId, 
+              'postId': basePost.linkedPostId,
+              'channelId': basePost.channelId,
+              'authorId': basePost.authorId,
+              'username': basePost.authorUsername,
+              'profileImageUrl': basePost.authorAvatarUrl,
               'message': basePost.caption,
-              'image_urls': jsonEncode(uploadResults.imageUrls.isNotEmpty ? uploadResults.imageUrls : basePost.imageUrls),
+              'imageUrls': jsonEncode(
+                uploadResults.imageUrls.isNotEmpty
+                    ? uploadResults.imageUrls
+                    : basePost.imageUrls,
+              ),
               'likes': 0,
               'isPending': 0,
-            }, conflictAlgorithm: ConflictAlgorithm.replace);
-            
-            // 👑 CONFIRMATION: Ensure count is accurate
-            await ChartNativeDB.instance.incrementManifestoCommentCount(basePost.linkedPostId!);
+              'createdAt': basePost.createdAt.toIso8601String(),
+            });
+
+            await ChartNativeDB.instance.incrementChannelPostCommentCount(
+              basePost.linkedPostId!,
+            );
           }
         } else {
-          // 🛣️ ROUTE B: GENERAL POSTS (Only if not a channel)
-          await db.insert('posts', {
+          // 🛣️ ROUTE B: GENERAL POSTS
+          await ChartNativeDB.instance.upsertPost({
             'id': basePost.id,
-            'author_id': basePost.authorId,
+            'authorId': basePost.authorId,
             'username': basePost.authorUsername,
             'userProfileImageUrl': basePost.authorAvatarUrl,
+            'channelName': basePost.channelName,
+            'channelId': basePost.channelId,
             'caption': basePost.caption,
-            'videoUrl': uploadResults.hdVideoUrls.isNotEmpty ? uploadResults.hdVideoUrls.first : '',
-            'video_urls': jsonEncode(uploadResults.hdVideoUrls),
-            'sdVideoUrl': uploadResults.sdVideoUrls.isNotEmpty ? uploadResults.sdVideoUrls.first : '',
+            'videoUrl': uploadResults.hdVideoUrls.isNotEmpty
+                ? uploadResults.hdVideoUrls.first
+                : '',
+            'videoUrls': jsonEncode(uploadResults.hdVideoUrls),
+            'sdVideoUrl': uploadResults.sdVideoUrls.isNotEmpty
+                ? uploadResults.sdVideoUrls.first
+                : '',
             'audioUrl': uploadResults.audioUrl ?? '',
             'imageUrls': jsonEncode(uploadResults.imageUrls),
             'thumbnailUrls': jsonEncode(uploadResults.thumbnails),
             'isVideo': uploadResults.isVideo ? 1 : 0,
             'isAudio': uploadResults.isAudio ? 1 : 0,
-            'folder_name': basePost.folderName ?? 'public_posts',
+            'folderName': basePost.folderName ?? 'public_posts',
+            'aspectRatio': basePost.aspectRatio ?? 1.0,
             'likes': 0,
             'comments': 0,
-            'isPending': 0, // Cleared pending status
-            'is_public': isPublicFeed ? 1 : 0,
-            'allow_comments': allowComments ? 1 : 0,
-          }, conflictAlgorithm: ConflictAlgorithm.replace);
+            'shares': 0,
+            'isLiked': 0,
+            'chartedCount': 0,
+            'localFileCache': '',
+            'isPending': 0,
+            'linkedPostId': basePost.linkedPostId,
+            'linkedAuthorUsername': basePost.linkedAuthorUsername,
+            'linkedCaption': basePost.linkedCaption,
+            'linkedChannelId': basePost.linkedChannelId,
+            'postType': basePost.postType,
+            'parentPostId': basePost.parentPostId,
+            'linkChain': basePost.linkChain,
+            'linkDepth': basePost.linkDepth,
+            'isPublic': isPublicFeed ? 1 : 0,
+            'allowComments': allowComments ? 1 : 0,
+            'createdAt': basePost.createdAt.toIso8601String(),
+          });
         }
       },
     );
@@ -514,10 +752,10 @@ class PostShapedData {
   final Map<String, dynamic> localDbMap;
   final String folderName;
   final String targetTable; // 👑 NEW TARGET FIELD
-  
+
   PostShapedData({
-    required this.entity, 
-    required this.localDbMap, 
+    required this.entity,
+    required this.localDbMap,
     required this.folderName,
     required this.targetTable,
   });

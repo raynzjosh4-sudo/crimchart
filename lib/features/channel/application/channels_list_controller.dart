@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/di/injection.dart';
 import '../domain/entities/channel_entity.dart';
@@ -12,27 +11,35 @@ class ChannelsListState {
   final ChannelsListStatus status;
   final List<ChannelEntity> channels;
   final String? error;
+  final int currentPage;
+  final bool hasReachedMax;
 
   const ChannelsListState({
     required this.status,
     this.channels = const [],
     this.error,
+    this.currentPage = 0,
+    this.hasReachedMax = false,
   });
 
   ChannelsListState copyWith({
     ChannelsListStatus? status,
     List<ChannelEntity>? channels,
     String? error,
+    int? currentPage,
+    bool? hasReachedMax,
   }) {
     return ChannelsListState(
       status: status ?? this.status,
       channels: channels ?? this.channels,
       error: error ?? this.error,
+      currentPage: currentPage ?? this.currentPage,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
     );
   }
 }
 
-// --- Provider (Family-indexed to support parallel paging of different filters) ---
+// --- Provider ---
 final channelsListControllerProvider =
     StateNotifierProvider.family<
       ChannelsListController,
@@ -59,46 +66,85 @@ class ChannelsListController extends StateNotifier<ChannelsListState> {
       state = state.copyWith(status: ChannelsListStatus.loading);
     }
 
-    // 1. ⚡ Fetch Instant SQLite Data via strict repository
+    // 1. ⚡ Fetch Instant SQLite Data
     final cachedChannels = await _repository.getOfflineFirstChannels(filter);
-    
+
     if (cachedChannels.isNotEmpty) {
-      debugPrint(
-        '⚡ [Offline-First] Loaded ${cachedChannels.length} channels instantly from SQLite via Repository!',
-      );
       state = state.copyWith(
         status: ChannelsListStatus.loaded,
         channels: cachedChannels,
       );
     }
 
-    // 2. ☁️ BACKGROUND SYNC: Hook up the live Supabase stream silently
-    _subscription = _repository
-        .watchChannels(filter)
-        .listen(
-          (freshChannels) {
-            // When Supabase finally connects and sends fresh data, update the UI!
-            state = state.copyWith(
-              status: ChannelsListStatus.loaded,
-              channels: freshChannels,
+    // 2. ☁️ Load First Page from Cloud
+    await loadChannels(refresh: true);
+
+    // 3. 🛰️ Optional: Real-time stream (usually only for first page or status updates)
+    _subscription = _repository.watchChannels(filter).listen((freshChannels) {
+      // Only merge if we're on the first page to avoid confusion
+      if (state.currentPage == 0) {
+        // 👑 Preserve creator details from existing channels because Supabase .stream() does not perform foreign-key joins.
+        final mergedChannels = freshChannels.map((fresh) {
+          final existing = state.channels
+              .where((c) => c.id == fresh.id)
+              .firstOrNull;
+          if (existing != null) {
+            return ChannelEntity(
+              id: fresh.id,
+              name: fresh.name,
+              description: fresh.description,
+              avatarUrl: fresh.avatarUrl,
+              creatorId: fresh.creatorId,
+              createdAt: fresh.createdAt,
+              creatorAvatarUrl:
+                  fresh.creatorAvatarUrl ?? existing.creatorAvatarUrl,
+              memberCount: fresh.memberCount,
+              unreadCount: fresh.unreadCount,
+              isCharted: fresh.isCharted,
+              isPrivate: fresh.isPrivate,
+              leaderAvatarUrl: fresh.leaderAvatarUrl,
+              age_restriction: fresh.age_restriction,
+              visible_to_other_channel_members:
+                  fresh.visible_to_other_channel_members,
+              visible_to_followed_users: fresh.visible_to_followed_users,
+              join_method: fresh.join_method,
+              prevent_leaving: fresh.prevent_leaving,
+              country_restrictions: fresh.country_restrictions,
+              allow_commenting_by: fresh.allow_commenting_by,
+              allow_status_posting_by: fresh.allow_status_posting_by,
+              allow_invitations_by: fresh.allow_invitations_by,
+              followersCount: fresh.followersCount,
+              tagsCount: fresh.tagsCount,
+              likesCount: fresh.likesCount,
+              postsCount: fresh.postsCount,
+              is_discoverable: fresh.is_discoverable,
+              creatorName: fresh.creatorName ?? existing.creatorName,
             );
-          },
-          onError: (error) {
-            debugPrint('📡 [Channels Stream] Error: $error');
-            // Only show error if we have no data to show (e.g. first install + network fail)
-            if (state.channels.isEmpty) {
-              state = state.copyWith(
-                status: ChannelsListStatus.error,
-                error: error.toString(),
-              );
-            }
-          },
+          }
+          return fresh;
+        }).toList();
+
+        state = state.copyWith(
+          status: ChannelsListStatus.loaded,
+          channels: mergedChannels,
         );
+      }
+    });
   }
 
-  /// Manual pull-to-refresh — triggers a one-shot fetch on top of the live stream
-  Future<void> loadChannels() async {
-    final result = await _repository.getChannels(filter);
+  Future<void> loadChannels({bool refresh = false}) async {
+    if (!refresh &&
+        (state.status == ChannelsListStatus.loading || state.hasReachedMax))
+      return;
+
+    final targetPage = refresh ? 0 : state.currentPage + 1;
+
+    if (!refresh) {
+      state = state.copyWith(status: ChannelsListStatus.loading);
+    }
+
+    final result = await _repository.getChannels(filter, page: targetPage);
+
     result.fold(
       (failure) {
         if (state.channels.isEmpty) {
@@ -109,9 +155,14 @@ class ChannelsListController extends StateNotifier<ChannelsListState> {
         }
       },
       (freshChannels) {
+        final newChannels = refresh
+            ? freshChannels
+            : [...state.channels, ...freshChannels];
         state = state.copyWith(
           status: ChannelsListStatus.loaded,
-          channels: freshChannels,
+          channels: newChannels,
+          currentPage: targetPage,
+          hasReachedMax: freshChannels.length < 20,
         );
       },
     );
@@ -119,7 +170,7 @@ class ChannelsListController extends StateNotifier<ChannelsListState> {
 
   @override
   void dispose() {
-    _subscription?.cancel(); // 🛑 Clean up the real-time stream on dispose
+    _subscription?.cancel();
     super.dispose();
   }
 }

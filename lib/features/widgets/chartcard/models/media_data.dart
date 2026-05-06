@@ -8,6 +8,7 @@ class MediaData {
   final String? creatorAvatarUrl; // Secondary overlay thumb (thumbnail link)
   final String resolution; // e.g., '360P', '1080P', 'Audio'
   final String? postId; // Unique Data LinTop reference
+  final double? aspectRatio;
 
   const MediaData({
     required this.type,
@@ -17,6 +18,7 @@ class MediaData {
     this.creatorAvatarUrl,
     this.resolution = '360P',
     this.postId,
+    this.aspectRatio,
   });
 }
 

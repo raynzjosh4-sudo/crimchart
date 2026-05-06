@@ -203,7 +203,7 @@ class LandingPage extends StatelessWidget {
                         width: 20.w,
                         height: 20.w,
                         child: Image.network(
-                          'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                          'https://www.gstatic.com/images/branding/product/2x/googleg_96dp.png',
                           fit: BoxFit.contain,
                         ),
                       ),
