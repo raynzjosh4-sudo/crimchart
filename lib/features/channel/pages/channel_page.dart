@@ -1,38 +1,36 @@
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/channel/pages/video_tab/video_tab_view.dart';
-import 'package:crown/features/allchannels/models/chart_channel.dart';
-import 'package:crown/features/channel/channelsettings/channel_settings_page.dart';
-import 'package:crown/features/channel/pages/widgets/invite_card.dart';
-import 'package:crown/profile/models/charter_model.dart';
-import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/channel/pages/video_tab/video_tab_view.dart';
+import 'package:crimchart/features/allchannels/models/chart_channel.dart';
+import 'package:crimchart/features/channel/channelsettings/channel_settings_page.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/features/newinsidechartstartpage/models/member.dart';
-import 'package:crown/features/newinsidechartstartpage/models/chart.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/members_story_bar.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/status_widget_shimmer.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/creator_contact_bar.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/suggestion_channels_section.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/channel_end_summary.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/channel_nav_bar.dart';
-import 'package:crown/features/channel/pages/members_tab/members_tab_view.dart';
-import 'package:crown/features/channel/pages/messages_tab/messages_page.dart';
-import 'package:crown/backicon/custom_back_button.dart';
-import 'package:crown/features/channel/domain/entities/channel_item.dart';
-import 'package:crown/posting/pages/post_page.dart';
+import 'package:crimchart/features/newinsidechartstartpage/models/member.dart';
+import 'package:crimchart/features/newinsidechartstartpage/models/chart.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/members_story_bar.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/status_widget_shimmer.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/creator_contact_bar.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/suggestion_channels_section.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/channel_end_summary.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/channel_nav_bar.dart';
+import 'package:crimchart/features/channel/pages/members_tab/members_tab_view.dart';
+import 'package:crimchart/features/channel/pages/messages_tab/messages_page.dart';
+import 'package:crimchart/backicon/custom_back_button.dart';
+import 'package:crimchart/features/channel/domain/entities/channel_item.dart';
+import 'package:crimchart/posting/pages/post_page.dart';
 import 'package:record/record.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:crown/commentingsheets/widgets/commenting_sheet.dart';
-import 'package:crown/features/channel/application/channel_feed_provider.dart';
-import 'package:crown/features/channel/application/channel_statuses_provider.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/feed_post_placeholder.dart';
-import 'package:crown/features/widgets/channelmemberdata/thread_discussion_sheet.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/feed_post_shimmer.dart';
-import 'package:crown/features/channel/pages/widgets/pagination_error_footer.dart';
+import 'package:crimchart/commentingsheets/widgets/commenting_sheet.dart';
+import 'package:crimchart/features/channel/application/channel_feed_provider.dart';
+import 'package:crimchart/features/channel/application/channel_statuses_provider.dart';
+import 'package:crimchart/features/channel/pages/tag/tag_overlay.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/feed_post_placeholder.dart';
+import 'package:crimchart/features/widgets/channelmemberdata/thread_discussion_sheet.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/feed_post_shimmer.dart';
+import 'package:crimchart/features/channel/pages/widgets/pagination_error_footer.dart';
 
-import 'package:crown/features/channel/application/channels_list_controller.dart';
+import 'package:crimchart/features/channel/application/channels_list_controller.dart';
 import 'dart:math';
 
 class ChannelPage extends ConsumerStatefulWidget {
@@ -120,22 +118,17 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
 
   void _openPostCommentSheet(dynamic item) {
     final displayChannel = widget.channel ?? _getEmptyChannel();
-    final theme = Theme.of(context);
-
-    // Extraction logic for both Manifesto and Invitation items
-    final String postId = (item is ManifestoItem)
-        ? item.id
-        : (item is InvitationItem ? item.id : '');
-    final String username = (item is ManifestoItem)
-        ? item.authorUsername
-        : (item is InvitationItem ? item.authorUsername : '');
-    final String avatar = (item is ManifestoItem)
-        ? (item.authorAvatarUrl ?? '')
-        : (item is InvitationItem ? (item.authorAvatarUrl ?? '') : '');
-    final List<String> images = (item is ManifestoItem) ? item.imageUrls : [];
-    final List<String> videos = (item is ManifestoItem)
-        ? (item.videoUrl != null ? [item.videoUrl!] : [])
-        : [];
+    // 👑 Extract postId for ALL item types
+    final String postId;
+    if (item is ManifestoItem) {
+      postId = item.id;
+    } else if (item is ChannelCommentItem) {
+      postId = item.id;
+    } else if (item is InvitationItem) {
+      postId = item.id;
+    } else {
+      postId = '';
+    }
 
     showModalBottomSheet(
       context: context,
@@ -146,6 +139,31 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
         channelId: displayChannel.id,
         channelName: displayChannel.title,
       ),
+    );
+  }
+
+  void _openTagSheet(dynamic item) {
+    final displayChannel = widget.channel ?? _getEmptyChannel();
+
+    // Extraction logic
+    final String? postId = (item is ManifestoItem) ? item.id : null;
+    final String? sourceChannelId = (item is ManifestoItem)
+        ? (item.originalPost?.channelId)
+        : (item is InvitationItem ? item.targetChannelId : null);
+    final String? channelName = (item is ManifestoItem)
+        ? (item.originalPost?.channelName)
+        : (item is InvitationItem ? item.targetChannelName : null);
+
+    if (postId == null) return;
+
+    TagOverlay.show(
+      context,
+      postId: postId,
+      sourceChannelId: sourceChannelId ?? displayChannel.id,
+      linkChain: (item is ManifestoItem)
+          ? (item.originalPost?.linkChain ?? [])
+          : [],
+      channelName: channelName ?? displayChannel.title,
     );
   }
 
@@ -361,7 +379,7 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
                     final statusesAsync = ref.watch(
                       channelStatusesProvider(displayChannel.id),
                     );
-                    
+
                     return statusesAsync.when(
                       data: (statuses) => MembersStoryBar(
                         statuses: statuses,
@@ -413,12 +431,7 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
                       .toList();
 
                   if (feedState.isLoading && feedState.channelItems.isEmpty) {
-                    return SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40.h),
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                    );
+                    return const SliverToBoxAdapter(child: SizedBox.shrink());
                   }
 
                   final items = feedState.channelItems;
@@ -542,6 +555,7 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
                           authorImageUrl: item.authorAvatarUrl,
                           type: 'invite',
                           likesCount: item.likes,
+                          tagsCount: item.originalPost?.tagsCount ?? 0,
                           isLiked: item.isLiked,
                           onLikeTap: () => notifier.toggleLike(item.id, true),
                           onCommentTap: () => _openPostCommentSheet(item),
@@ -550,6 +564,8 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
                           inviteChannelImage: item.targetChannelImage,
                           inviteChannelTitle: item.targetChannelTitle,
                           onJoinPressed: () {},
+                          onTagTap: () => _openTagSheet(item),
+                          currentChannelAvatar: displayChannel.imageUrl,
                         );
                       }
                       if (item is ManifestoItem) {
@@ -572,9 +588,16 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
                           aspectRatio: item.aspectRatio,
                           likesCount: item.likes,
                           commentsCount: item.commentCount,
+                          tagsCount: item.originalPost?.tagsCount ?? 0,
                           isLiked: item.isLiked,
                           onLikeTap: () => notifier.toggleLike(item.id, true),
                           onCommentTap: () => _openPostCommentSheet(item),
+                          onTagTap: () => _openTagSheet(item),
+                          taggerName: item.taggerName,
+                          taggerAvatar: item.taggerAvatar,
+                          sourceChannelName: item.sourceChannelName,
+                          sourceChannelAvatar: item.sourceChannelAvatar,
+                          currentChannelAvatar: displayChannel.imageUrl,
                         );
                       }
                       if (item is ChannelCommentItem) {
@@ -586,8 +609,17 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
                           timeAgo: _formatTimeAgo(item.createdAt),
                           authorImageUrl: item.authorAvatarUrl,
                           likesCount: item.likes,
+                          commentsCount: item.commentCount,
+                          tagsCount: item.originalPost?.tagsCount ?? 0,
                           isLiked: item.isLiked,
                           onLikeTap: () => notifier.toggleLike(item.id, false),
+                          onCommentTap: () => _openPostCommentSheet(item),
+                          onTagTap: () => _openTagSheet(item),
+                          taggerName: item.taggerName,
+                          taggerAvatar: item.taggerAvatar,
+                          sourceChannelName: item.sourceChannelName,
+                          sourceChannelAvatar: item.sourceChannelAvatar,
+                          currentChannelAvatar: displayChannel.imageUrl,
                         );
                       }
                       return const SizedBox.shrink();

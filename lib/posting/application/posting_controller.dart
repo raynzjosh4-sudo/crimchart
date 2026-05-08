@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/core/di/injection.dart';
+import 'package:crimchart/core/di/injection.dart';
 
 import 'controller/posting_state.dart';
 import 'controller/posting_controller.dart';

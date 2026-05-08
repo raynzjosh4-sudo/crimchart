@@ -1,9 +1,9 @@
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crown/posting/models/media_item.dart';
+import 'package:crimchart/posting/models/media_item.dart';
 
 class FinalizeMediaPreview extends StatelessWidget {
   final List<MediaItem> selectedMedia;

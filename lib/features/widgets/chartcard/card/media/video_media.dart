@@ -1,4 +1,4 @@
-import 'package:crown/core/native/chart_native_ffi.dart';
+import 'package:crimchart/core/native/chart_native_ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';

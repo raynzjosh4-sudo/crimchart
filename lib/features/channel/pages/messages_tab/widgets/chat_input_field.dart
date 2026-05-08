@@ -1,18 +1,17 @@
-import 'package:crown/core/db/chart_native_db.dart';
-import 'package:crown/core/di/injection.dart';
-import 'package:crown/features/auth/application/auth_controller.dart';
-import 'package:crown/features/channel/data/sources/channel_remote_source.dart';
-import 'package:crown/features/showcase/chart_toast.dart';
+import 'package:crimchart/core/db/chart_native_db.dart';
+import 'package:crimchart/core/di/injection.dart';
+import 'package:crimchart/features/auth/application/auth_controller.dart';
+import 'package:crimchart/features/channel/data/sources/channel_remote_source.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dart:io';
 import 'dart:async';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/core/theme/design_system.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/core/theme/design_system.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../bottom_sheets/select_media_bottom_sheet.dart';
 import '../dialogs/microphone_permission_dialog.dart';
@@ -251,7 +250,7 @@ class _ChatInputFieldState extends ConsumerState<ChatInputField>
     return Container(
       padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
+        color: theme.colorScheme.surface, // 👑 SOLID BACKGROUND: specific to the input field!
         border: Border(
           top: BorderSide(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.05),

@@ -1,5 +1,5 @@
-import 'package:crown/features/allchannels/models/chart_channel.dart';
-import 'package:crown/features/newinsidechartstartpage/models/channel_post.dart';
+import 'package:crimchart/features/allchannels/models/chart_channel.dart';
+import 'package:crimchart/features/newinsidechartstartpage/models/channel_post.dart';
 
 final List<ChartChannel> dummyChannels = List.generate(60, (index) {
   final id = (index + 1).toString();

@@ -1,11 +1,11 @@
 import 'dart:io';
-import 'package:crown/features/channel/pages/messages_tab/widgets/emoji_picker_panel.dart';
-import 'package:crown/posting/models/media_item.dart';
-import 'package:crown/posting/pages/editing/functioning/edit_post_controller.dart';
-import 'package:crown/posting/pages/editing/functioning/media_baking_service.dart';
-import 'package:crown/posting/pages/editing/widgets/edit_media_preview.dart';
+import 'package:crimchart/features/channel/pages/messages_tab/widgets/emoji_picker_panel.dart';
+import 'package:crimchart/posting/models/media_item.dart';
+import 'package:crimchart/posting/pages/editing/functioning/edit_post_controller.dart';
+import 'package:crimchart/posting/pages/editing/functioning/media_baking_service.dart';
+import 'package:crimchart/posting/pages/editing/widgets/edit_media_preview.dart';
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 // ─── Tool modes ───────────────────────────────────────────────────────────────

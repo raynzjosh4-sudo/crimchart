@@ -1,21 +1,18 @@
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/allchannels/dummydata/channel_dummy_data.dart';
-import 'package:crown/features/auth/application/auth_controller.dart';
-import 'package:crown/features/channel/application/channels_list_controller.dart';
-import 'package:crown/features/newinsidechartstartpage/models/chart.dart';
-import 'package:crown/mainFeed/features/cardwidgets/storychacrdwidget/status_page.dart';
-import 'package:crown/profile/channels/widgets/active_channel_circle.dart';
-import 'package:crown/profile/channels/widgets/create_channel_circle.dart';
-import 'package:crown/profile/chart/dummydata/dummy_chart_data.dart'
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/auth/application/auth_controller.dart';
+import 'package:crimchart/features/channel/application/channels_list_controller.dart';
+import 'package:crimchart/features/newinsidechartstartpage/models/chart.dart';
+import 'package:crimchart/profile/chart/dummydata/dummy_chart_data.dart'
     as chart_data;
-import 'package:crown/profile/chart/models/chart_chart.dart';
-import 'package:crown/profile/chart/pages/chart_detail_page.dart';
-import 'package:crown/profile/chart/widgets/chart_list_item.dart';
-import 'package:crown/profile/chart/widgets/sheets/inbox_options_sheet.dart';
-import 'package:crown/profile/widgets/charters/channel_filter_chips.dart';
-import 'package:crown/profile/widgets/charters/chart_channel_list_item.dart';
+import 'package:crimchart/profile/chart/models/chart_chart.dart';
+import 'package:crimchart/profile/chart/widgets/chart_list_item.dart';
+import 'package:crimchart/profile/widgets/charters/channel_filter_chips.dart';
+import 'package:crimchart/profile/widgets/charters/chart_channel_list_item.dart';
+import 'package:crimchart/profile/channels/widgets/top_horizontal_widgets/inbox_active_circles.dart';
+import 'package:crimchart/profile/channels/widgets/top_horizontal_widgets/channel_status_moments.dart';
+import 'package:crimchart/profile/widgets/charters/skeleton_channel_list_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -152,16 +149,96 @@ class _PageContent extends ConsumerWidget {
       key: PageStorageKey<String>(filter),
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        // 1. Horizontal Suggested/Active Channels
-        SliverToBoxAdapter(child: _buildActiveChannels(context, ref)),
+        // 1. Moments (Horizontal Status/Moments)
+        if (filter == 'inbox')
+          const SliverToBoxAdapter(child: InboxActiveCircles()),
+        
+        if (filter == 'channels') ...[
+          _buildSectionHeader(context, 'Moments', showAction: false),
+          const SliverToBoxAdapter(child: ChannelStatusMoments()),
+        ],
 
-        const SliverToBoxAdapter(
-          child: Divider(height: 1, thickness: 0.5, color: Colors.white10),
-        ),
+        if (filter == 'inbox' || filter == 'channels')
+          const SliverToBoxAdapter(
+            child: Divider(height: 1, thickness: 0.5, color: Colors.white10),
+          ),
 
-        // 2. The Main Conversations List
+        // 2. Channels (Main Conversations List)
+        if (filter == 'channels')
+          _buildSectionHeader(context, 'Channels', actionText: 'Explore'),
+
         _buildSliverChannelsList(context, ref, filter),
+
+        if (filter == 'channels') ...[
+          _buildSectionHeader(context, 'Find channels to follow', showAction: false),
+          _buildSliverSuggestedChannelsList(context, ref),
+        ],
       ],
+    );
+  }
+
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title, {
+    bool showAction = true,
+    String actionText = 'See all',
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return SliverPadding(
+      padding: EdgeInsets.fromLTRB(20.w, 16.h, 12.w, 8.h),
+      sliver: SliverToBoxAdapter(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w900,
+                color: colorScheme.onSurface,
+                letterSpacing: -0.5,
+              ),
+            ),
+            if (showAction)
+              TextButton(
+                onPressed: () {},
+                style: TextButton.styleFrom(
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                ),
+                child: Text(
+                  actionText,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSliverSuggestedChannelsList(BuildContext context, WidgetRef ref) {
+    // This would ideally use a different provider for discovery
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 40.h),
+        child: Center(
+          child: Text(
+            'Explore more channels to find new moments',
+            style: TextStyle(
+              fontSize: 13.sp,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -183,19 +260,6 @@ class _PageContent extends ConsumerWidget {
           builderDelegate: PagedChildBuilderDelegate<dynamic>(
             itemBuilder: (context, item, index) =>
                 ChartListItem(chart: item as ChartChart),
-            noItemsFoundIndicatorBuilder: (context) => SliverToBoxAdapter(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 40.h),
-                  child: Text(
-                    context.tr('no_channels_found'),
-                    style: TextStyle(
-                      color: colorScheme.onSurface.withOpacity(0.4),
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ),
         ),
       );
@@ -207,8 +271,11 @@ class _PageContent extends ConsumerWidget {
 
     if (channelsState.status == ChannelsListStatus.loading &&
         channelsState.channels.isEmpty) {
-      return const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+      return SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => const SkeletonChannelListItem(),
+          childCount: 5,
+        ),
       );
     }
 
@@ -274,88 +341,6 @@ class _PageContent extends ConsumerWidget {
           index: index,
         );
       }, childCount: displayChannels.length),
-    );
-  }
-
-  Widget _buildActiveChannels(BuildContext context, WidgetRef ref) {
-    final personalChannels = dummyChannels
-        .where((c) => c.isOwnChannel || c.isCharted)
-        .toList();
-
-    return Container(
-      height: 150.h,
-      padding: EdgeInsets.symmetric(vertical: 12.h),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: personalChannels.isEmpty && dummyChannels.isNotEmpty
-            ? 1
-            : personalChannels.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) return const CreateChannelCircle();
-
-          final channel = personalChannels[index - 1];
-          final hasStatus = index % 4 == 0;
-          final userName = channel.staterName?.split(' ').first ?? 'User';
-
-          return ActiveChannelCircle(
-            imageUrl: channel.staterAvatarUrl,
-            name: userName,
-            hasUpdate: hasStatus,
-            onTap: () {
-              final dummyChart = ChartChart(
-                id: 'active_$index',
-                senderName: userName,
-                senderAvatarUrl: channel.staterAvatarUrl,
-                lastMessage: 'Active recently',
-                timestamp: DateTime.now(),
-              );
-
-              if (hasStatus) {
-                showModalBottomSheet(
-                  context: context,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => InboxOptionsSheet(
-                    userName: userName,
-                    userAvatar: channel.staterAvatarUrl,
-                    onViewStatus: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => StatusPage(
-                            username: userName,
-                            userProfileImageUrl: channel.staterAvatarUrl ?? '',
-                            statusImageUrl:
-                                'https://picsum.photos/seed/status_$index/1080/1920',
-                            isChartable: true,
-                            isPublic: true,
-                          ),
-                        ),
-                      );
-                    },
-                    onOpenChat: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ChartDetailPage(chart: dummyChart),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChartDetailPage(chart: dummyChart),
-                  ),
-                );
-              }
-            },
-          );
-        },
-      ),
     );
   }
 }

@@ -1,11 +1,11 @@
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/theme_provider.dart';
-import 'package:crown/gifts/horizontalgiftscroll/horizontal_gift_scroll.dart';
-import 'package:crown/gifts/widgets/gift_sheet.dart';
-import 'package:crown/gifts/models/gift_recipient.dart';
-import 'package:crown/core/localization/localization_provider.dart';
+import 'package:crimchart/gifts/horizontalgiftscroll/horizontal_gift_scroll.dart';
+import 'package:crimchart/gifts/widgets/gift_sheet.dart';
+import 'package:crimchart/gifts/models/gift_recipient.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
 
 // Corrected relative imports
 import '../memberimage/starter_image.dart';

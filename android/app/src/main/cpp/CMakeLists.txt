@@ -1,7 +1,7 @@
 # Minimum CMake version required by Android Studio
 cmake_minimum_required(VERSION 3.22.1)
 
-project("crimchat_native")
+project("crimchart_native")
 
 # 1. Tell Android where the FFmpeg directory is
 set(FFMPEG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg)
@@ -30,14 +30,14 @@ add_library(avfilter SHARED IMPORTED)
 set_target_properties(avfilter PROPERTIES IMPORTED_LOCATION ${FFMPEG_DIR}/lib/${ANDROID_ABI}/libavfilter.so)
 
 # 4. Build Your Custom C++ Engine
-add_library(crimchat_native SHARED media_processor.cpp)
+add_library(crimchart_native SHARED media_processor.cpp)
 
 # 5. Find the native Android logging library (so your std::cout prints to the terminal)
 find_library(log-lib log)
 
-# 6. Stitch everything together into one ultra-fast libcrimchat_native.so file
+# 6. Stitch everything together into one ultra-fast libcrimchart_native.so file
 target_link_libraries(
-    crimchat_native
+    crimchart_native
     avformat
     avcodec
     avfilter   # 👑 UNLOCKS PRO EDITING EFFECTS

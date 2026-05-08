@@ -1,5 +1,5 @@
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 import '../../../../mainFeed/features/cardwidgets/models/channel_post_model.dart';
 import '../../core/widgets/video_player_widget.dart';

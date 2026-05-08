@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crown/features/channel/channelsettings/channel_edit_page.dart';
+import 'package:crimchart/features/channel/channelsettings/channel_edit_page.dart';
 
 class ChannelHeader extends StatelessWidget {
   final String channelId;

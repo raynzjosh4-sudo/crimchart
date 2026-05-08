@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 enum OfflinePageType { feed, chat, members, general }
@@ -77,19 +77,21 @@ class OfflineView extends StatelessWidget {
             ),
             SizedBox(height: 40.h),
 
-            // Retry Button
             GestureDetector(
               onTap: onRetry,
               child: Container(
-                height: 48.h,
+                height: 52.h,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(24.r),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
+                  color: const Color(0xFFFFB800),
+                  borderRadius: BorderRadius.circular(26.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFB800).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: Row(
@@ -97,16 +99,16 @@ class OfflineView extends StatelessWidget {
                     children: [
                       Icon(
                         LucideIcons.refreshCw,
-                        size: 16.sp,
-                        color: Colors.white,
+                        size: 18.sp,
+                        color: Colors.black,
                       ),
-                      SizedBox(width: 10.w),
+                      SizedBox(width: 12.w),
                       Text(
                         'Try Again',
                         style: TextStyle(
                           fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
                         ),
                       ),
                     ],
@@ -123,7 +125,7 @@ class OfflineView extends StatelessWidget {
   IconData _getIconForType() {
     switch (type) {
       case OfflinePageType.feed:
-        return LucideIcons.layoutGrid;
+        return LucideIcons.cloudOff;
       case OfflinePageType.chat:
         return LucideIcons.messageCircle;
       case OfflinePageType.members:
@@ -137,7 +139,7 @@ class OfflineView extends StatelessWidget {
   String _getTitleForType() {
     switch (type) {
       case OfflinePageType.feed:
-        return "Feed Unavailable";
+        return "Connection Lost";
       case OfflinePageType.chat:
         return "Chat Paused";
       case OfflinePageType.members:
@@ -151,7 +153,7 @@ class OfflineView extends StatelessWidget {
   String _getMessageForType() {
     switch (type) {
       case OfflinePageType.feed:
-        return "Your connection took a break. We couldn't load the latest content.";
+        return "It seems like you're offline. We couldn't load your feed. Please check your connection.";
       case OfflinePageType.chat:
         return "The conversation is on hold. Please check your internet connection.";
       case OfflinePageType.members:

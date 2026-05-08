@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(crimchat_native LANGUAGES CXX)
+project(crimchart_native LANGUAGES CXX)
 
 # ── FFmpeg paths ───────────────────────────────────────────────────────────────
 set(FFMPEG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../ffmpeg/ffmpeg-n7.1-latest-win64-gpl-shared-7.1")
@@ -8,14 +8,14 @@ set(FFMPEG_LIB_DIR     "${FFMPEG_DIR}/lib")
 set(FFMPEG_BIN_DIR     "${FFMPEG_DIR}/bin")
 
 # ── Build our shared library ───────────────────────────────────────────────────
-add_library(crimchat_native SHARED media_processor.cpp)
-target_compile_features(crimchat_native PUBLIC cxx_std_17)
+add_library(crimchart_native SHARED media_processor.cpp)
+target_compile_features(crimchart_native PUBLIC cxx_std_17)
 
 # Include FFmpeg headers
-target_include_directories(crimchat_native PRIVATE "${FFMPEG_INCLUDE_DIR}")
+target_include_directories(crimchart_native PRIVATE "${FFMPEG_INCLUDE_DIR}")
 
 # Link against FFmpeg import libraries (.lib files on Windows)
-target_link_libraries(crimchat_native PRIVATE
+target_link_libraries(crimchart_native PRIVATE
   "${FFMPEG_LIB_DIR}/avcodec.lib"
   "${FFMPEG_LIB_DIR}/avformat.lib"
   "${FFMPEG_LIB_DIR}/avutil.lib"
@@ -24,7 +24,7 @@ target_link_libraries(crimchat_native PRIVATE
 )
 
 # ── Output directories ─────────────────────────────────────────────────────────
-set_target_properties(crimchat_native PROPERTIES
+set_target_properties(crimchart_native PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY         "${CMAKE_BINARY_DIR}/runner"
   RUNTIME_OUTPUT_DIRECTORY_DEBUG   "${CMAKE_BINARY_DIR}/runner/Debug"
   RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/runner/Release"
@@ -43,10 +43,10 @@ set(FFMPEG_DLLS
 )
 
 foreach(DLL ${FFMPEG_DLLS})
-  add_custom_command(TARGET crimchat_native POST_BUILD
+  add_custom_command(TARGET crimchart_native POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       "${DLL}"
-      "$<TARGET_FILE_DIR:crimchat_native>"
+      "$<TARGET_FILE_DIR:crimchart_native>"
     COMMENT "Copying ${DLL}"
   )
 endforeach()

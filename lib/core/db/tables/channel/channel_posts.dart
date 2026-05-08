@@ -26,6 +26,14 @@ class ChannelPosts extends Table {
   IntColumn get allowComments => integer().withDefault(const Constant(1)).named('allow_comments')();
   IntColumn get isPending => integer().withDefault(const Constant(0)).named('is_pending')();
   IntColumn get isLiked => integer().withDefault(const Constant(0)).named('is_liked')();
+  
+  // 👑 TAGGING METADATA
+  TextColumn get taggerName => text().nullable().named('tagger_name')();
+  TextColumn get taggerAvatar => text().nullable().named('tagger_avatar')();
+  TextColumn get sourceChannelName => text().nullable().named('source_channel_name')();
+  TextColumn get sourceChannelAvatar => text().nullable().named('source_channel_avatar')();
+  IntColumn get tagsCount => integer().withDefault(const Constant(0)).named('tags_count')();
+  
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime).named('created_at')();
 
   // 👑 For Cross-Channel Invitations & Extensibility

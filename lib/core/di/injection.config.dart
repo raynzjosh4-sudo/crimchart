@@ -21,12 +21,17 @@ import '../../features/channel/data/repositories/channel_repository_impl.dart'
     as _i346;
 import '../../features/channel/data/repositories/moment_repository_impl.dart'
     as _i396;
+import '../../features/channel/data/repositories/tag_repository_impl.dart'
+    as _i571;
 import '../../features/channel/data/sources/channel_remote_source.dart'
     as _i279;
+import '../../features/channel/data/sources/tag_remote_source.dart' as _i623;
 import '../../features/channel/domain/repositories/channel_repository.dart'
     as _i699;
 import '../../features/channel/domain/repositories/moment_repository.dart'
     as _i669;
+import '../../features/channel/domain/repositories/tag_repository.dart'
+    as _i358;
 import '../../features/feed/data/repositories/feed_repository_impl.dart'
     as _i452;
 import '../../features/feed/data/sources/feed_local_source.dart' as _i223;
@@ -61,15 +66,19 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i279.ChannelRemoteSource>(
       () => _i279.ChannelRemoteSource(),
     );
-    gh.factory<_i164.AuthRemoteSource>(
-      () => _i164.AuthRemoteSource(gh<_i557.ApiClient>()),
-    );
-    gh.lazySingleton<_i435.ChartNativeDB>(
-      () => _i435.ChartNativeDB(gh<_i187.ChartDatabase>()),
+    gh.lazySingleton<_i623.TagRemoteSource>(() => _i623.TagRemoteSource());
+    gh.factory<_i507.FeedRemoteSource>(
+      () => _i507.FeedRemoteSource(gh<_i557.ApiClient>()),
     );
     gh.lazySingleton<_i459.MediaRepository>(() => _i110.MediaRepositoryImpl());
     gh.lazySingleton<_i669.MomentRepository>(
       () => _i396.MomentRepositoryImpl(),
+    );
+    gh.lazySingleton<_i699.ChannelRepository>(
+      () => _i346.ChannelRepositoryImpl(gh<_i279.ChannelRemoteSource>()),
+    );
+    gh.factory<_i164.AuthRemoteSource>(
+      () => _i164.AuthRemoteSource(gh<_i557.ApiClient>()),
     );
     gh.factory<_i787.AuthRepository>(
       () => _i153.AuthRepositoryImpl(
@@ -77,17 +86,20 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i51.AuthLocalSource>(),
       ),
     );
+    gh.lazySingleton<_i435.ChartNativeDB>(
+      () => _i435.ChartNativeDB(gh<_i187.ChartDatabase>()),
+    );
     gh.factory<_i172.CompressVideo>(
       () => _i172.CompressVideo(gh<_i459.MediaRepository>()),
     );
-    gh.lazySingleton<_i699.ChannelRepository>(
-      () => _i346.ChannelRepositoryImpl(gh<_i279.ChannelRemoteSource>()),
-    );
-    gh.factory<_i507.FeedRemoteSource>(
-      () => _i507.FeedRemoteSource(gh<_i557.ApiClient>()),
-    );
     gh.factory<_i223.FeedLocalSource>(
       () => _i223.FeedLocalSource(gh<_i435.ChartNativeDB>()),
+    );
+    gh.lazySingleton<_i358.TagRepository>(
+      () => _i571.TagRepositoryImpl(
+        gh<_i623.TagRemoteSource>(),
+        gh<_i435.ChartNativeDB>(),
+      ),
     );
     gh.factory<_i430.FeedRepository>(
       () => _i452.FeedRepositoryImpl(

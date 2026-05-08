@@ -1,6 +1,5 @@
-import 'package:crown/features/showcase/chart_toast.dart';
-import 'package:crown/posting/application/posting_service.dart';
-import 'package:crown/posting/models/media_item.dart';
+import 'package:crimchart/posting/application/posting_service.dart';
+import 'package:crimchart/posting/models/media_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -45,7 +44,12 @@ class ChannelMessages extends _$ChannelMessages {
           .toList()
           .reversed,
     );
-    yield List.from(_memoryMessages);
+
+    // 👑 Only yield immediately if we actually have local messages.
+    // Otherwise, let the UI shimmer until the first remote sync completes!
+    if (_memoryMessages.isNotEmpty) {
+      yield List.from(_memoryMessages);
+    }
 
     // 2. Start background sync
     _remoteSync();
@@ -59,6 +63,7 @@ class ChannelMessages extends _$ChannelMessages {
   }
 
   void _remoteSync() {
+    bool isFirstSync = true;
     final remoteSource = getIt<ChannelRemoteSource>();
     _syncSubscription = remoteSource.streamChannelMessages(channelId).listen((
       messages,
@@ -81,7 +86,9 @@ class ChannelMessages extends _$ChannelMessages {
           );
         }
       }
-      if (changed) {
+      // 👑 Always trigger UI update on the first sync so the shimmer stops
+      if (isFirstSync || changed) {
+        isFirstSync = false;
         _controller.add(List.from(_memoryMessages));
       }
     });
@@ -147,6 +154,7 @@ class ChannelMessages extends _$ChannelMessages {
     if (currentUser == null) return;
 
     final messageId = const Uuid().v4();
+    // ignore: unused_local_variable
     String? finalMediaUrl = mediaUrl;
     List<Map<String, String>> finalMediaItems = List.from(mediaItems ?? []);
 
@@ -254,6 +262,12 @@ class ChannelMessages extends _$ChannelMessages {
           finalMediaUrl = remoteMediaItems.first['url'];
         }
 
+        // 👑 Extract first video thumbnail if present
+        String? finalThumbnailUrl;
+        if (uploadResult.thumbnailUrls.isNotEmpty) {
+           finalThumbnailUrl = uploadResult.thumbnailUrls.first;
+        }
+
         // Update memory
         final idx = _memoryMessages.indexWhere(
           (m) => m.id == optimisticMessage.id,
@@ -261,6 +275,7 @@ class ChannelMessages extends _$ChannelMessages {
         if (idx != -1) {
           _memoryMessages[idx] = _memoryMessages[idx].copyWith(
             mediaUrl: finalMediaUrl,
+            thumbnailUrl: finalThumbnailUrl, // 👑
             metadata: {...?metadata, 'media_items': remoteMediaItems},
           );
           _controller.add(List.from(_memoryMessages));
@@ -289,6 +304,24 @@ class ChannelMessages extends _$ChannelMessages {
       }
     } catch (e) {
       debugPrint('👑 [sendMessage] ⚠️ Cloud sync failed: $e');
+    }
+  }
+
+  Future<void> deleteMessage(String messageId) async {
+    try {
+      // 1. Optimistic memory update
+      _memoryMessages.removeWhere((m) => m.id == messageId);
+      _controller.add(List.from(_memoryMessages));
+
+      // 2. Delete from local DB
+      await _nativeDb.deleteChannelMessage(messageId);
+
+      // 3. Delete from remote DB
+      final remoteSource = getIt<ChannelRemoteSource>();
+      await remoteSource.deleteChannelMessage(messageId);
+    } catch (e) {
+      debugPrint('❌ [deleteMessage Error]: $e');
+      // If remote deletion fails, it might resync if we refresh, but we keep the UI optimistic
     }
   }
 }

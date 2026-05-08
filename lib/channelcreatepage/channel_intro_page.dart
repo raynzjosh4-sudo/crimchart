@@ -1,11 +1,11 @@
-import 'package:crown/features/allchannels/dummydata/channel_dummy_data.dart';
-import 'package:crown/features/allchannels/models/chart_channel.dart';
-import 'package:crown/profile/widgets/charters/channel_filter_chips.dart';
+import 'package:crimchart/features/allchannels/dummydata/channel_dummy_data.dart';
+import 'package:crimchart/features/allchannels/models/chart_channel.dart';
+import 'package:crimchart/profile/widgets/charters/channel_filter_chips.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/widgets/memberimage/starter_image.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/widgets/memberimage/starter_image.dart';
 import 'channel_create_page.dart';
 
 class ChannelIntroPage extends StatefulWidget {

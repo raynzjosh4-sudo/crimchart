@@ -1,5 +1,5 @@
-import 'package:crown/features/widgets/chartcard/models/media_data.dart';
-import 'package:crown/features/widgets/memberimage/starter_image.dart';
+import 'package:crimchart/features/widgets/chartcard/models/media_data.dart';
+import 'package:crimchart/features/widgets/memberimage/starter_image.dart';
 import 'package:flutter/material.dart';
 import '../models/member.dart';
 

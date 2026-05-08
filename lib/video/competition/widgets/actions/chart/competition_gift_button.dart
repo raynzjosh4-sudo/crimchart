@@ -1,5 +1,5 @@
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/video/competition/widgets/actions/chart/gift_bubble_animation.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/video/competition/widgets/actions/chart/gift_bubble_animation.dart';
 import 'package:flutter/material.dart';
 import '../../../../../../gifts/models/gift_model.dart';
 

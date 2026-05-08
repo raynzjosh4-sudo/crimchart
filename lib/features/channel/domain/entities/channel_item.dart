@@ -1,17 +1,23 @@
 import 'dart:convert';
 
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
 
 sealed class ChannelItem {
   final String id;
   final String authorUsername;
   final String? authorAvatarUrl;
-  final bool authorIsOnline;   // 👑 Snapshot presence
-  final bool authorHasStatus;  // 👑 Snapshot presence
+  final bool authorIsOnline; // 👑 Snapshot presence
+  final bool authorHasStatus; // 👑 Snapshot presence
   final DateTime createdAt;
   final int likes;
+  final int commentCount; // 👑 ADDED TO BASE
   final bool isLiked;
   final PostEntity? originalPost; // Bridge to legacy features
+
+  final String? taggerName;
+  final String? taggerAvatar;
+  final String? sourceChannelName;
+  final String? sourceChannelAvatar;
 
   ChannelItem({
     required this.id,
@@ -21,8 +27,13 @@ sealed class ChannelItem {
     this.authorHasStatus = false,
     required this.createdAt,
     required this.likes,
+    this.commentCount = 0, // 👑 DEFAULT
     this.isLiked = false,
     this.originalPost,
+    this.taggerName,
+    this.taggerAvatar,
+    this.sourceChannelName,
+    this.sourceChannelAvatar,
   });
 }
 
@@ -31,7 +42,6 @@ class ManifestoItem extends ChannelItem {
   final String caption;
   final List<String> imageUrls;
   final String? videoUrl;
-  final int commentCount;
   final double? aspectRatio;
 
   ManifestoItem({
@@ -42,12 +52,16 @@ class ManifestoItem extends ChannelItem {
     super.authorHasStatus,
     required super.createdAt,
     required super.likes,
+    required super.commentCount, // 👑 ADDED
     super.isLiked,
     super.originalPost,
+    super.taggerName,
+    super.taggerAvatar,
+    super.sourceChannelName,
+    super.sourceChannelAvatar,
     required this.caption,
     required this.imageUrls,
     this.videoUrl,
-    required this.commentCount,
     this.aspectRatio,
   });
 
@@ -76,13 +90,25 @@ class ManifestoItem extends ChannelItem {
           DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.now(),
       likes: map['likes'] ?? 0,
-      isLiked: map['is_liked'] == true || map['is_liked'] == 1 || (originalPost?.isLiked ?? false),
+      isLiked:
+          map['is_liked'] == true ||
+          map['is_liked'] == 1 ||
+          (originalPost?.isLiked ?? false),
       caption: map['caption'] ?? '',
       imageUrls: parseImages(map['image_urls']),
       videoUrl: map['video_url'],
       commentCount: map['comments'] ?? 0,
       aspectRatio: (map['aspect_ratio'] as num?)?.toDouble(),
       originalPost: originalPost,
+      taggerName: map['tagger_name']?.toString() ?? originalPost?.taggerName,
+      taggerAvatar:
+          map['tagger_avatar']?.toString() ?? originalPost?.taggerAvatar,
+      sourceChannelName:
+          map['source_channel_name']?.toString() ??
+          originalPost?.sourceChannelName,
+      sourceChannelAvatar:
+          map['source_channel_avatar']?.toString() ??
+          originalPost?.sourceChannelAvatar,
     );
   }
 }
@@ -100,8 +126,13 @@ class ChannelCommentItem extends ChannelItem {
     super.authorHasStatus,
     required super.createdAt,
     required super.likes,
+    super.commentCount = 0, // 👑 USE SUPER
     super.isLiked,
     super.originalPost,
+    super.taggerName,
+    super.taggerAvatar,
+    super.sourceChannelName,
+    super.sourceChannelAvatar,
     required this.message,
     this.manifestoId,
   });
@@ -120,10 +151,23 @@ class ChannelCommentItem extends ChannelItem {
           DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.now(),
       likes: map['likes'] ?? 0,
-      isLiked: map['is_liked'] == true || map['is_liked'] == 1 || (originalPost?.isLiked ?? false),
+      isLiked:
+          map['is_liked'] == true ||
+          map['is_liked'] == 1 ||
+          (originalPost?.isLiked ?? false),
       message: map['message'] ?? '',
+      commentCount: map['comments'] ?? 0,
       manifestoId: map['manifesto_id'],
       originalPost: originalPost,
+      taggerName: map['tagger_name']?.toString() ?? originalPost?.taggerName,
+      taggerAvatar:
+          map['tagger_avatar']?.toString() ?? originalPost?.taggerAvatar,
+      sourceChannelName:
+          map['source_channel_name']?.toString() ??
+          originalPost?.sourceChannelName,
+      sourceChannelAvatar:
+          map['source_channel_avatar']?.toString() ??
+          originalPost?.sourceChannelAvatar,
     );
   }
 }
@@ -145,8 +189,13 @@ class InvitationItem extends ChannelItem {
     super.authorHasStatus,
     required super.createdAt,
     required super.likes,
+    super.commentCount = 0, // 👑 DEFAULT
     super.isLiked,
     super.originalPost,
+    super.taggerName,
+    super.taggerAvatar,
+    super.sourceChannelName,
+    super.sourceChannelAvatar,
     required this.targetChannelId,
     required this.targetChannelName,
     this.targetChannelImage,
@@ -172,7 +221,11 @@ class InvitationItem extends ChannelItem {
           DateTime.tryParse(map['created_at']?.toString() ?? '') ??
           DateTime.now(),
       likes: map['likes'] ?? 0,
-      isLiked: map['is_liked'] == true || map['is_liked'] == 1 || (originalPost?.isLiked ?? false),
+      commentCount: map['comments'] ?? 0,
+      isLiked:
+          map['is_liked'] == true ||
+          map['is_liked'] == 1 ||
+          (originalPost?.isLiked ?? false),
       targetChannelId: metadata['target_channel_id']?.toString() ?? '',
       targetChannelName:
           metadata['target_channel_name']?.toString() ?? 'Unknown Channel',
@@ -181,6 +234,15 @@ class InvitationItem extends ChannelItem {
       authorTitle: originalPost?.authorTitle,
       caption: originalPost?.caption,
       originalPost: originalPost,
+      taggerName: map['tagger_name']?.toString() ?? originalPost?.taggerName,
+      taggerAvatar:
+          map['tagger_avatar']?.toString() ?? originalPost?.taggerAvatar,
+      sourceChannelName:
+          map['source_channel_name']?.toString() ??
+          originalPost?.sourceChannelName,
+      sourceChannelAvatar:
+          map['source_channel_avatar']?.toString() ??
+          originalPost?.sourceChannelAvatar,
     );
   }
 }

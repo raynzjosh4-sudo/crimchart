@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 
 class StatusWidgetShimmer extends StatelessWidget {
   const StatusWidgetShimmer({super.key});

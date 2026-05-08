@@ -1,6 +1,6 @@
-import 'package:crown/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import '../../../newinsidechartstartpage/models/member.dart';

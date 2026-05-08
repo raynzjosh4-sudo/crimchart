@@ -1,14 +1,14 @@
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/posting/application/posting_controller.dart';
-import 'package:crown/posting/models/media_item.dart';
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/posting/pages/channeltags/channel_tags.dart';
-import 'package:crown/posting/pages/advancedsettings/advanced_settings_sheet.dart';
-import 'package:crown/features/allchannels/dummydata/channel_dummy_data.dart';
+import 'package:crimchart/posting/application/posting_controller.dart';
+import 'package:crimchart/posting/models/media_item.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/posting/pages/channeltags/channel_tags.dart';
+import 'package:crimchart/posting/pages/advancedsettings/advanced_settings_sheet.dart';
+import 'package:crimchart/features/allchannels/dummydata/channel_dummy_data.dart';
 
 import 'widgets/finalize_media_preview.dart';
 import 'widgets/finalize_caption_section.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import '../channelmemberdata/comment_card/media/video_media.dart';
 
 /// 🎥 Specialized widget for a single, immersive video player.

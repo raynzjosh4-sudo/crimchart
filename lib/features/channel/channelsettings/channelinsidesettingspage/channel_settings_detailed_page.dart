@@ -1,16 +1,16 @@
-import 'package:crown/channelcreatepage/subpages/age_selection_page.dart';
-import 'package:crown/channelcreatepage/subpages/country_selection_page.dart';
-import 'package:crown/core/localization/localization_provider.dart';
+import 'package:crimchart/channelcreatepage/subpages/age_selection_page.dart';
+import 'package:crimchart/channelcreatepage/subpages/country_selection_page.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:crown/core/di/injection.dart';
-import 'package:crown/features/showcase/chart_toast.dart';
-import 'package:crown/core/widgets/chart_linear_loader.dart';
-import 'package:crown/features/channel/domain/repositories/channel_repository.dart';
-import 'package:crown/core/db/chart_native_db.dart';
-import 'package:crown/features/channel/domain/entities/channel_entity.dart';
+import 'package:crimchart/core/di/injection.dart';
+import 'package:crimchart/features/showcase/chart_toast.dart';
+import 'package:crimchart/core/widgets/chart_linear_loader.dart';
+import 'package:crimchart/features/channel/domain/repositories/channel_repository.dart';
+import 'package:crimchart/core/db/chart_native_db.dart';
+import 'package:crimchart/features/channel/domain/entities/channel_entity.dart';
 import 'dart:convert';
 
 class ChannelSettingsDetailedPage extends StatefulWidget {

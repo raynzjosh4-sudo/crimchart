@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/core/widgets/chart_image.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/core/widgets/chart_image.dart';
 
 /// 🖼️ Specialized widget for a single, large hero image.
 class ManifestoSingleImage extends StatelessWidget {

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/commentingsheets/widgets/commenting_sheet.dart';
+import 'package:crimchart/features/channel/pages/tag/tag_overlay.dart';
 
 /// Full-screen vertical-scroll video feed page.
 /// Mimics the native TikTok/Reels feel — edge-to-edge, no app bar chrome,
@@ -332,7 +334,15 @@ class _VideoFeedItemState extends State<_VideoFeedItem> {
                 _SidebarAction(
                   icon: Icons.local_offer_rounded,
                   label: 'Tag',
-                  onTap: () {},
+                  onTap: () {
+                    TagOverlay.show(
+                      context,
+                      postId: widget.video.id,
+                      sourceChannelId: widget.video.channelId,
+                      linkChain: widget.video.linkChain,
+                      channelName: widget.video.channelName,
+                    );
+                  },
                 ),
               ],
             ),

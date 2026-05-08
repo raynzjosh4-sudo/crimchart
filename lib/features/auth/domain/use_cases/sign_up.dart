@@ -1,4 +1,4 @@
-import 'package:crown/core/errors/failures.dart';
+import 'package:crimchart/core/errors/failures.dart';
 import 'package:dartz/dartz.dart';
 import '../entities/user_entity.dart';
 import '../entities/auth_params.dart';

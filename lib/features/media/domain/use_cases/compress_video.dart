@@ -1,4 +1,4 @@
-import 'package:crown/core/errors/failures.dart';
+import 'package:crimchart/core/errors/failures.dart';
 import 'package:dartz/dartz.dart';
 import '../repositories/media_repository.dart';
 import 'package:injectable/injectable.dart';

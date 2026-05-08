@@ -20,6 +20,14 @@ class Manifestos extends Table {
   IntColumn get isLiked => integer().withDefault(const Constant(0)).named('is_liked')();
   RealColumn get aspectRatio => real().nullable().named('aspect_ratio')();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime).named('created_at')();
+  
+  // 👑 TAGGING METADATA
+  TextColumn get taggerName => text().nullable().named('tagger_name')();
+  TextColumn get taggerAvatar => text().nullable().named('tagger_avatar')();
+  TextColumn get sourceChannelName => text().nullable().named('source_channel_name')();
+  TextColumn get sourceChannelAvatar => text().nullable().named('source_channel_avatar')();
+  IntColumn get tagsCount => integer().withDefault(const Constant(0)).named('tags_count')();
+  TextColumn get metadata => text().nullable().named('metadata')(); // JSON map
 
   @override
   Set<Column> get primaryKey => {id};

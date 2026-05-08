@@ -27,16 +27,19 @@ class MomentRepositoryImpl implements MomentRepository {
         'media_url': mediaUrl,
         'media_type': mediaType,
         'caption': caption,
-        'expires_at':
-            DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
+        'expires_at': DateTime.now()
+            .add(const Duration(hours: 24))
+            .toIso8601String(),
       };
 
-      final response =
-          await _supabase.from('channel_moments').insert(momentData).select();
+      final response = await _supabase
+          .from('channel_moments')
+          .insert(momentData)
+          .select();
 
       if (response.isNotEmpty) {
         final newMomentRaw = response.first;
-        
+
         // ── Enrich with Author Info for Local DB ──
         // Since we just posted, we know the current user's info
         // We can fetch it from profiles or just use the current session info
@@ -45,10 +48,11 @@ class MomentRepositoryImpl implements MomentRepository {
             .select('display_name, profile_image_url')
             .eq('id', user.id)
             .single();
-            
+
         final Map<String, dynamic> enrichedData = Map.from(newMomentRaw);
         enrichedData['author_name'] = profileResponse['display_name'];
-        enrichedData['author_avatar_url'] = profileResponse['profile_image_url'];
+        enrichedData['author_avatar_url'] =
+            profileResponse['profile_image_url'];
 
         await _db.upsertChannelMoment(enrichedData);
         return ChannelMomentEntity.fromMap(enrichedData);
@@ -74,7 +78,7 @@ class MomentRepositoryImpl implements MomentRepository {
 
       // 2. Local Cleanup
       await _db.deleteExpiredMoments(channelId);
-      
+
       debugPrint('🧹 [MomentRepository] Expired moments cleaned up');
     } catch (e) {
       debugPrint('⚠️ [MomentRepository] Cleanup error: $e');
@@ -126,14 +130,50 @@ class MomentRepositoryImpl implements MomentRepository {
               map['author_name'] = profile['display_name'];
               map['author_avatar_url'] = profile['profile_image_url'];
             } catch (profileError) {
-              debugPrint('⚠️ [MomentRepository] Fallback profile fetch failed: $profileError');
+              debugPrint(
+                '⚠️ [MomentRepository] Fallback profile fetch failed: $profileError',
+              );
             }
           }
           await _db.upsertChannelMoment(map);
         }
       } catch (fallbackError) {
-        debugPrint('❌ [MomentRepository] Critical Sync Fallback error: $fallbackError');
+        debugPrint(
+          '❌ [MomentRepository] Critical Sync Fallback error: $fallbackError',
+        );
       }
+    }
+  }
+
+  @override
+  Future<void> syncJoinedMoments(List<String> channelIds) async {
+    if (channelIds.isEmpty) return;
+    try {
+      debugPrint(
+        '🚀 [MomentRepository] Syncing moments for ${channelIds.length} joined channels',
+      );
+      final response = await _supabase
+          .from('channel_moments')
+          .select('*, author:profiles(display_name, profile_image_url)')
+          .filter('channel_id', 'in', '(${channelIds.join(',')})')
+          .order('created_at', ascending: false)
+          .limit(50); // Get top 50 recent moments total
+
+      final list = response as List;
+      for (final raw in list) {
+        final map = Map<String, dynamic>.from(raw);
+        final author = map['author'] as Map<String, dynamic>?;
+        if (author != null) {
+          map['author_name'] = author['display_name'];
+          map['author_avatar_url'] = author['profile_image_url'];
+        }
+        await _db.upsertChannelMoment(map);
+      }
+      debugPrint(
+        '✅ [MomentRepository] Batch sync complete: ${list.length} moments',
+      );
+    } catch (e) {
+      debugPrint('⚠️ [MomentRepository] syncJoinedMoments failed: $e');
     }
   }
 }

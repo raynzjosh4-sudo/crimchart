@@ -7,12 +7,12 @@ import '../finalpostpage/finalize_post_page.dart';
 // uncomment these imports:
 //
 // import 'dart:io';
-// import 'package:crown/core/localization/localization_provider.dart';
-// import 'package:crown/core/utils/responsive_size.dart';
+// import 'package:crimchart/core/localization/localization_provider.dart';
+// import 'package:crimchart/core/utils/responsive_size.dart';
 // import 'package:cached_network_image/cached_network_image.dart';
 // import 'package:lucide_icons/lucide_icons.dart';
 // import 'package:path_provider/path_provider.dart';
-// import 'package:crown/core/native/chart_native_ffi.dart';
+// import 'package:crimchart/core/native/chart_native_ffi.dart';
 // import 'functioning/edit_post_controller.dart';
 // import 'widgets/edit_top_bar.dart';
 // import 'widgets/edit_right_toolbar.dart';

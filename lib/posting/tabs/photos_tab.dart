@@ -1,9 +1,8 @@
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/media_item.dart';
-import 'dummydata/photos_dummy_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'dart:typed_data';
@@ -29,13 +28,10 @@ class _PhotosTabState extends State<PhotosTab> {
 
   // Real assets fetched from Device Camera Roll
   final List<AssetEntity> _realAssets = [];
-  // Dummy assets fallback for Windows/Web testing
-  final List<String> _displayedItems = [];
 
   bool _isLoadingMore = false;
   bool _hasMore = true;
   int _page = 0;
-  bool _useDummyFallback = false;
 
   @override
   void initState() {
@@ -64,7 +60,7 @@ class _PhotosTabState extends State<PhotosTab> {
     try {
       // PhotoManager mobile plugin throws on Windows/Web
       if (kIsWeb || Platform.isWindows || Platform.isLinux) {
-        throw Exception('Not running on mobile device');
+        throw Exception('Gallery access is only available on mobile devices.');
       }
 
       final PermissionState ps = await PhotoManager.requestPermissionExtend();
@@ -91,14 +87,11 @@ class _PhotosTabState extends State<PhotosTab> {
         });
       }
     } catch (e) {
-      // Graceful fallback to UI Dummy Data so the developer can keep building Windows UI natively!
-      _useDummyFallback = true;
+      debugPrint('Error loading photos: $e');
       if (mounted) {
         setState(() {
-          _displayedItems.addAll(photosDummyData);
-          _page++;
           _isLoadingMore = false;
-          if (_page >= 3) _hasMore = false;
+          _hasMore = false;
         });
       }
     }
@@ -109,16 +102,23 @@ class _PhotosTabState extends State<PhotosTab> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    if (_realAssets.isEmpty && !_isLoadingMore) {
+      return Center(
+        child: Text(
+          'No photos found',
+          style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
+        ),
+      );
+    }
+
+
     return MasonryGridView.count(
       controller: _scrollController,
       padding: EdgeInsets.all(1.w),
       crossAxisCount: 3,
       mainAxisSpacing: 1.5.w,
       crossAxisSpacing: 1.5.w,
-      itemCount:
-          (_useDummyFallback ? _displayedItems.length : _realAssets.length) +
-          1 +
-          (_isLoadingMore ? 3 : 0),
+      itemCount: _realAssets.length + 1 + (_isLoadingMore ? 3 : 0),
       itemBuilder: (context, index) {
         if (index == 0) {
           return AspectRatio(
@@ -146,9 +146,7 @@ class _PhotosTabState extends State<PhotosTab> {
           );
         }
 
-        final int listLength = _useDummyFallback
-            ? _displayedItems.length
-            : _realAssets.length;
+        final int listLength = _realAssets.length;
 
         if (index > listLength) {
           return AspectRatio(
@@ -167,9 +165,7 @@ class _PhotosTabState extends State<PhotosTab> {
         }
 
         final mediaIndex = index - 1;
-        final String mediaId = _useDummyFallback
-            ? _displayedItems[mediaIndex]
-            : _realAssets[mediaIndex].id;
+        final String mediaId = _realAssets[mediaIndex].id;
         final isSelected = widget.selectedItems.containsKey(mediaId);
         final double aspectRatio = (index % 5 == 1 || index % 7 == 3)
             ? 0.7
@@ -177,32 +173,25 @@ class _PhotosTabState extends State<PhotosTab> {
 
         return GestureDetector(
           onTap: () async {
-            if (_useDummyFallback) {
+            final file = await _realAssets[mediaIndex].file;
+            if (file != null) {
+              final asset = _realAssets[mediaIndex];
+              final thumb = await asset.thumbnailDataWithSize(
+                const ThumbnailSize(500, 500),
+              );
+
+              // 📏 Calculate the real "Real Data" ratio
+              final double ratio = asset.width / asset.height.clamp(1, 10000);
+
               widget.onToggleSelection(
                 mediaId,
-                MediaItem(path: mediaId, type: MediaType.photo),
+                MediaItem(
+                  path: file.path,
+                  type: MediaType.photo,
+                  thumbnailBytes: thumb,
+                  aspectRatio: ratio,
+                ),
               );
-            } else {
-              final file = await _realAssets[mediaIndex].file;
-              if (file != null) {
-                final asset = _realAssets[mediaIndex];
-                final thumb = await asset.thumbnailDataWithSize(
-                  const ThumbnailSize(500, 500),
-                );
-
-                // 📏 Calculate the real "Real Data" ratio
-                final double ratio = asset.width / asset.height.clamp(1, 10000);
-
-                widget.onToggleSelection(
-                  mediaId,
-                  MediaItem(
-                    path: file.path,
-                    type: MediaType.photo,
-                    thumbnailBytes: thumb,
-                    aspectRatio: ratio,
-                  ),
-                );
-              }
             }
           },
           child: AspectRatio(
@@ -210,22 +199,10 @@ class _PhotosTabState extends State<PhotosTab> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (_useDummyFallback)
-                  Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: CachedNetworkImageProvider(
-                          _displayedItems[mediaIndex],
-                        ),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  )
-                else
-                  _MediaThumbnailWidget(
-                    asset: _realAssets[mediaIndex],
-                    colorScheme: colorScheme,
-                  ),
+                _MediaThumbnailWidget(
+                  asset: _realAssets[mediaIndex],
+                  colorScheme: colorScheme,
+                ),
                 if (isSelected)
                   Container(
                     color: Colors.black.withValues(alpha: 0.25),

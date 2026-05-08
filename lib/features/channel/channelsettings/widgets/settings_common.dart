@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 
 class SettingsSection extends StatelessWidget {
   final List<Widget> children;

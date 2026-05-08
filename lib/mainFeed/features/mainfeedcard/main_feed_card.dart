@@ -1,6 +1,6 @@
-import 'package:crown/mainFeed/features/cardwidgets/models/hiness_model.dart';
-import 'package:crown/mainFeed/features/charts_stars/charts_and_stars_widget.dart';
-import 'package:crown/mainFeed/features/cardwidgets/hiness/hiness_card_widget.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/models/hiness_model.dart';
+import 'package:crimchart/mainFeed/features/charts_stars/charts_and_stars_widget.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/hiness/hiness_card_widget.dart';
 import 'package:flutter/material.dart';
 import '../../../features/channel/pages/channel_page.dart';
 import '../cardwidgets/storychacrdwidget/story_list_widget.dart';

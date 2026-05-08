@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:crown/core/errors/failures.dart';
-import 'package:crown/core/native/chart_native_ffi.dart';
+import 'package:crimchart/core/errors/failures.dart';
+import 'package:crimchart/core/native/chart_native_ffi.dart';
 import 'package:dartz/dartz.dart';
 import '../../domain/repositories/media_repository.dart';
 import 'package:injectable/injectable.dart';

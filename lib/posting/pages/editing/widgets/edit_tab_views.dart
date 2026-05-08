@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import '../functioning/edit_post_controller.dart';
 
 // ─── Filter Grid ────────────────────────────────────────────────────────────
@@ -317,7 +317,7 @@ class StickersTabView extends StatelessWidget {
       child: ElevatedButton.icon(
         icon: Icon(LucideIcons.sticker, size: 24.sp),
         label: Text(
-          'Add Crimchat Logo',
+          'Add crimchart Logo',
           style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(

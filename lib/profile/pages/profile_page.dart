@@ -1,11 +1,11 @@
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/auth/application/auth_controller.dart';
-import 'package:crown/features/widgets/memberimage/starter_image.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/auth/application/auth_controller.dart';
+import 'package:crimchart/features/widgets/memberimage/starter_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:crown/core/router/app_router.dart';
+import 'package:crimchart/core/router/app_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../tabs/photos_profile_tab.dart';
 import '../tabs/videos_profile_tab.dart';

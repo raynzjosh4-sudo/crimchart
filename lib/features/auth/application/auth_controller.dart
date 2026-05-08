@@ -1,14 +1,14 @@
 import 'dart:convert';
-import 'package:crown/core/network/api_client.dart';
-import 'package:crown/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:crown/features/auth/data/sources/auth_local_source.dart';
-import 'package:crown/features/auth/data/sources/auth_remote_source.dart';
-import 'package:crown/features/auth/domain/entities/auth_params.dart';
-import 'package:crown/features/auth/domain/entities/user_entity.dart';
-import 'package:crown/features/auth/domain/repositories/auth_repository.dart';
-import 'package:crown/features/auth/domain/use_cases/auth_use_cases.dart';
-import 'package:crown/features/auth/domain/use_cases/login.dart';
-import 'package:crown/features/auth/domain/use_cases/sign_up.dart';
+import 'package:crimchart/core/network/api_client.dart';
+import 'package:crimchart/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:crimchart/features/auth/data/sources/auth_local_source.dart';
+import 'package:crimchart/features/auth/data/sources/auth_remote_source.dart';
+import 'package:crimchart/features/auth/domain/entities/auth_params.dart';
+import 'package:crimchart/features/auth/domain/entities/user_entity.dart';
+import 'package:crimchart/features/auth/domain/repositories/auth_repository.dart';
+import 'package:crimchart/features/auth/domain/use_cases/auth_use_cases.dart';
+import 'package:crimchart/features/auth/domain/use_cases/login.dart';
+import 'package:crimchart/features/auth/domain/use_cases/sign_up.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';

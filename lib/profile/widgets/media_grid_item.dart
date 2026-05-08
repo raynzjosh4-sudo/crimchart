@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crown/core/widgets/chart_image.dart';
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/core/widgets/chart_image.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 

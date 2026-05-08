@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/theme/theme_provider.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/theme/theme_provider.dart';
 import 'package:provider/provider.dart';
 
 class AudioPlayerPage extends StatefulWidget {

@@ -1,6 +1,6 @@
 // import 'package:flutter/material.dart';
-// import 'package:crown/core/utils/responsive_size.dart';
-// import 'package:crown/profile/models/charter_model.dart';
+// import 'package:crimchart/core/utils/responsive_size.dart';
+// import 'package:crimchart/profile/models/charter_model.dart';
 // import 'person_card.dart';
 
 // class PeopleYouMayKnowSection extends StatelessWidget {

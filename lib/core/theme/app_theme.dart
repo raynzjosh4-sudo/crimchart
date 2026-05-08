@@ -34,13 +34,15 @@ class AppTheme {
   }) {
     final isDark = brightness == Brightness.dark;
     final scaffoldColor = isDark
-        ? Colors.transparent 
+        ? const Color(0xFF110E0D) // 👑 SOLID BACKGROUND
         : const Color.fromARGB(255, 245, 245, 245);
     final textColor = isDark ? Colors.white : Colors.black;
 
     // Soft Shadow Helper
     final softShadow = AppShadows.diffused(
-      color: isDark ? Colors.black.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.08),
+      color: isDark
+          ? Colors.black.withValues(alpha: 0.4)
+          : Colors.black.withValues(alpha: 0.08),
     );
 
     return ThemeData(
@@ -49,7 +51,7 @@ class AppTheme {
       scaffoldBackgroundColor: scaffoldColor,
       primaryColor: primaryColor,
       fontFamily: fontFamily,
-      
+
       // Card Theme with Squircles and Soft Shadows
       cardTheme: CardThemeData(
         shape: AppShapes.cardSquircle,
@@ -67,9 +69,7 @@ class AppTheme {
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          shape: AppShapes.buttonSquircle,
-        ),
+        style: FilledButton.styleFrom(shape: AppShapes.buttonSquircle),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
@@ -118,7 +118,7 @@ class AppTheme {
         onError: Colors.white,
         surface: isDark ? const Color(0xFF141110) : Colors.white,
         onSurface: textColor,
-        surfaceContainerHighest: isDark 
+        surfaceContainerHighest: isDark
             ? const Color(0xFF231D1C) // Warmer dark brown
             : const Color(0xFFF5F0EE), // Warmer light surface
         onSurfaceVariant: textColor.withValues(alpha: 0.7),

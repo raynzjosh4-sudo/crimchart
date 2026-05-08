@@ -1,4 +1,4 @@
-import 'package:crown/features/newinsidechartstartpage/models/member.dart';
+import 'package:crimchart/features/newinsidechartstartpage/models/member.dart';
 
 class AggregatedGift {
   final ReceivedGift sample;

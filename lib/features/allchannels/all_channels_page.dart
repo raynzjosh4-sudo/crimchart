@@ -1,6 +1,6 @@
-import 'package:crown/features/channel/application/channels_list_controller.dart';
-import 'package:crown/features/channel/pages/channel_page.dart';
-import 'package:crown/features/newinsidechartstartpage/models/chart.dart';
+import 'package:crimchart/features/channel/application/channels_list_controller.dart';
+import 'package:crimchart/features/channel/pages/channel_page.dart';
+import 'package:crimchart/features/newinsidechartstartpage/models/chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../newinsidechartstartpage/widgets/existingcharts/existing_chart_tile.dart';

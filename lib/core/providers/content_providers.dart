@@ -1,4 +1,4 @@
-import 'package:crown/core/models/content_entity.dart';
+import 'package:crimchart/core/models/content_entity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Repository for content operations

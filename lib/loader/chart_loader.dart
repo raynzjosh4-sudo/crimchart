@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 
 /// A reusable premium Linear Loader used across the Chart app.
 /// Extracted from signing pages to provide a consistent loading experience.

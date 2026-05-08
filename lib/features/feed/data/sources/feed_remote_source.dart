@@ -74,14 +74,14 @@ class FeedRemoteSource {
     try {
       final response = await supabase
           .from('channel_posts')
-          .select()
+          .select('*, author:profiles(*)')
           .eq('channel_id', channelId)
           .eq('is_video', true)
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
 
       return (response as List)
-          .map((row) => PostEntity.fromMap(Map<String, dynamic>.from(row)))
+          .map((row) => PostMapper.fromJson(Map<String, dynamic>.from(row)))
           .toList();
     } catch (e) {
       debugPrint('❌ [FeedRemoteSource] Error fetching channel videos: $e');
@@ -176,6 +176,9 @@ class FeedRemoteSource {
             'audio_url': payload['audio_url'],
             'is_video': payload['is_video'],
             'is_audio': payload['is_audio'],
+            'thumbnail_url': post.thumbnailUrls.isNotEmpty
+                ? post.thumbnailUrls.first
+                : null,
             'expires_at': DateTime.now()
                 .add(const Duration(hours: 24))
                 .toIso8601String(),
@@ -193,6 +196,9 @@ class FeedRemoteSource {
             'audio_url': payload['audio_url'],
             'is_video': payload['is_video'],
             'is_audio': payload['is_audio'],
+            'thumbnail_url': post.thumbnailUrls.isNotEmpty
+                ? post.thumbnailUrls.first
+                : null,
             'privacy': payload['privacy'],
             'allow_comments': payload['allow_comments'],
             'expires_at': DateTime.now()
@@ -267,7 +273,8 @@ class FeedRemoteSource {
       }
 
       // 👑 ADDITIONAL: Also Share to Status if flag is on
-      if (shareToStatus) {
+      // Skip if the primary post type is already status to avoid double-inserting
+      if (shareToStatus && post.postType != 'status') {
         final personalStatusPayload = {
           'id': const Uuid().v4(), // Different ID
           'author_id': payload['author_id'],
@@ -277,6 +284,9 @@ class FeedRemoteSource {
           'audio_url': payload['audio_url'],
           'is_video': payload['is_video'],
           'is_audio': payload['is_audio'],
+          'thumbnail_url': post.thumbnailUrls.isNotEmpty
+              ? post.thumbnailUrls.first
+              : null,
           'privacy': payload['privacy'] ?? 'public',
           'allow_comments': payload['allow_comments'] ?? true,
           'expires_at': DateTime.now()
@@ -360,14 +370,12 @@ class FeedRemoteSource {
     int limit = 10,
   }) async {
     final supabase = Supabase.instance.client;
+    final userId = supabase.auth.currentUser?.id;
     final startIndex = (page - 1) * limit;
     final endIndex = startIndex + limit - 1;
 
-    print("🌐 [FeedRemoteSource] Querying channel_feed_view for: $channelId");
-
     try {
       if (channelId == 'general' || channelId.isEmpty) {
-        // Fallback for general feed
         final response = await supabase
             .from('posts')
             .select('*, author:profiles(*)')
@@ -377,40 +385,54 @@ class FeedRemoteSource {
         return _mapResponseToEntities(response as List);
       }
 
-      // 👑 PRO LEVEL: Query the View (Selective for Manifestos Only)
-      // Restoring all columns as confirmed by the user.
-      // This includes profile data, audio urls, and link threading metadata.
+      // 1. Fetch posts from the view (plain select — views can't FK-join)
       final response = await supabase
           .from('channel_feed_view')
-          .select('''
-            id, 
-            author_id, 
-            username,
-            display_name, 
-            profile_image_url, 
-            channel_id, 
-            caption, 
-            video_url,
-            video_urls,
-            audio_url, 
-            image_urls, 
-            thumbnail_urls, 
-            is_video, 
-            is_audio, 
-            likes, 
-            comments, 
-            created_at, 
-            post_type, 
-            metadata,
-            is_liked
-          ''')
+          .select()
           .eq('channel_id', channelId)
           .order('created_at', ascending: false)
           .range(startIndex, endIndex);
 
-      return _mapResponseToEntities(response as List);
+      final rawList = response as List;
+
+      // 2. If logged in, fetch which of these posts the user has liked
+      //    in a separate lightweight query — this is required because
+      //    channel_feed_view is a VIEW with no FK relationships.
+      Set<String> likedIds = {};
+      if (userId != null && rawList.isNotEmpty) {
+        final postIds = rawList
+            .map((r) => r['id']?.toString())
+            .where((id) => id != null)
+            .toList();
+        try {
+          final likesResponse = await supabase
+              .from('channel_post_likes')
+              .select('post_id')
+              .eq('user_id', userId)
+              .inFilter('post_id', postIds);
+          likedIds = (likesResponse as List)
+              .map((r) => r['post_id']?.toString() ?? '')
+              .toSet();
+          debugPrint(
+            '❤️ [FeedRemoteSource] User liked ${likedIds.length} posts in this page.',
+          );
+        } catch (e) {
+          debugPrint('⚠️ [FeedRemoteSource] Could not fetch liked ids: $e');
+        }
+      }
+
+      // 3. Stamp is_liked on each row before mapping to entities
+      final stampedList = rawList.map((row) {
+        final map = Map<String, dynamic>.from(row as Map);
+        if (likedIds.contains(map['id']?.toString())) {
+          map['is_liked'] = true;
+        }
+        return map;
+      }).toList();
+
+      return _mapResponseToEntities(stampedList);
     } catch (e) {
-      debugPrint('❌ [FeedRemoteSource] Network Fetch Failed: $e');
+      debugPrint('❌ [FeedRemoteSource] Fetch Failed: $e');
       throw ServerException('Failed to get channel posts: $e');
     }
   }
@@ -581,10 +603,12 @@ class FeedRemoteSource {
     }
 
     debugPrint('🌐 [Step 1: Dedup] Processing ${response.length} raw rows...');
-    
+
     // ... grouping logic ...
-    
-    debugPrint('🌐 [Step 2: Mapping] Converting ${deduped.length} unique items to entities...');
+
+    debugPrint(
+      '🌐 [Step 2: Mapping] Converting ${deduped.length} unique items to entities...',
+    );
     final List<PostEntity> results = [];
     for (final entry in deduped.entries) {
       try {
@@ -597,7 +621,9 @@ class FeedRemoteSource {
       }
     }
 
-    debugPrint('🌐 [Step 3: Complete] Successfully mapped ${results.length} entities.');
+    debugPrint(
+      '🌐 [Step 3: Complete] Successfully mapped ${results.length} entities.',
+    );
     return results;
   }
 

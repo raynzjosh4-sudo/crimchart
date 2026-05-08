@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:crown/features/auth/application/auth_controller.dart';
-import 'package:crown/posting/models/media_item.dart';
-import 'package:crown/core/db/chart_native_db.dart';
-import 'package:crown/features/channel/application/channel_feed_provider.dart';
-import 'package:crown/features/channel/application/channel_statuses_provider.dart';
-import 'package:crown/features/channel/application/channel_moments_provider.dart';
+import 'package:crimchart/features/auth/application/auth_controller.dart';
+import 'package:crimchart/posting/models/media_item.dart';
+import 'package:crimchart/core/db/chart_native_db.dart';
+import 'package:crimchart/features/channel/application/channel_feed_provider.dart';
+import 'package:crimchart/features/channel/application/channel_statuses_provider.dart';
+import 'package:crimchart/features/channel/application/channel_moments_provider.dart';
 import '../posting_service.dart';
 
 import 'posting_status.dart';

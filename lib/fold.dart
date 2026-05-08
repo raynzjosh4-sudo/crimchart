@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'package:crown/features/widgets/memberimage/starter_image.dart';
+import 'package:crimchart/features/widgets/memberimage/starter_image.dart';
 import 'package:flutter/material.dart';
 
 class AudioCardMedia extends StatefulWidget {

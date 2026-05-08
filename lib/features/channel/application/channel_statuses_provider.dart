@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:crown/features/channel/domain/entities/channel_status_entity.dart';
+import 'package:crimchart/features/channel/domain/entities/channel_status_entity.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -122,6 +122,7 @@ class ChannelStatusesNotifier
             ? jsonEncode(map['image_urls'])
             : (map['image_urls'] as String?),
         'videoUrl': map['video_url'],
+        'thumbnailUrl': map['thumbnail_url'],
         'audioUrl': map['audio_url'],
         'isVideo': map['is_video'] == true ? 1 : 0,
         'isAudio': map['is_audio'] == true ? 1 : 0,

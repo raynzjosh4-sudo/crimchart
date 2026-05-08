@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:crown/channelcreatepage/channel_create_page.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/channelcreatepage/channel_create_page.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 

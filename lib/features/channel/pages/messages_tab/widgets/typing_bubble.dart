@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/core/theme/design_system.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/core/theme/design_system.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/user_model.dart';
 import '../bottom_sheets/user_profile_bottom_sheet.dart';

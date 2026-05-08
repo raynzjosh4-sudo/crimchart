@@ -1,4 +1,4 @@
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/channel_entity.dart';

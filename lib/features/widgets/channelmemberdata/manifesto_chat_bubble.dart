@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/core/widgets/chart_image.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/core/widgets/chart_image.dart';
 import '../memberimage/starter_image.dart';
 
 class ManifestoChatBubble extends StatelessWidget {
@@ -11,6 +11,8 @@ class ManifestoChatBubble extends StatelessWidget {
   final bool isMe;
   final bool isOnline;
   final List<String> imageUrls;
+  final VoidCallback? onLongPress; // 👑 Long-press → delete sheet
+  final VoidCallback? onAvatarTap; // 👑 Avatar tap → profile page
 
   const ManifestoChatBubble({
     super.key,
@@ -21,6 +23,8 @@ class ManifestoChatBubble extends StatelessWidget {
     this.isMe = false,
     this.isOnline = false,
     this.imageUrls = const [],
+    this.onLongPress,
+    this.onAvatarTap,
   });
 
   @override
@@ -43,13 +47,16 @@ class ManifestoChatBubble extends StatelessWidget {
         children: [
           // ── LEFT AVATAR (For Others) ──
           if (!isMe) ...[
-            MemberImage(
-              size: 34.w,
-              imageUrl:
-                  avatarUrl ??
-                  'https://picsum.photos/seed/${username.hashCode}/100',
-              showActiveDot: isOnline,
-              borderWidth: 1.w,
+            GestureDetector(
+              onTap: onAvatarTap,
+              child: MemberImage(
+                size: 34.w,
+                imageUrl:
+                    avatarUrl ??
+                    'https://picsum.photos/seed/${username.hashCode}/100',
+                showActiveDot: isOnline,
+                borderWidth: 1.w,
+              ),
             ),
             SizedBox(width: 10.w),
           ],
@@ -80,48 +87,51 @@ class ManifestoChatBubble extends StatelessWidget {
                 ),
 
                 // ── MESSAGE BODY ──
-                Container(
-                  constraints: BoxConstraints(
-                    maxWidth: 0.75.w,
-                    minWidth: 100.w,
-                    minHeight: 40.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: borderRadius,
-                    border: Border.all(
-                      color: isMe
-                          ? themeColor.withValues(alpha: 0.4)
-                          : Colors.white10,
-                      width: 0.5,
+                GestureDetector(
+                  onLongPress: onLongPress,
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+                      minWidth: 100.w,
+                      minHeight: 40.h,
                     ),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── IMAGES GRID ──
-                      if (imageUrls.isNotEmpty) _buildImageGrid(),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: borderRadius,
+                      border: Border.all(
+                        color: isMe
+                            ? themeColor.withValues(alpha: 0.4)
+                            : Colors.white10,
+                        width: 0.5,
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── IMAGES GRID ──
+                        if (imageUrls.isNotEmpty) _buildImageGrid(),
 
-                      // ── TEXT MESSAGE ──
-                      if (message.isNotEmpty)
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 14.w,
-                            vertical: 10.h,
-                          ),
-                          child: Text(
-                            message,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 14.sp,
-                              height: 1.4,
-                              fontWeight: FontWeight.w500,
+                        // ── TEXT MESSAGE ──
+                        if (message.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 14.w,
+                              vertical: 10.h,
+                            ),
+                            child: Text(
+                              message,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: 14.sp,
+                                height: 1.4,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -131,13 +141,16 @@ class ManifestoChatBubble extends StatelessWidget {
           // ── RIGHT AVATAR (For Me) ──
           if (isMe) ...[
             SizedBox(width: 10.w),
-            MemberImage(
-              size: 34.w,
-              imageUrl:
-                  avatarUrl ??
-                  'https://picsum.photos/seed/${username.hashCode}/100',
-              showActiveDot: isOnline,
-              borderWidth: 1.w,
+            GestureDetector(
+              onTap: onAvatarTap,
+              child: MemberImage(
+                size: 34.w,
+                imageUrl:
+                    avatarUrl ??
+                    'https://picsum.photos/seed/${username.hashCode}/100',
+                showActiveDot: isOnline,
+                borderWidth: 1.w,
+              ),
             ),
           ],
         ],

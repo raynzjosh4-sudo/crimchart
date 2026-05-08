@@ -1,4 +1,4 @@
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 
 import '../features/cardwidgets/models/channel_post_model.dart';
 import '../../../../features/widgets/channelmemberdata/comment_card/thumbnaillink/thumbnaillinkmedia/thumbnail_media_type.dart';

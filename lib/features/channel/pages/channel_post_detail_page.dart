@@ -1,7 +1,7 @@
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/mainFeed/features/cardwidgets/models/channel_post_model.dart';
-import 'package:crown/mainFeed/features/mainfeedcard/main_feed_card.dart';
-import 'package:crown/mainFeed/features/mainfeedcard/models/main_feed_card_type_model.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/models/channel_post_model.dart';
+import 'package:crimchart/mainFeed/features/mainfeedcard/main_feed_card.dart';
+import 'package:crimchart/mainFeed/features/mainfeedcard/models/main_feed_card_type_model.dart';
 import 'package:flutter/material.dart';
 
 class ChannelPostDetailPage extends StatefulWidget {

@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'package:crown/mainFeed/dummydata/charter_star_dummy_data.dart';
+import 'package:crimchart/mainFeed/dummydata/charter_star_dummy_data.dart';
 import 'package:flutter/material.dart';
 import 'back_card.dart';
 import '../../../../gifts/horizontalgiftscroll/horizontal_gift_scroll.dart';

@@ -1,5 +1,5 @@
-import 'package:crown/features/channel/pages/crownpoll/crown_option_model.dart';
-import 'package:crown/features/channel/pages/crownpoll/widgets/mediatype/crown_media_type.dart';
+import 'package:crimchart/features/channel/pages/crownpoll/crown_option_model.dart';
+import 'package:crimchart/features/channel/pages/crownpoll/widgets/mediatype/crown_media_type.dart';
 
 class SheetDummyData {
   static final String crownTitle = "What should our next event be? We have so many options and we really need the community to come together and decide on this critical matter because it will dictate the next entire year of our trajectory! " * 5;

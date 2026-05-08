@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crown/video/core/widgets/video_player_widget.dart';
 import '../../../domain/entities/channel_moment_entity.dart';
 
 class PromotionBannerCard extends StatelessWidget {
@@ -14,12 +13,9 @@ class PromotionBannerCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: 6.w,
-        vertical: 5.h,
-      ),
+      margin: EdgeInsets.symmetric(horizontal: 6.w, vertical: 5.h),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.15),
@@ -38,29 +34,41 @@ class PromotionBannerCard extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // ── Media Content ──
-          moment.mediaType == 'video'
-              ? VideoPlayerWidget(
-                  videoUrl: moment.mediaUrl,
-                  autoPlay: false,
-                )
-              : CachedNetworkImage(
-                  imageUrl: moment.mediaUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(
-                    color: colorScheme.surfaceContainer,
+          CachedNetworkImage(
+            imageUrl: (moment.mediaType == 'video'
+                ? (moment.thumbnailUrl ?? moment.mediaUrl)
+                : moment.mediaUrl),
+            fit: BoxFit.cover,
+            placeholder: (_, __) =>
+                Container(color: colorScheme.surfaceContainer),
+            errorWidget: (_, __, ___) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.video_library_outlined,
+                    color: Colors.white.withValues(alpha: 0.2),
+                    size: 32.sp,
                   ),
-                  errorWidget: (_, __, ___) => const Center(
-                    child: Icon(Icons.error_outline),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'Preview Unavailable',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      fontSize: 10.sp,
+                    ),
                   ),
-                ),
+                ],
+              ),
+            ),
+          ),
 
           // ── Bottom Gradient for Readability ──
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            height: 80.h,
+            height: 60.h,
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -83,8 +91,8 @@ class PromotionBannerCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 28.w,
-                  height: 28.w,
+                  width: 24.w,
+                  height: 24.w,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -123,7 +131,7 @@ class PromotionBannerCard extends StatelessWidget {
                       moment.authorName ?? 'User',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 13.sp,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.3,
                         shadows: [
@@ -142,7 +150,7 @@ class PromotionBannerCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 10.sp,
+                          fontSize: 9.sp,
                           fontWeight: FontWeight.w500,
                           shadows: [
                             Shadow(

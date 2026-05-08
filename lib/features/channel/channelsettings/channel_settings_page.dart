@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'widgets/settings_common.dart';
 import 'widgets/channel_header.dart';
@@ -8,7 +8,7 @@ import 'widgets/management_section.dart';
 import 'widgets/allmember/members_horizontal_list.dart';
 import 'insidesettingspage/all_members_page.dart';
 import 'channelinsidesettingspage/channel_settings_detailed_page.dart';
-import 'package:crown/features/newinsidechartstartpage/models/member.dart';
+import 'package:crimchart/features/newinsidechartstartpage/models/member.dart';
 import 'package:intl/intl.dart';
 
 class ChannelSettingsPage extends StatelessWidget {

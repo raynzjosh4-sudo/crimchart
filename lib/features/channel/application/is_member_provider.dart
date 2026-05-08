@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/features/auth/application/auth_controller.dart';
-import 'package:crown/core/db/chart_native_db.dart';
+import 'package:crimchart/features/auth/application/auth_controller.dart';
+import 'package:crimchart/core/db/chart_native_db.dart';
 
 /// 👑 The Centralized Rule File for Channel Membership
 /// Watches the local Drift database for instant, offline-first membership status

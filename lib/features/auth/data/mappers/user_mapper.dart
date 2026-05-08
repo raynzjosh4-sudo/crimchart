@@ -1,5 +1,5 @@
-import 'package:crown/features/auth/domain/entities/auth_params.dart';
-import 'package:crown/features/auth/domain/entities/user_entity.dart';
+import 'package:crimchart/features/auth/domain/entities/auth_params.dart';
+import 'package:crimchart/features/auth/domain/entities/user_entity.dart';
 
 class UserMapper {
   const UserMapper._();

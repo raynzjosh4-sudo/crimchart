@@ -19,6 +19,7 @@ import 'tables/channel/channel_presence.dart';
 import 'tables/channel/channel_creator.dart';
 import 'tables/channel/channel_posts.dart';
 import 'tables/channel/channel_post_tags.dart';
+import 'tables/channel/channel_content_tags.dart';
 import 'tables/channel/channel_post_comments.dart';
 import 'tables/channel/channel_messages.dart';
 import 'tables/channel/common_channels.dart';
@@ -46,6 +47,7 @@ part 'chart_db.g.dart';
     ChannelCreator,
     ChannelPosts,
     ChannelPostTags,
+    ChannelContentTags,
     ChannelPostComments,
     ChannelMessages,
     CommonChannels,
@@ -61,7 +63,7 @@ class ChartDatabase extends _$ChartDatabase {
   ChartDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration {
@@ -71,56 +73,53 @@ class ChartDatabase extends _$ChartDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         debugPrint('🛠️ [Drift] Migrating from $from to $to...');
-        if (from < 6) {
-          // 👑 FAIL-SAFE: Re-create all tables to ensure the new Invitations table is present
-          for (final table in allTables) {
-            await m.drop(table).catchError((_) {});
-          }
-          await m.createAll();
-        } else if (from < 7) {
-          // 👑 CROSS-CHANNEL INVITATIONS: Add new columns via Raw SQL to avoid type errors with non-generated code
-          await customStatement(
-            'ALTER TABLE channel_posts ADD COLUMN post_type TEXT DEFAULT "post"',
-          );
-          await customStatement(
-            'ALTER TABLE channel_posts ADD COLUMN metadata TEXT',
-          );
+
+        if (from < 20) {
+          debugPrint('👑 [Drift] Adding Tagging Metadata columns (Version 20)...');
+          await customStatement('ALTER TABLE manifestos ADD COLUMN tagger_name TEXT');
+          await customStatement('ALTER TABLE manifestos ADD COLUMN tagger_avatar TEXT');
+          await customStatement('ALTER TABLE manifestos ADD COLUMN source_channel_name TEXT');
+          await customStatement('ALTER TABLE manifestos ADD COLUMN source_channel_avatar TEXT');
+          await customStatement('ALTER TABLE manifestos ADD COLUMN tags_count INTEGER DEFAULT 0');
+          await customStatement('ALTER TABLE manifestos ADD COLUMN metadata TEXT');
+
+          await customStatement('ALTER TABLE posts ADD COLUMN tagger_name TEXT');
+          await customStatement('ALTER TABLE posts ADD COLUMN tagger_avatar TEXT');
+          await customStatement('ALTER TABLE posts ADD COLUMN source_channel_name TEXT');
+          await customStatement('ALTER TABLE posts ADD COLUMN source_channel_avatar TEXT');
+          await customStatement('ALTER TABLE posts ADD COLUMN tags_count INTEGER DEFAULT 0');
+          await customStatement('ALTER TABLE posts ADD COLUMN metadata TEXT');
+
+          await customStatement('ALTER TABLE channel_posts ADD COLUMN tagger_name TEXT');
+          await customStatement('ALTER TABLE channel_posts ADD COLUMN tagger_avatar TEXT');
+          await customStatement('ALTER TABLE channel_posts ADD COLUMN source_channel_name TEXT');
+          await customStatement('ALTER TABLE channel_posts ADD COLUMN source_channel_avatar TEXT');
+          await customStatement('ALTER TABLE channel_posts ADD COLUMN tags_count INTEGER DEFAULT 0');
         }
 
-        if (from < 8) {
-          // 👑 COMMUNITY POLLS: Add columns to messages and create new tables
-          await customStatement(
-            'ALTER TABLE channel_messages ADD COLUMN message_type TEXT DEFAULT "text"',
-          );
-          await customStatement(
-            'ALTER TABLE channel_messages ADD COLUMN metadata TEXT',
-          );
-
-          await m.createTable(channelPolls);
-          await m.createTable(channelPollOptions);
+        if (from < 19) {
+          debugPrint('👑 [Drift] Adding ChannelContentTags table (Version 19)...');
+          await m.createTable(channelContentTags);
         }
 
-        if (from < 9) {
-          // 👑 CHANNEL GIFTS: Create the table and link to messages
-          await m.createTable(channelGifts);
+        if (from < 18) {
+          debugPrint('👑 [Drift] Adding thumbnail_url to channel_messages (Version 18)...');
+          await customStatement('ALTER TABLE channel_messages ADD COLUMN thumbnail_url TEXT');
         }
 
-        if (from < 10) {
-          await customStatement(
-            'ALTER TABLE channels ADD COLUMN allow_invitations_by TEXT DEFAULT "all"',
-          );
+        if (from < 17) {
+          debugPrint('👑 [Drift] Adding thumbnail_url to channel_statuses (Version 17)...');
+          await customStatement('ALTER TABLE channel_statuses ADD COLUMN thumbnail_url TEXT');
         }
 
-        if (from < 13) {
-          debugPrint(
-            '👑 [Drift] Recreating channel_moments table for Version 13 (Author Info)...',
-          );
-          // 👑 Migration: Aggressively recreate channel_moments to ensure author info columns are added
-          await m.drop(channelMoments).catchError((e) {
-            debugPrint('⚠️ [Drift] Drop failed (probably non-existent): $e');
-          });
-          await m.createTable(channelMoments);
-          debugPrint('✅ [Drift] channel_moments recreated successfully!');
+        if (from < 16) {
+          debugPrint('👑 [Drift] Adding likes_count to channels (Version 16)...');
+          await customStatement('ALTER TABLE channels ADD COLUMN likes_count INTEGER DEFAULT 0');
+        }
+
+        if (from < 15) {
+          debugPrint('👑 [Drift] Adding tags_count to channels (Version 15)...');
+          await customStatement('ALTER TABLE channels ADD COLUMN tags_count INTEGER DEFAULT 0');
         }
 
         if (from < 14) {
@@ -130,14 +129,37 @@ class ChartDatabase extends _$ChartDatabase {
           await customStatement('ALTER TABLE channels ADD COLUMN followers_count INTEGER DEFAULT 0');
         }
 
-        if (from < 15) {
-          debugPrint('👑 [Drift] Adding tags_count to channels (Version 15)...');
-          await customStatement('ALTER TABLE channels ADD COLUMN tags_count INTEGER DEFAULT 0');
+        if (from < 13) {
+          debugPrint('👑 [Drift] Recreating channel_moments table (Version 13)...');
+          await m.drop(channelMoments).catchError((_) {});
+          await m.createTable(channelMoments);
         }
 
-        if (from < 16) {
-          debugPrint('👑 [Drift] Adding likes_count to channels (Version 16)...');
-          await customStatement('ALTER TABLE channels ADD COLUMN likes_count INTEGER DEFAULT 0');
+        if (from < 10) {
+          await customStatement('ALTER TABLE channels ADD COLUMN allow_invitations_by TEXT DEFAULT "all"');
+        }
+
+        if (from < 9) {
+          await m.createTable(channelGifts);
+        }
+
+        if (from < 8) {
+          await customStatement('ALTER TABLE channel_messages ADD COLUMN message_type TEXT DEFAULT "text"');
+          await customStatement('ALTER TABLE channel_messages ADD COLUMN metadata TEXT');
+          await m.createTable(channelPolls);
+          await m.createTable(channelPollOptions);
+        }
+
+        if (from < 7) {
+          await customStatement('ALTER TABLE channel_posts ADD COLUMN post_type TEXT DEFAULT "post"');
+          await customStatement('ALTER TABLE channel_posts ADD COLUMN metadata TEXT');
+        }
+
+        if (from < 6) {
+          for (final table in allTables) {
+            await m.drop(table).catchError((_) {});
+          }
+          await m.createAll();
         }
       },
       beforeOpen: (details) async {

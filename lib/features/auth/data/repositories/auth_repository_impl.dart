@@ -1,10 +1,12 @@
-import 'package:crown/core/errors/exceptions.dart';
-import 'package:crown/core/errors/failures.dart';
-import 'package:crown/features/auth/domain/entities/auth_params.dart';
-import 'package:crown/features/auth/domain/entities/user_entity.dart';
-import 'package:crown/features/auth/domain/repositories/auth_repository.dart';
+import 'package:flutter/foundation.dart';
+import 'package:crimchart/core/errors/exceptions.dart';
+import 'package:crimchart/core/errors/failures.dart';
+import 'package:crimchart/features/auth/domain/entities/auth_params.dart';
+import 'package:crimchart/features/auth/domain/entities/user_entity.dart';
+import 'package:crimchart/features/auth/domain/repositories/auth_repository.dart';
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
 import '../sources/auth_remote_source.dart';
 import '../sources/auth_local_source.dart';
@@ -134,8 +136,39 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, UserEntity?>> getCurrentUser() async {
     try {
-      // Return cached user — no network call needed for this
+      // 1. Get user from Native C++ DB
       final user = await _local.getUser();
+      if (user == null) return const Right(null);
+
+      // 2. 👑 SESSION SYNC: If Supabase has no session, restore it from Native tokens
+      final supabase = Supabase.instance.client;
+      if (supabase.auth.currentSession == null) {
+        final tokens = await _local.getTokens();
+        if (tokens != null && tokens['refresh'] != null) {
+          debugPrint(
+            '🔄 [AuthRepo] Restoring Supabase session from Native C++ DB (using Refresh Token)...',
+          );
+          try {
+            await supabase.auth.setSession(tokens['refresh']!);
+            debugPrint('✅ [AuthRepo] Supabase session restored via refresh token!');
+          } catch (e) {
+            debugPrint('⚠️ [AuthRepo] Session restoration failed: $e');
+            await _local.clearAll();
+            return const Right(null);
+          }
+        } else if (tokens != null && tokens['access'] != null) {
+          debugPrint('🔄 [AuthRepo] Attempting session restore via Access Token...');
+          try {
+            await supabase.auth.setSession(tokens['access']!);
+            debugPrint('✅ [AuthRepo] Supabase session restored via access token!');
+          } catch (e) {
+            debugPrint('⚠️ [AuthRepo] Access token restoration failed: $e');
+            await _local.clearAll();
+            return const Right(null);
+          }
+        }
+      }
+
       return Right(user);
     } on CacheException catch (e) {
       return Left(CacheFailure(e.message));
@@ -172,14 +205,3 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-

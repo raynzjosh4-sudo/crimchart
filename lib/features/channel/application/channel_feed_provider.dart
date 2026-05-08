@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -62,8 +61,8 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
   /// 👑 PRO: In-memory profile cache keyed by author_id.
   /// Populated from existing posts so we never fetch the same profile twice.
   final Map<String, PostEntity> _profileCache = {};
-  RealtimeChannel?
-  _likesChannel; // 👑 NEW: For syncing "isLiked" status across devices
+  RealtimeChannel? _likesChannel;
+  RealtimeChannel? _commentsChannel; // 👑 NEW: Real-time comment count sync
 
   /// 👑 LOCK: Prevents rapid-fire clicks on the same item
   final Set<String> _processingIds = {};
@@ -78,19 +77,46 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
     // 1. Update the STRICT UI Items so the screen repaints instantly
     final updatedChannelItems = state.channelItems.map((item) {
       if (item is ManifestoItem && item.id == postId) {
-        // Rebuild the Manifesto with +1 comments
+        // 👑 PRESERVE ALL FIELDS while updating count
         return ManifestoItem(
           id: item.id,
           authorUsername: item.authorUsername,
           authorAvatarUrl: item.authorAvatarUrl,
+          authorIsOnline: item.authorIsOnline,
+          authorHasStatus: item.authorHasStatus,
           createdAt: item.createdAt,
           likes: item.likes,
+          isLiked: item.isLiked, // 💖 KEEP THE HEART FILLED
           originalPost: item.originalPost,
           caption: item.caption,
           imageUrls: item.imageUrls,
           videoUrl: item.videoUrl,
           commentCount: item.commentCount + 1, // 🚀 The Increment!
           aspectRatio: item.aspectRatio,
+          taggerName: item.taggerName,
+          taggerAvatar: item.taggerAvatar,
+          sourceChannelName: item.sourceChannelName,
+          sourceChannelAvatar: item.sourceChannelAvatar,
+        );
+      }
+      if (item is ChannelCommentItem && item.id == postId) {
+        return ChannelCommentItem(
+          id: item.id,
+          authorUsername: item.authorUsername,
+          authorAvatarUrl: item.authorAvatarUrl,
+          authorIsOnline: item.authorIsOnline,
+          authorHasStatus: item.authorHasStatus,
+          createdAt: item.createdAt,
+          likes: item.likes,
+          isLiked: item.isLiked,
+          originalPost: item.originalPost,
+          message: item.message,
+          commentCount: item.commentCount + 1,
+          manifestoId: item.manifestoId,
+          taggerName: item.taggerName,
+          taggerAvatar: item.taggerAvatar,
+          sourceChannelName: item.sourceChannelName,
+          sourceChannelAvatar: item.sourceChannelAvatar,
         );
       }
       return item;
@@ -121,17 +147,95 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
     });
   }
 
+  void decrementCommentCount(String postId) {
+    debugPrint('➖ [UI] Decrementing comment count on Manifesto: $postId');
+    final updatedChannelItems = state.channelItems.map((item) {
+      if (item is ManifestoItem && item.id == postId) {
+        return ManifestoItem(
+          id: item.id,
+          authorUsername: item.authorUsername,
+          authorAvatarUrl: item.authorAvatarUrl,
+          authorIsOnline: item.authorIsOnline,
+          authorHasStatus: item.authorHasStatus,
+          createdAt: item.createdAt,
+          likes: item.likes,
+          isLiked: item.isLiked,
+          originalPost: item.originalPost,
+          caption: item.caption,
+          imageUrls: item.imageUrls,
+          videoUrl: item.videoUrl,
+          commentCount: (item.commentCount - 1).clamp(0, 999999),
+          aspectRatio: item.aspectRatio,
+          taggerName: item.taggerName,
+          taggerAvatar: item.taggerAvatar,
+          sourceChannelName: item.sourceChannelName,
+          sourceChannelAvatar: item.sourceChannelAvatar,
+        );
+      }
+      if (item is ChannelCommentItem && item.id == postId) {
+        return ChannelCommentItem(
+          id: item.id,
+          authorUsername: item.authorUsername,
+          authorAvatarUrl: item.authorAvatarUrl,
+          authorIsOnline: item.authorIsOnline,
+          authorHasStatus: item.authorHasStatus,
+          createdAt: item.createdAt,
+          likes: item.likes,
+          isLiked: item.isLiked,
+          originalPost: item.originalPost,
+          message: item.message,
+          commentCount: (item.commentCount - 1).clamp(0, 999999),
+          manifestoId: item.manifestoId,
+          taggerName: item.taggerName,
+          taggerAvatar: item.taggerAvatar,
+          sourceChannelName: item.sourceChannelName,
+          sourceChannelAvatar: item.sourceChannelAvatar,
+        );
+      }
+      return item;
+    }).toList();
+
+    final updatedRemote = state.remotePosts
+        .map(
+          (p) => p.id == postId
+              ? p.copyWith(comments: (p.comments - 1).clamp(0, 999999))
+              : p,
+        )
+        .toList();
+
+    state = state.copyWith(
+      channelItems: updatedChannelItems,
+      remotePosts: updatedRemote,
+    );
+  }
+
   // 👑 HELPER: Bridges the gap between old entities and new UI items
   ChannelItem _mapPostToChannelItem(PostEntity post) {
+    final map = {
+      'id': post.id,
+      'author_id': post.authorId,
+      'username': post.authorUsername,
+      'profile_image_url': post.authorAvatarUrl,
+      'likes': post.likes,
+      'comments': post.comments,
+      'shares': post.shares,
+      'tags_count': post.tagsCount,
+      'caption': post.caption,
+      'message': post.caption,
+      'image_urls': post.imageUrls,
+      'video_url': post.videoUrl,
+      'aspect_ratio': post.aspectRatio,
+      'created_at': post.createdAt.toIso8601String(),
+      'post_type': post.postType,
+      'is_liked': post.isLiked,
+      'tagger_name': post.taggerName,
+      'tagger_avatar': post.taggerAvatar,
+      'source_channel_name': post.sourceChannelName,
+      'source_channel_avatar': post.sourceChannelAvatar,
+    };
+
     if (post.postType == 'invitation') {
-      return InvitationItem.fromMap({
-        'id': post.id,
-        'author_id': post.authorId,
-        'username': post.authorUsername,
-        'profile_image_url': post.authorAvatarUrl,
-        'likes': post.likes,
-        'created_at': post.createdAt.toIso8601String(),
-      }, originalPost: post);
+      return InvitationItem.fromMap(map, originalPost: post);
     }
 
     bool isManifesto =
@@ -143,31 +247,9 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
             post.linkDepth == 0);
 
     if (isManifesto) {
-      return ManifestoItem.fromMap({
-        'id': post.id,
-        'author_id': post.authorId,
-        'username': post.authorUsername,
-        'profile_image_url': post.authorAvatarUrl,
-        'caption': post.caption,
-        'image_urls': post.imageUrls,
-        'video_url': post.videoUrl,
-        'likes': post.likes,
-        'comments': post.comments,
-        'aspect_ratio': post.aspectRatio,
-        'created_at': post.createdAt.toIso8601String(),
-      }, originalPost: post);
+      return ManifestoItem.fromMap(map, originalPost: post);
     } else {
-      return ChannelCommentItem.fromMap({
-        'id': post.id,
-        'author_id': post.authorId,
-        'username': post.authorUsername,
-        'profile_image_url': post.authorAvatarUrl,
-        'message': post.caption,
-        'image_urls': post.imageUrls,
-        'likes': post.likes,
-        'manifesto_id': post.linkedPostId,
-        'created_at': post.createdAt.toIso8601String(),
-      }, originalPost: post);
+      return ChannelCommentItem.fromMap(map, originalPost: post);
     }
   }
 
@@ -237,6 +319,7 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
 
     // 4. 👑 PERSONAL SYNC: Listens for our own likes/unlikes on other devices
     _initLikesSync();
+    _initCommentCountSync();
 
     // 4. DELTA STREAM: Surgically inject ONE new post at a time.
     // No full-list refetch — the server pushes the row, we patch and prepend it.
@@ -441,9 +524,23 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
           state = state.copyWith(isLoading: false); // 👑 KILL SPINNER
         },
         (posts) async {
-          // 👑 Make sure this callback is async!
+          // 👑 MERGE: Preserve 'isLiked' state from our current memory if Supabase returns false.
+          // This ensures the heart stays filled even if the network join is flaky or hasn't synced yet.
+          final mergedPosts = posts.map((newPost) {
+            final existing = state.remotePosts.firstWhere(
+              (p) => p.id == newPost.id,
+              orElse: () => newPost,
+            );
+
+            // If we already know it's liked locally, keep it liked!
+            if (existing.isLiked && !newPost.isLiked) {
+              return newPost.copyWith(isLiked: true);
+            }
+            return newPost;
+          }).toList();
+
           // 👑 WARM THE PROFILE CACHE from fresh results.
-          for (final p in posts) {
+          for (final p in mergedPosts) {
             if (p.authorUsername.isNotEmpty && p.authorUsername != 'unknown') {
               _profileCache[p.authorId] = p;
             }
@@ -453,19 +550,18 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
             '🕒 [ChannelFeedNotifier] refresh: network success. setting isLoading=false',
           );
           state = state.copyWith(
-            remotePosts: posts,
+            remotePosts: mergedPosts,
             isLoading: false, // 👑 KILL SPINNER
-            hasMore: posts.length >= 10,
+            hasMore: mergedPosts.length >= 10,
             page: 2,
           );
 
           _updateUIState(); // 👑 Sync UI here so the network data appears!
 
-          // 👑 THE ZOMBIE FIX: Wipe old synced data from this channel...
-          await ChartNativeDB.instance.clearSyncedPosts(channelId: channelId);
-
-          // 👑 ...then save the fresh Truth from the server!
-          _persistToNativeDB(posts);
+          // 👑 PERSIST: Save the merged truth to SQLite.
+          // We use insertOrReplace so stale rows are updated in-place.
+          // We do NOT clear first — that was wiping the correct isLiked state.
+          _persistToNativeDB(mergedPosts);
         },
       );
     } catch (e) {
@@ -491,7 +587,9 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      debugPrint('📡 [Pagination] Fetching more for channel: $channelId, page: ${state.page}');
+      debugPrint(
+        '📡 [Pagination] Fetching more for channel: $channelId, page: ${state.page}',
+      );
       final result = await _repository.getChannelPosts(
         channelId,
         page: state.page,
@@ -506,11 +604,23 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
           );
         },
         (posts) {
+          // 👑 MERGE: Preserve 'isLiked' state during pagination too!
+          final mergedNewPosts = posts.map((newPost) {
+            final existing = state.remotePosts.firstWhere(
+              (p) => p.id == newPost.id,
+              orElse: () => newPost,
+            );
+            if (existing.isLiked && !newPost.isLiked) {
+              return newPost.copyWith(isLiked: true);
+            }
+            return newPost;
+          }).toList();
+
           debugPrint(
             '🕒 [ChannelFeedNotifier] loadMore success. loaded ${posts.length} new posts',
           );
           state = state.copyWith(
-            remotePosts: [...state.remotePosts, ...posts],
+            remotePosts: [...state.remotePosts, ...mergedNewPosts],
             isLoading: false,
             hasMore: posts.length >= 10,
             page: state.page + 1,
@@ -562,8 +672,10 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
     _updateUIState(); // 👑 Sync UI here!
   }
 
-  /// 👑 BACKGROUND PERSIST: Silently write fresh Supabase posts to new dual SQLite tables.
-  /// This is what makes cold-start offline work — next launch reads from here instead of waiting for network.
+  /// 👑 BACKGROUND PERSIST: Silently write fresh Supabase posts to the
+  /// channel_posts SQLite table — the same table _initOfflineFirst reads from.
+  /// This makes cold-start offline work: next launch reads from here instead
+  /// of waiting for the network.
   Future<void> _persistToNativeDB(List<PostEntity> posts) async {
     try {
       final List<Map<String, dynamic>> items = posts
@@ -582,24 +694,33 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
               'comments': post.comments,
               'aspectRatio': post.aspectRatio,
               'createdAt': post.createdAt.toIso8601String(),
-              'isLiked': post.isLiked ? 1 : 0,
-              'videoUrls': post.videoUrls, // 👑 Non-nullable safety
+              'isLiked': post.isLiked
+                  ? 1
+                  : 0, // 👑 persists server-resolved state
+              'videoUrls': post.videoUrls,
+              'taggerName': post.taggerName,
+              'taggerAvatar': post.taggerAvatar,
+              'sourceChannelName': post.sourceChannelName,
+              'sourceChannelAvatar': post.sourceChannelAvatar,
+              'tagsCount': post.tagsCount,
+              'metadata': post.metadata,
+              'postType': post.postType,
             },
           )
           .toList();
 
-      await ChartNativeDB.instance.cacheManifestos(items);
-      debugPrint('💾 [SQLite Sync] Synchronized ${posts.length} items.');
+      // 👑 FIX: Write to channel_posts (same table _initOfflineFirst reads from)
+      await ChartNativeDB.instance.cacheChannelPosts(items);
+      debugPrint(
+        '💾 [SQLite Sync] Synchronized ${posts.length} items to channel_posts.',
+      );
 
       // 👑 ROLLING CACHE: Keeps only the newest 10 posts on disk.
-      // Everything older than index 10 is deleted from SQLite but stays in memory.
       await ChartNativeDB.instance.trimChannelPosts(
         channelId: channelId,
         keepCount: 10,
       );
 
-      // 👑 ROLLING CACHE: Quietly trim the DB so it never bloats over time.
-      // Fire-and-forget: runs in background, never blocks the UI.
       ChartNativeDB.instance.globalCacheSweep();
     } catch (e) {
       debugPrint('⚠️ [SQLite Sync] Error: $e');
@@ -657,6 +778,33 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
       debugPrint('📡 [LIKE SYNC] Status: $status');
       if (error != null) debugPrint('🚨 [LIKE SYNC Error] $error');
     });
+  }
+
+  /// 💬 REAL-TIME COMMENT COUNT SYNC
+  /// Subscribes to inserts on channel_post_comment_counts for this channel.
+  /// When a new row arrives, the count on the matching post increments instantly.
+  void _initCommentCountSync() {
+    final supabase = Supabase.instance.client;
+    debugPrint('📡 [COMMENT SYNC] Subscribing for channel: $channelId');
+
+    _commentsChannel = supabase
+        .channel('comment_counts:$channelId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'channel_post_comment_counts',
+          callback: (payload) {
+            final postId = payload.newRecord['post_id'] as String?;
+            if (postId == null) return;
+
+            debugPrint('💬 [COMMENT SYNC] New comment on post: $postId');
+            incrementCommentCount(postId);
+          },
+        )
+        .subscribe((status, [error]) {
+          debugPrint('📡 [COMMENT SYNC] Status: $status');
+          if (error != null) debugPrint('🚨 [COMMENT SYNC Error] $error');
+        });
   }
 
   /// 🚀 INSTANT UI: Injects a new post at the top of the feed instantly before server confirms
@@ -832,8 +980,9 @@ class ChannelFeedNotifier extends StateNotifier<ChannelFeedState> {
 
   @override
   void dispose() {
-    _subscription?.cancel(); // 🛑 Always clean up the stream
-    _likesChannel?.unsubscribe(); // 🛑 Clean up likes sync
+    _subscription?.cancel();
+    _likesChannel?.unsubscribe();
+    _commentsChannel?.unsubscribe(); // 🛑 Clean up comment count sync
     super.dispose();
   }
 }

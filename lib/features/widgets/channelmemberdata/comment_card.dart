@@ -1,7 +1,7 @@
-import 'package:crown/mainFeed/features/cardwidgets/models/channel_post_model.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/models/channel_post_model.dart';
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/commentingsheets/widgets/commenting_sheet.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/commentingsheets/widgets/commenting_sheet.dart';
 import '../memberimage/starter_image.dart';
 import 'comment_card/media/comment_media.dart';
 import 'comment_card/media/comment_media_type.dart';

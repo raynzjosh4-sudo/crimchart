@@ -8,6 +8,7 @@ class ChannelMessages extends Table {
   
   TextColumn get textContent => text().nullable().named('text_content')();
   TextColumn get mediaUrl => text().nullable().named('media_url')();
+  TextColumn get thumbnailUrl => text().nullable().named('thumbnail_url')();
   TextColumn get mediaType => text().nullable().named('media_type')(); // image, video, file
   TextColumn get voiceNoteUrl => text().nullable().named('voice_note_url')();
   

@@ -1,7 +1,7 @@
-import 'package:crown/features/channel/channelsettings/channelinsidesettingspage/select_charter_page.dart';
+import 'package:crimchart/features/channel/channelsettings/channelinsidesettingspage/select_charter_page.dart';
 import 'package:flutter/material.dart';
 
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 
 class ChartingSetupPage extends StatefulWidget {
   const ChartingSetupPage({super.key});

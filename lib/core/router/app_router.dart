@@ -1,7 +1,7 @@
-import 'package:crown/features/showcase/notification_showcase_page.dart';
-import 'package:crown/settings/subsettings/language_page.dart';
-import 'package:crown/features/channel/channelsettings/channel_settings_page.dart';
-import 'package:crown/features/newinsidechartstartpage/models/member.dart';
+import 'package:crimchart/features/showcase/notification_showcase_page.dart';
+import 'package:crimchart/settings/subsettings/language_page.dart';
+import 'package:crimchart/features/channel/channelsettings/channel_settings_page.dart';
+import 'package:crimchart/features/newinsidechartstartpage/models/member.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

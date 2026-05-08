@@ -1,18 +1,17 @@
-import 'package:crown/features/channel/pages/discovery_widgets/feed_post_shimmer.dart';
-import 'package:crown/features/channel/pages/messages_tab/widgets/chat_bubble_shimmer.dart';
-import 'package:crown/features/channel/pages/widgets/pagination_error_footer.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/feed_post_shimmer.dart';
+import 'package:crimchart/features/channel/pages/messages_tab/widgets/chat_bubble_shimmer.dart';
+import 'package:crimchart/features/channel/pages/widgets/pagination_error_footer.dart';
+import 'package:crimchart/features/showcase/chart_toast.dart';
 import 'package:intl/intl.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/core/db/chart_native_db.dart';
-import 'package:crown/core/di/injection.dart';
-import 'package:crown/features/channel/application/channel_members_provider.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/core/db/chart_native_db.dart';
+import 'package:crimchart/core/di/injection.dart';
+import 'package:crimchart/features/channel/application/channel_members_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timeago/timeago.dart' as timeago;
 
 import 'widgets/chat_bubble.dart';
 import 'widgets/chat_input_field.dart';
-import 'widgets/active_users_bar.dart';
 import 'widgets/typing_bubble.dart';
 import 'widgets/date_divider.dart';
 import 'models/user_model.dart';
@@ -241,12 +240,18 @@ class _MessagesTabViewState extends ConsumerState<MessagesTabView> {
         .where((u) => typingUserIds.contains(u.id))
         .toList();
 
-    // Auto-scroll when someone starts typing so the bubble is visible
+    // 👑 SMART SCROLL: Only auto-scroll if we're already near the bottom
     ref.listen(channelPresenceProvider(widget.channelId), (prev, next) {
       final isSomeoneTyping =
           next.value?.values.any((isTyping) => isTyping) ?? false;
-      if (isSomeoneTyping) {
-        _scrollToBottom();
+
+      if (isSomeoneTyping && _scrollController.hasClients) {
+        final pos = _scrollController.position;
+        final isNearBottom = pos.pixels > pos.maxScrollExtent - 200.h;
+
+        if (isNearBottom) {
+          _scrollToBottom();
+        }
       }
     });
 
@@ -263,19 +268,25 @@ class _MessagesTabViewState extends ConsumerState<MessagesTabView> {
                     data: (messages) {
                       if (messages.isEmpty) {
                         return Center(
-                          child: Text(
-                            'No messages yet. Start the conversation!',
-                            style: TextStyle(
-                              color: colorScheme.onSurface.withOpacity(0.5),
+                          child: Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 48.sp,
+                            color: colorScheme.onSurface.withValues(
+                              alpha: 0.15,
                             ),
                           ),
                         );
                       }
                       return NotificationListener<ScrollNotification>(
                         onNotification: (notification) {
-                          if (notification is ScrollUpdateNotification) {
-                            // Since older messages are at the TOP, trigger when near the top
-                            if (notification.metrics.pixels < 300.h) {
+                          // 👑 STRICT AXIS ISOLATION: Only listen to the main vertical scroll, ignore horizontal image carousels
+                          if (notification is ScrollUpdateNotification &&
+                              notification.metrics.axis == Axis.vertical &&
+                              notification.depth == 0) {
+                            // STABLE PAGINATION: Only trigger if we're actually scrolling up and hit the top
+                            if (notification.metrics.pixels < 100.h &&
+                                notification.scrollDelta != null &&
+                                notification.scrollDelta! < 0) {
                               ref
                                   .read(
                                     channelMessagesProvider(
@@ -453,6 +464,9 @@ class _MessagesTabViewState extends ConsumerState<MessagesTabView> {
                                     replyTo: replyData,
                                     mediaItems: mediaItems,
                                     poll: pollData,
+                                    onDelete: () => _deleteMessage(
+                                      msg,
+                                    ), // 👑 Wired directly to popup menu
                                   ),
                                 ),
                               ],
@@ -499,7 +513,9 @@ class _MessagesTabViewState extends ConsumerState<MessagesTabView> {
                             guestUI: Container(
                               padding: EdgeInsets.all(16.w),
                               decoration: BoxDecoration(
-                                color: theme.scaffoldBackgroundColor,
+                                color: theme
+                                    .colorScheme
+                                    .surface, // 👑 SOLID BACKGROUND
                                 border: Border(
                                   top: BorderSide(
                                     color: theme.colorScheme.onSurface
@@ -550,7 +566,7 @@ class _MessagesTabViewState extends ConsumerState<MessagesTabView> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
+        color: theme.colorScheme.surface, // 👑 SOLID BACKGROUND
         border: Border(
           top: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.1)),
         ),
@@ -601,5 +617,19 @@ class _MessagesTabViewState extends ConsumerState<MessagesTabView> {
 
   bool _isSameDay(DateTime d1, DateTime d2) {
     return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
+  }
+
+  // 👑 Direct Delete Action (Triggered by PopupMenuButton)
+  void _deleteMessage(ChannelMessageEntity msg) {
+    // Trigger full end-to-end deletion (Memory -> Local DB -> Remote DB)
+    ref
+        .read(channelMessagesProvider(widget.channelId).notifier)
+        .deleteMessage(msg.id);
+
+    ChartToast.showSuccess(
+      context,
+      title: 'Deleted',
+      message: 'Message has been removed.',
+    );
   }
 }

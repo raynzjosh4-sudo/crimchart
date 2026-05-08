@@ -1,4 +1,4 @@
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 
 class SkeletonChannelListItem extends StatefulWidget {
@@ -48,15 +48,15 @@ class _SkeletonChannelListItemState extends State<SkeletonChannelListItem>
             children: [
               // Avatar Stack Area
               SizedBox(
-                width: 85.w,
-                height: 55.h,
+                width: 75.w,
+                height: 48.h,
                 child: Stack(
                   children: [
                     Positioned(
-                      left: 30.w,
+                      left: 26.w,
                       child: Container(
-                        width: 55.w,
-                        height: 55.h,
+                        width: 48.w,
+                        height: 48.h,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: color,
@@ -68,10 +68,10 @@ class _SkeletonChannelListItemState extends State<SkeletonChannelListItem>
                       ),
                     ),
                     Positioned(
-                      left: 15.w,
+                      left: 13.w,
                       child: Container(
-                        width: 55.w,
-                        height: 55.h,
+                        width: 48.w,
+                        height: 48.h,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: color,
@@ -85,8 +85,8 @@ class _SkeletonChannelListItemState extends State<SkeletonChannelListItem>
                     Positioned(
                       left: 0,
                       child: Container(
-                        width: 55.w,
-                        height: 55.h,
+                        width: 48.w,
+                        height: 48.h,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: color,

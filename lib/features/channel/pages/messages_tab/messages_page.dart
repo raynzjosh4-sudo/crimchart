@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/channel/pages/messages_tab/messages_tab_view.dart';
-import 'package:crown/features/channel/pages/messages_tab/widgets/active_users_bar.dart';
-import 'package:crown/features/channel/pages/messages_tab/models/user_model.dart';
-import 'package:crown/features/channel/application/channel_members_provider.dart';
-import 'package:crown/profile/models/charter_model.dart';
-import 'package:crown/backicon/custom_back_button.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/channel/pages/messages_tab/messages_tab_view.dart';
+import 'package:crimchart/features/channel/pages/messages_tab/widgets/active_users_bar.dart';
+import 'package:crimchart/features/channel/pages/messages_tab/models/user_model.dart';
+import 'package:crimchart/features/channel/application/channel_members_provider.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
+import 'package:crimchart/backicon/custom_back_button.dart';
 
 class MessagesPage extends ConsumerWidget {
   final String channelId;
@@ -98,6 +98,9 @@ class MessagesPage extends ConsumerWidget {
             ),
           ),
           MessagesTabView(
+            key: ValueKey(
+              channelId,
+            ), // 👑 Key preservation for scroll stability
             channelId: channelId,
             members: contestants,
             initialIsMember: initialIsMember,

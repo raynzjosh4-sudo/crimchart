@@ -9,6 +9,7 @@ class ChannelStatuses extends Table {
   TextColumn get caption => text().nullable()();
   TextColumn get imageUrls => text().nullable().named('image_urls')(); // JSON string
   TextColumn get videoUrl => text().nullable().named('video_url')();
+  TextColumn get thumbnailUrl => text().nullable().named('thumbnail_url')();
   TextColumn get audioUrl => text().nullable().named('audio_url')();
   
   IntColumn get isVideo => integer().withDefault(const Constant(0)).named('is_video')();

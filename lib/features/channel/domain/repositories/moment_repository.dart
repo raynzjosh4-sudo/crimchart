@@ -14,4 +14,7 @@ abstract class MomentRepository {
 
   /// Synchronizes moments from the server to the local database.
   Future<void> syncMoments({required String channelId, int offset = 0});
+
+  /// Synchronizes moments for all provided channel IDs.
+  Future<void> syncJoinedMoments(List<String> channelIds);
 }

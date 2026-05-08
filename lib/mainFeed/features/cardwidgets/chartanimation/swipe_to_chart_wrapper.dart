@@ -1,8 +1,8 @@
 import 'dart:math' as math;
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/widgets/channelinfo/stacked_contestants.dart';
-import 'package:crown/gifts/horizontalgiftscroll/horizontal_gift_scroll.dart';
-import 'package:crown/gifts/models/gift_recipient.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/widgets/channelinfo/stacked_contestants.dart';
+import 'package:crimchart/gifts/horizontalgiftscroll/horizontal_gift_scroll.dart';
+import 'package:crimchart/gifts/models/gift_recipient.dart';
 import 'package:flutter/material.dart';
 
 class SwipeToChartWrapper extends StatefulWidget {

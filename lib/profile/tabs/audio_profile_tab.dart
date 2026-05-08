@@ -1,5 +1,5 @@
-import 'package:crown/core/application/audio_controller.dart';
-import 'package:crown/core/widgets/chart_image.dart';
+import 'package:crimchart/core/application/audio_controller.dart';
+import 'package:crimchart/core/widgets/chart_image.dart';
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lucide_icons/lucide_icons.dart';

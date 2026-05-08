@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import 'package:crown/features/showcase/chart_toast.dart';
+import 'package:crimchart/features/showcase/chart_toast.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'media_caption_bottom_sheet.dart';

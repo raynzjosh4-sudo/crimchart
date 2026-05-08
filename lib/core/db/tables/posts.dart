@@ -38,6 +38,14 @@ class Posts extends Table {
   IntColumn get linkDepth => integer().withDefault(const Constant(0)).named('link_depth')();
   IntColumn get isPublic => integer().withDefault(const Constant(1)).named('is_public')();
   IntColumn get allowComments => integer().withDefault(const Constant(1)).named('allow_comments')();
+  
+  // 👑 TAGGING METADATA
+  TextColumn get taggerName => text().nullable().named('tagger_name')();
+  TextColumn get taggerAvatar => text().nullable().named('tagger_avatar')();
+  TextColumn get sourceChannelName => text().nullable().named('source_channel_name')();
+  TextColumn get sourceChannelAvatar => text().nullable().named('source_channel_avatar')();
+  IntColumn get tagsCount => integer().withDefault(const Constant(0)).named('tags_count')();
+  TextColumn get metadata => text().nullable().named('metadata')(); // JSON map
 
   @override
   Set<Column> get primaryKey => {id};

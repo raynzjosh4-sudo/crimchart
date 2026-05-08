@@ -1,9 +1,9 @@
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/profile/dummydata/profile_dummy_data.dart';
-import 'package:crown/profile/models/charter_model.dart';
-import 'package:crown/profile/widgets/ChartCard/channelcard.dart';
-import 'package:crown/profile/widgets/skeleton_chart_card.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/profile/dummydata/profile_dummy_data.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
+import 'package:crimchart/profile/widgets/ChartCard/channelcard.dart';
+import 'package:crimchart/profile/widgets/skeleton_chart_card.dart';
 import 'package:flutter/material.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 

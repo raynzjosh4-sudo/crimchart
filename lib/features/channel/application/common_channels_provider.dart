@@ -2,7 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/db/chart_native_db.dart';
 import '../../../core/di/injection.dart';
 import '../../auth/application/auth_controller.dart';
-import 'package:crown/features/allchannels/models/chart_channel.dart';
+import 'package:crimchart/features/allchannels/models/chart_channel.dart';
 
 part 'common_channels_provider.g.dart';
 

@@ -1,4 +1,4 @@
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../../features/widgets/memberimage/starter_image.dart';

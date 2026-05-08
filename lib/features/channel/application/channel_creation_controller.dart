@@ -1,9 +1,7 @@
 import 'dart:io';
-import 'dart:ui' as dart_ui;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/db/chart_native_db.dart';
 import '../../../../core/native/chart_native_ffi.dart';
 import '../../../../core/network/cloud_media_service.dart';
 import '../../../../core/di/injection.dart';
@@ -61,9 +59,12 @@ class ChannelCreationController extends StateNotifier<ChannelCreationState> {
         if (mediaPath.startsWith('http')) {
           finalCloudflareUrl = mediaPath;
         } else {
-          print('🖼️ CONTROLLER: Compressing channel avatar via Native Engine...');
+          print(
+            '🖼️ CONTROLLER: Compressing channel avatar via Native Engine...',
+          );
           final appDir = await getTemporaryDirectory();
-          final crushedImagePath = '${appDir.path}/ch_avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          final crushedImagePath =
+              '${appDir.path}/ch_avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
           // 👑 NATIVE COMPRESSION PIPELINE (C++ FFI)
           final success = await ChartNativeFFI().compressPhoto(
@@ -72,9 +73,13 @@ class ChannelCreationController extends StateNotifier<ChannelCreationState> {
             width: 600, // Balanced for avatar quality/speed
           );
 
-          final fileToUpload = success ? File(crushedImagePath) : File(mediaPath);
+          final fileToUpload = success
+              ? File(crushedImagePath)
+              : File(mediaPath);
 
-          print('📤 CONTROLLER: Uploading avatar to Cloudflare (Folder: channel_avatars)...');
+          print(
+            '📤 CONTROLLER: Uploading avatar to Cloudflare (Folder: channel_avatars)...',
+          );
           finalCloudflareUrl = await _cloudService.uploadMedia(
             fileToUpload,
             userId: currentUserId,
@@ -98,7 +103,10 @@ class ChannelCreationController extends StateNotifier<ChannelCreationState> {
       };
 
       // 👑 3. SAVE TO SUPABASE (METADATA ONLY)
-      final result = await _repository.createChannel(channelData, avatarUrl: finalCloudflareUrl);
+      final result = await _repository.createChannel(
+        channelData,
+        avatarUrl: finalCloudflareUrl,
+      );
 
       result.fold(
         (failure) {
@@ -141,66 +149,82 @@ class ChannelCreationController extends StateNotifier<ChannelCreationState> {
         if (newMediaPath.startsWith('http')) {
           finalCloudflareUrl = newMediaPath;
         } else {
-          print('🖼️ CONTROLLER: Compressing new channel avatar via Native Engine...');
-        final appDir = await getTemporaryDirectory();
-        final crushedImagePath = '${appDir.path}/ch_avatar_edit_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          print(
+            '🖼️ CONTROLLER: Compressing new channel avatar via Native Engine...',
+          );
+          final appDir = await getTemporaryDirectory();
+          final crushedImagePath =
+              '${appDir.path}/ch_avatar_edit_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-        final success = await ChartNativeFFI().compressPhoto(
-          inputPath: newMediaPath,
-          outputPath: crushedImagePath,
-          width: 600,
-        );
+          final success = await ChartNativeFFI().compressPhoto(
+            inputPath: newMediaPath,
+            outputPath: crushedImagePath,
+            width: 600,
+          );
 
-        final fileToUpload = success ? File(crushedImagePath) : File(newMediaPath);
+          final fileToUpload = success
+              ? File(crushedImagePath)
+              : File(newMediaPath);
 
-        print('📤 CONTROLLER: Uploading new avatar to Cloudflare...');
-        finalCloudflareUrl = await _cloudService.uploadMedia(
-          fileToUpload,
-          userId: currentUserId,
-          folderName: 'channel_avatars',
-        );
-
+          print('📤 CONTROLLER: Uploading new avatar to Cloudflare...');
+          finalCloudflareUrl = await _cloudService.uploadMedia(
+            fileToUpload,
+            userId: currentUserId,
+            folderName: 'channel_avatars',
+          );
         }
       }
-      
+
       // 👑 1.5 AUTO-UPGRADE LEGACY URLS (Rebrand fix)
       // We perform this even if finalCloudflareUrl was just set from an 'http' newMediaPath.
       if (finalCloudflareUrl != null && finalCloudflareUrl.isNotEmpty) {
-           var corrected = finalCloudflareUrl
-              .replaceFirst('/channel-profiles/', '/channel_avatars/');
-           
-           if (corrected.contains('crown.nexassearch.com/') && !corrected.contains('crown.nexassearch.com/users/')) {
-              corrected = corrected.replaceFirst('crown.nexassearch.com/', 'crown.nexassearch.com/users/');
-           }
+        var corrected = finalCloudflareUrl.replaceFirst(
+          '/channel-profiles/',
+          '/channel_avatars/',
+        );
 
-           if (corrected != finalCloudflareUrl) {
-              print('👑 AUTO-UPGRADING Legacy URL to: $corrected');
-              finalCloudflareUrl = corrected;
-           }
+        if (corrected.contains('crown.nexassearch.com/') &&
+            !corrected.contains('crown.nexassearch.com/users/')) {
+          corrected = corrected.replaceFirst(
+            'crown.nexassearch.com/',
+            'crown.nexassearch.com/users/',
+          );
+        }
+
+        if (corrected != finalCloudflareUrl) {
+          print('👑 AUTO-UPGRADING Legacy URL to: $corrected');
+          finalCloudflareUrl = corrected;
+        }
       } else if (oldCloudflareUrl != null && oldCloudflareUrl.isNotEmpty) {
-           // If no new image picked, check if the old one needs fixing
-           var corrected = oldCloudflareUrl
-              .replaceFirst('/channel-profiles/', '/channel_avatars/');
-           
-           if (corrected.contains('crown.nexassearch.com/') && !corrected.contains('crown.nexassearch.com/users/')) {
-              corrected = corrected.replaceFirst('crown.nexassearch.com/', 'crown.nexassearch.com/users/');
-           }
+        // If no new image picked, check if the old one needs fixing
+        var corrected = oldCloudflareUrl.replaceFirst(
+          '/channel-profiles/',
+          '/channel_avatars/',
+        );
 
-           if (corrected != oldCloudflareUrl) {
-              print('👑 AUTO-UPGRADING Old Legacy URL to: $corrected');
-              finalCloudflareUrl = corrected;
-           }
+        if (corrected.contains('crown.nexassearch.com/') &&
+            !corrected.contains('crown.nexassearch.com/users/')) {
+          corrected = corrected.replaceFirst(
+            'crown.nexassearch.com/',
+            'crown.nexassearch.com/users/',
+          );
+        }
+
+        if (corrected != oldCloudflareUrl) {
+          print('👑 AUTO-UPGRADING Old Legacy URL to: $corrected');
+          finalCloudflareUrl = corrected;
+        }
       }
 
-
       // 👑 2. PACKAGE DATA
-      final channelData = {
-        'name': name,
-        'description': description,
-      };
+      final channelData = {'name': name, 'description': description};
 
       // 👑 3. SAVE TO SUPABASE
-      final result = await _repository.updateChannel(channelId, channelData, avatarUrl: finalCloudflareUrl);
+      final result = await _repository.updateChannel(
+        channelId,
+        channelData,
+        avatarUrl: finalCloudflareUrl,
+      );
 
       result.fold(
         (failure) {

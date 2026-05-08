@@ -11,14 +11,14 @@ Future<void> main() async {
     region: 'auto',
   );
 
-  final bucketName = 'Crimchat-media-bucket';
+  final bucketName = 'crimchart-media-bucket';
   
   // Create dummy file
   final dummyFile = File('dummy.jpg');
   await dummyFile.writeAsString('dummy image data');
 
   final extension = path.extension(dummyFile.path);
-  final fileName = 'Crimchat_test_${DateTime.now().millisecondsSinceEpoch}$extension';
+  final fileName = 'crimchart_test_${DateTime.now().millisecondsSinceEpoch}$extension';
 
   try {
     print('Firing image to Cloudflare R2...');
@@ -29,7 +29,7 @@ Future<void> main() async {
       dummyFile.path,
     );
 
-    final publicUrl = 'https://Crimchat.nexassearch.com/$fileName';
+    final publicUrl = 'https://crimchart.nexassearch.com/$fileName';
     print('Upload Successful! Image live at: $publicUrl');
   } catch (e) {
     print('Cloudflare Upload Error: $e');

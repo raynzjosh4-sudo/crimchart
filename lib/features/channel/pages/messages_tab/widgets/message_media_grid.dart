@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:crown/features/channel/application/channel_moments_provider.dart';
+import 'package:crimchart/features/channel/application/channel_moments_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/media_model.dart';
 import '../bottom_sheets/media_gallery_bottom_sheet.dart';

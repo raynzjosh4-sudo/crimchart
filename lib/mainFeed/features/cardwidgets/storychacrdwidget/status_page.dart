@@ -1,4 +1,4 @@
-import 'package:crown/chartdialog/chart_options_dialog.dart';
+import 'package:crimchart/chartdialog/chart_options_dialog.dart';
 import 'package:flutter/material.dart';
 import '../../../../features/widgets/memberimage/starter_image.dart';
 import '../../../../profile/pages/profile_page.dart';
@@ -6,7 +6,7 @@ import '../../../../features/channel/domain/entities/channel_status_entity.dart'
 import '../../../../features/inforsheet/info_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../video/core/widgets/video_player_widget.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 
 class StatusPage extends StatefulWidget {
   final ChannelStatusEntity? status;
@@ -205,7 +205,10 @@ class _StatusPageState extends State<StatusPage>
                       tag: _currentIndex == 0 && widget.heroTag != null
                           ? widget.heroTag!
                           : 'none',
-                      child: currentImageUrl != null
+                      child: (currentImageUrl != null &&
+                              currentImageUrl.isNotEmpty &&
+                              Uri.tryParse(currentImageUrl)?.hasAbsolutePath ==
+                                  true)
                           ? CachedNetworkImage(
                               imageUrl: currentImageUrl,
                               fit: BoxFit.cover,
@@ -214,6 +217,8 @@ class _StatusPageState extends State<StatusPage>
                                   color: Colors.white24,
                                 ),
                               ),
+                              errorWidget: (context, url, error) =>
+                                  Container(color: Colors.black),
                             )
                           : Container(color: Colors.black),
                     ),
@@ -291,7 +296,12 @@ class _StatusPageState extends State<StatusPage>
                             );
                           },
                           size: 40,
-                          imageUrl: displayProfileImage,
+                          imageUrl: (displayProfileImage.isNotEmpty &&
+                                  Uri.tryParse(displayProfileImage)
+                                          ?.hasAbsolutePath ==
+                                      true)
+                              ? displayProfileImage
+                              : null,
                           showStatusRing: false,
                           showActiveDot: false,
                         ),

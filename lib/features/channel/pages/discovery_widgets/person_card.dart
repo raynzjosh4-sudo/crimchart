@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:crown/core/theme/design_system.dart';
+import 'package:crimchart/core/theme/design_system.dart';
 
 class PersonCard extends StatelessWidget {
   final String imageUrl;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../widgets/memberimage/starter_image.dart';
 import '../../../newinsidechartstartpage/models/member.dart';

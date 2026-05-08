@@ -1,29 +1,29 @@
 import 'dart:convert';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/features/newinsidechartstartpage/widgets/pagination_indicators.dart';
-import 'package:crown/features/widgets/shimmer/shimmer_effect.dart';
-import 'package:crown/mainFeed/dummydata/feed_dummy_data.dart';
-import 'package:crown/mainFeed/features/bottomappbar/widgets/main_bottom_app_bar.dart';
-import 'package:crown/mainFeed/features/cardwidgets/shimmer/discover_charts_shimmer.dart';
-import 'package:crown/mainFeed/features/cardwidgets/shimmer/main_feed_card_shimmer.dart';
-import 'package:crown/mainFeed/features/cardwidgets/shimmer/story_list_shimmer.dart';
-import 'package:crown/mainFeed/features/mainfeedcard/main_feed_card.dart';
-import 'package:crown/mainFeed/features/mainfeedcard/models/main_feed_card_type_model.dart';
-import 'package:crown/posting/pages/post_page.dart';
-import 'package:crown/profile/channels/pages/channels_page.dart';
-import 'package:crown/profile/pages/profile_page.dart';
-import 'package:crown/video/pages/video_feed_page.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/features/newinsidechartstartpage/widgets/pagination_indicators.dart';
+import 'package:crimchart/features/widgets/shimmer/shimmer_effect.dart';
+import 'package:crimchart/mainFeed/dummydata/feed_dummy_data.dart';
+import 'package:crimchart/mainFeed/features/bottomappbar/widgets/main_bottom_app_bar.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/shimmer/discover_charts_shimmer.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/shimmer/main_feed_card_shimmer.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/shimmer/story_list_shimmer.dart';
+import 'package:crimchart/mainFeed/features/mainfeedcard/main_feed_card.dart';
+import 'package:crimchart/mainFeed/features/mainfeedcard/models/main_feed_card_type_model.dart';
+import 'package:crimchart/posting/pages/post_page.dart';
+import 'package:crimchart/profile/channels/pages/channels_page.dart';
+import 'package:crimchart/profile/pages/profile_page.dart';
+import 'package:crimchart/video/pages/video_feed_page.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import 'package:crown/mainFeed/pages/export.dart';
+import 'package:crimchart/mainFeed/pages/export.dart';
 import 'package:flutter/material.dart';
-import 'package:crown/core/db/feed_repository.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
-import 'package:crown/mainFeed/features/cardwidgets/models/channel_post_model.dart';
-import 'package:crown/mainFeed/features/search/native_search_delegate.dart';
+import 'package:crimchart/core/db/feed_repository.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/models/channel_post_model.dart';
+import 'package:crimchart/mainFeed/features/search/native_search_delegate.dart';
 
 class MainFeedPage extends StatefulWidget {
   final int initialIndex;

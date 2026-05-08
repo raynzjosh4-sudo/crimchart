@@ -1,6 +1,6 @@
-import 'package:crown/mainFeed/dummydata/charter_star_dummy_data.dart';
-import 'package:crown/mainFeed/features/cardwidgets/chartsandstars/widgets/charter_star_avatar_stack.dart';
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/mainFeed/dummydata/charter_star_dummy_data.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/chartsandstars/widgets/charter_star_avatar_stack.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:flutter/material.dart';
 
 import '../channel/pages/channel_page.dart';

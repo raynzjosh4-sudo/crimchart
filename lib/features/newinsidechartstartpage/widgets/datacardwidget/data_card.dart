@@ -1,4 +1,4 @@
-import 'package:crown/features/widgets/chartcard/models/media_data.dart';
+import 'package:crimchart/features/widgets/chartcard/models/media_data.dart';
 import 'package:flutter/material.dart';
 import 'widgets/video_item.dart';
 import 'widgets/image_item.dart';

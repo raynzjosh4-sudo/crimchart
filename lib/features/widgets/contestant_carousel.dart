@@ -1,6 +1,6 @@
-import 'package:crown/profile/models/charter_model.dart';
-import 'package:crown/features/widgets/memberimage/starter_image.dart'; // ✅ IMPORT MEMBER IMAGE
-import 'package:crown/features/channel/pages/channel_page.dart'; // ✅ MISSING IMPORT
+import 'package:crimchart/profile/models/charter_model.dart';
+import 'package:crimchart/features/widgets/memberimage/starter_image.dart'; // ✅ IMPORT MEMBER IMAGE
+import 'package:crimchart/features/channel/pages/channel_page.dart'; // ✅ MISSING IMPORT
 import 'package:flutter/material.dart';
 import '../../core/utils/responsive_size.dart';
 

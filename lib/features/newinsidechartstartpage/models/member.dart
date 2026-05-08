@@ -1,5 +1,5 @@
-import 'package:crown/features/widgets/chartcard/models/media_data.dart';
-import 'package:crown/gifts/models/gift_model.dart';
+import 'package:crimchart/features/widgets/chartcard/models/media_data.dart';
+import 'package:crimchart/gifts/models/gift_model.dart';
 
 class ReceivedGift {
   final GiftModel gift;

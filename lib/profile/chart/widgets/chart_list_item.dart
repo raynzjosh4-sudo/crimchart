@@ -1,4 +1,4 @@
-import 'package:crown/profile/chart/pages/chart_detail_page.dart';
+import 'package:crimchart/profile/chart/pages/chart_detail_page.dart';
 import 'package:flutter/material.dart';
 import '../models/chart_chart.dart';
 import '../../../core/utils/responsive_size.dart';

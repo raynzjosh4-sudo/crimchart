@@ -162,7 +162,7 @@ class ChannelsListController extends StateNotifier<ChannelsListState> {
           status: ChannelsListStatus.loaded,
           channels: newChannels,
           currentPage: targetPage,
-          hasReachedMax: freshChannels.length < 20,
+          hasReachedMax: freshChannels.length < 10,
         );
       },
     );

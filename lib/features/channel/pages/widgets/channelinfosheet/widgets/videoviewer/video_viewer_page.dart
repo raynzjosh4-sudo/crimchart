@@ -1,15 +1,15 @@
 import 'dart:io';
-import 'package:crown/features/feed/application/feed_controller.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/feed/application/feed_controller.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/widgets/chart_image.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/widgets/chart_image.dart';
 
 class VideoViewerPage extends ConsumerStatefulWidget {
   final List<PostEntity> initialVideos;

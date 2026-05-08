@@ -1,6 +1,6 @@
-import 'package:crown/features/newinsidechartstartpage/models/chart.dart';
-import 'package:crown/features/widgets/memberimage/starter_image.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/features/newinsidechartstartpage/models/chart.dart';
+import 'package:crimchart/features/widgets/memberimage/starter_image.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 
 class ExistingChartTile extends StatelessWidget {

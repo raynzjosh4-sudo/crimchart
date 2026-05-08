@@ -1,4 +1,4 @@
-import 'package:crown/gifts/models/gift_model.dart';
+import 'package:crimchart/gifts/models/gift_model.dart';
 
 final List<GiftModel> dummyGifts = [
   // --- 7 FREE GIFTS (0 Coins) ---

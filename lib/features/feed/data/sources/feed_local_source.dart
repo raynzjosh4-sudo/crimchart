@@ -44,6 +44,11 @@ class FeedLocalSource {
           'postType': post.postType,
           'linkChain': jsonEncode(post.linkChain),
           'linkDepth': post.linkDepth,
+          'taggerName': post.taggerName,
+          'taggerAvatar': post.taggerAvatar,
+          'sourceChannelName': post.sourceChannelName,
+          'sourceChannelAvatar': post.sourceChannelAvatar,
+          'tagsCount': post.tagsCount,
           'isPublic': post.isPublic ? 1 : 0,
           'allowComments': post.allowComments ? 1 : 0,
         };
@@ -86,6 +91,11 @@ class FeedLocalSource {
             'isPending': 0,
             'postType': post.postType,
             'metadata': jsonEncode(post.metadata),
+            'taggerName': post.taggerName,
+            'taggerAvatar': post.taggerAvatar,
+            'sourceChannelName': post.sourceChannelName,
+            'sourceChannelAvatar': post.sourceChannelAvatar,
+            'tagsCount': post.tagsCount,
             'isLiked': post.isLiked ? 1 : 0,
           });
         } catch (e) {

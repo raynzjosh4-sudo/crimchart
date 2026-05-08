@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:crown/core/widgets/chart_image.dart';
+import 'package:crimchart/core/widgets/chart_image.dart';
 
 class MemberImage extends StatelessWidget {
   final double size;

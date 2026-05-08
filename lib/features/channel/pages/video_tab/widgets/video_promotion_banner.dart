@@ -1,7 +1,7 @@
-import 'package:crown/commentingsheets/widgets/commenting_sheet.dart';
-import 'package:crown/features/channel/application/channel_moments_provider.dart';
+import 'package:crimchart/commentingsheets/widgets/commenting_sheet.dart';
+import 'package:crimchart/features/channel/application/channel_moments_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'native_button.dart';
 import 'promotion_banner_card.dart';
@@ -30,7 +30,7 @@ class _VideoPromotionBannerState extends ConsumerState<VideoPromotionBanner> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.65, initialPage: 500);
+    _pageController = PageController(viewportFraction: 0.33, initialPage: 500);
   }
 
   @override
@@ -66,7 +66,7 @@ class _VideoPromotionBannerState extends ConsumerState<VideoPromotionBanner> {
             child: Text(
               'Moments',
               style: TextStyle(
-                fontSize: 20.sp,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.w900,
                 color: colorScheme.onSurface,
                 letterSpacing: -0.5,
@@ -81,7 +81,7 @@ class _VideoPromotionBannerState extends ConsumerState<VideoPromotionBanner> {
                 textAlign: TextAlign.center,
                 text: TextSpan(
                   style: TextStyle(
-                    fontSize: 22.sp,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.w800,
                     color: colorScheme.onSurface,
                     letterSpacing: -0.5,
@@ -103,7 +103,7 @@ class _VideoPromotionBannerState extends ConsumerState<VideoPromotionBanner> {
           ] else ...[
             // ── The Responsive Carousel ──
             SizedBox(
-              height: 400.h,
+              height: 180.h,
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: itemCount,
@@ -141,17 +141,17 @@ class _VideoPromotionBannerState extends ConsumerState<VideoPromotionBanner> {
                 widget.channelName ?? 'Stay connected',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 28.sp,
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.w900,
                   color: colorScheme.onSurface,
-                  letterSpacing: -1.2,
+                  letterSpacing: -1.0,
                   height: 1.0,
                   fontFamily: theme.textTheme.displayLarge?.fontFamily,
                 ),
               ),
             ),
 
-            SizedBox(height: 10.h),
+            SizedBox(height: 6.h),
 
             // ── Subtext ──
             Padding(
@@ -161,16 +161,16 @@ class _VideoPromotionBannerState extends ConsumerState<VideoPromotionBanner> {
                     'Share your special moments and find new inspiration',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14.sp,
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
                   color: colorScheme.onSurface.withValues(alpha: 0.6),
-                  height: 1.4,
+                  height: 1.3,
                 ),
               ),
             ),
           ],
 
-          SizedBox(height: 12.h),
+          SizedBox(height: 8.h),
 
           // ── ACTION BUTTON ──
           Padding(

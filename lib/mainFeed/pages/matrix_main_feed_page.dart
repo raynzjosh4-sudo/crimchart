@@ -1,4 +1,4 @@
-import 'package:crown/mainFeed/features/mainfeedcard/main_feed_card.dart';
+import 'package:crimchart/mainFeed/features/mainfeedcard/main_feed_card.dart';
 import 'package:flutter/material.dart';
 import '../dummydata/feed_dummy_data.dart';
 

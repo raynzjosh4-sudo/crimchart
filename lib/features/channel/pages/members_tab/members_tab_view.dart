@@ -1,18 +1,18 @@
-import 'package:crown/commentingsheets/widgets/commenting_sheet.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/members_story_bar.dart';
+import 'package:crimchart/commentingsheets/widgets/commenting_sheet.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/members_story_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:crown/profile/models/charter_model.dart';
-import 'package:crown/features/channel/pages/members_tab/widgets/member_list_item.dart';
-import 'package:crown/mainFeed/features/cardwidgets/storychacrdwidget/status_page.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
+import 'package:crimchart/features/channel/pages/members_tab/widgets/member_list_item.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/storychacrdwidget/status_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/features/channel/application/channel_statuses_provider.dart';
-import 'package:crown/features/channel/application/channel_members_provider.dart';
-import 'package:crown/features/channel/pages/members_tab/widgets/channel_invitation_card.dart';
-import 'package:crown/features/channel/channelsettings/channelinsidesettingspage/select_charter_page.dart';
-import 'package:crown/profile/pages/profile_page.dart';
-import 'package:crown/features/widgets/shimmer/membershimmer.dart';
-import 'package:crown/features/widgets/offline/offline_view.dart';
+import 'package:crimchart/features/channel/application/channel_statuses_provider.dart';
+import 'package:crimchart/features/channel/application/channel_members_provider.dart';
+import 'package:crimchart/features/channel/pages/members_tab/widgets/channel_invitation_card.dart';
+import 'package:crimchart/features/channel/channelsettings/channelinsidesettingspage/select_charter_page.dart';
+import 'package:crimchart/profile/pages/profile_page.dart';
+import 'package:crimchart/features/widgets/shimmer/membershimmer.dart';
+import 'package:crimchart/features/widgets/offline/offline_view.dart';
 
 class MembersTabView extends ConsumerWidget {
   final String channelId;

@@ -1,10 +1,8 @@
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'dummydata/audio_dummy_data.dart';
 import '../models/media_item.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -26,12 +24,10 @@ class _AudioTabState extends State<AudioTab> {
   final ScrollController _scrollController = ScrollController();
 
   final List<AssetEntity> _realAssets = [];
-  final List<AudioTrack> _displayedItems = [];
 
   bool _isLoadingMore = false;
   bool _hasMore = true;
   int _page = 0;
-  bool _useDummyFallback = false;
 
   @override
   void initState() {
@@ -59,7 +55,7 @@ class _AudioTabState extends State<AudioTab> {
 
     try {
       if (kIsWeb || Platform.isWindows || Platform.isLinux) {
-        throw Exception('Not running on mobile device');
+        throw Exception('Gallery access is only available on mobile devices.');
       }
 
       final PermissionState ps = await PhotoManager.requestPermissionExtend(
@@ -95,16 +91,11 @@ class _AudioTabState extends State<AudioTab> {
         });
       }
     } catch (e) {
-      print('=================================');
-      print('[AudioTab] Failed to load real audio: $e');
-      print('=================================');
-      _useDummyFallback = true;
+      debugPrint('[AudioTab] Error loading audio: $e');
       if (mounted) {
         setState(() {
-          _displayedItems.addAll(audioDummyData);
-          _page++;
           _isLoadingMore = false;
-          if (_page >= 3) _hasMore = false;
+          _hasMore = false;
         });
       }
     }
@@ -121,153 +112,124 @@ class _AudioTabState extends State<AudioTab> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final int listLength = _useDummyFallback
-        ? _displayedItems.length
-        : _realAssets.length;
+    final int listLength = _realAssets.length;
 
-    return ListView.separated(
-      controller: _scrollController,
-      padding: EdgeInsets.all(16.w),
-      itemCount: listLength + (_isLoadingMore ? 1 : 0),
-      separatorBuilder: (context, index) => Divider(
-        color: colorScheme.onSurface.withValues(alpha: 0.05),
-        height: 1,
-      ),
-      itemBuilder: (context, index) {
-        if (index == listLength) {
-          return Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 20.h),
-              child: SizedBox(
-                width: 24.w,
-                height: 24.h,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: colorScheme.primary,
-                ),
+    return listLength == 0 && !_isLoadingMore
+        ? Center(
+            child: Text(
+              'No audio files found',
+              style: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ),
-          );
-        }
-
-        final String mediaId = _useDummyFallback
-            ? _displayedItems[index].coverUrl + _displayedItems[index].title
-            : _realAssets[index].id;
-        final isSelected = widget.selectedItems.containsKey(mediaId);
-
-        String title = "Unknown";
-        String artist = "Unknown Artist";
-        String durationStr = "0:00";
-
-        if (_useDummyFallback) {
-          title = _displayedItems[index].title;
-          artist = _displayedItems[index].artist;
-          durationStr = _displayedItems[index].duration;
-        } else {
-          final asset = _realAssets[index];
-          title = asset.title ?? "Unknown";
-          durationStr = _formatDuration(asset.duration);
-        }
-
-        return ListTile(
-          onTap: () async {
-            if (_useDummyFallback) {
-              widget.onToggleSelection(
-                mediaId,
-                MediaItem(
-                  path: _displayedItems[index].coverUrl,
-                  type: MediaType.audio,
-                  title: title,
-                  artist: artist,
-                ),
-              );
-            } else {
-              final file = await _realAssets[index].file;
-              if (file != null) {
-                widget.onToggleSelection(
-                  mediaId,
-                  MediaItem(
-                    path: file.path,
-                    type: MediaType.audio,
-                    title: title,
-                    artist: artist,
+          )
+        : ListView.separated(
+            controller: _scrollController,
+            padding: EdgeInsets.all(16.w),
+            itemCount: listLength + (_isLoadingMore ? 1 : 0),
+            separatorBuilder: (context, index) => Divider(
+              color: colorScheme.onSurface.withValues(alpha: 0.05),
+              height: 1,
+            ),
+            itemBuilder: (context, index) {
+              if (index == listLength) {
+                return Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20.h),
+                    child: SizedBox(
+                      width: 24.w,
+                      height: 24.h,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: colorScheme.primary,
+                      ),
+                    ),
                   ),
                 );
               }
-            }
-          },
-          leading: Container(
-            width: 50.w,
-            height: 50.h,
-            decoration: BoxDecoration(
-              color: colorScheme.onSurface.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: isSelected
-                ? Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Icon(Icons.check, color: colorScheme.onPrimary),
-                  )
-                : _useDummyFallback
-                ? ClipRRect(
+
+              final String mediaId = _realAssets[index].id;
+              final isSelected = widget.selectedItems.containsKey(mediaId);
+
+              String title = "Unknown";
+              String artist = "Unknown Artist";
+              String durationStr = "0:00";
+
+              final asset = _realAssets[index];
+              title = asset.title ?? "Unknown";
+              durationStr = _formatDuration(asset.duration);
+
+              return ListTile(
+                onTap: () async {
+                  final file = await _realAssets[index].file;
+                  if (file != null) {
+                    widget.onToggleSelection(
+                      mediaId,
+                      MediaItem(
+                        path: file.path,
+                        type: MediaType.audio,
+                        title: title,
+                        artist: artist,
+                      ),
+                    );
+                  }
+                },
+                leading: Container(
+                  width: 50.w,
+                  height: 50.h,
+                  decoration: BoxDecoration(
+                    color: colorScheme.onSurface.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8.r),
-                    child: CachedNetworkImage(
-                      imageUrl: _displayedItems[index].coverUrl,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : Center(
-                    child: Icon(
-                      LucideIcons.music,
-                      color: colorScheme.onSurface.withValues(alpha: 0.5),
-                      size: 20.sp,
-                    ),
                   ),
-          ),
-          title: Text(
-            title,
-            style: TextStyle(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w900,
-              fontSize: 15.sp,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Text(
-            artist,
-            style: TextStyle(
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: Text(
-            durationStr,
-            style: TextStyle(
-              color: colorScheme.onSurface.withValues(alpha: 0.3),
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        );
-      },
-    );
+                  child: isSelected
+                      ? Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Icon(
+                            Icons.check,
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : Center(
+                          child: Icon(
+                            LucideIcons.music,
+                            color: colorScheme.onSurface.withValues(alpha: 0.5),
+                            size: 20.sp,
+                          ),
+                        ),
+                ),
+                title: Text(
+                  title,
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15.sp,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  artist,
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Text(
+                  durationStr,
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.3),
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            },
+          );
   }
 }
-
-
-
-
-
-
-
-
-
-
-

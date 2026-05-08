@@ -2,13 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/commentingsheets/widgets/commenting_sheet.dart';
-import 'package:crown/features/widgets/chartcard/models/media_data.dart';
-import 'package:crown/core/widgets/chart_linear_loader.dart';
-import 'package:crown/features/showcase/chart_toast.dart';
-import 'package:crown/features/channel/application/channel_creation_controller.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/commentingsheets/widgets/commenting_sheet.dart';
+import 'package:crimchart/features/widgets/chartcard/models/media_data.dart';
+import 'package:crimchart/core/widgets/chart_linear_loader.dart';
+import 'package:crimchart/features/showcase/chart_toast.dart';
+import 'package:crimchart/features/channel/application/channel_creation_controller.dart';
 
 class ChannelEditPage extends ConsumerStatefulWidget {
   final String channelId;

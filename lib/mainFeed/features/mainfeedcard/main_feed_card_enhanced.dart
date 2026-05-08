@@ -1,5 +1,5 @@
-import 'package:crown/mainFeed/features/cardwidgets/hiness/hiness_card_widget.dart';
-import 'package:crown/mainFeed/features/cardwidgets/models/hiness_model.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/hiness/hiness_card_widget.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/models/hiness_model.dart';
 
 import '../../../features/feed/domain/entities/post_entity.dart';
 import 'package:flutter/material.dart';

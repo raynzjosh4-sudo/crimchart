@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:crown/core/models/content_entity.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
-import 'package:crown/features/feed/domain/entities/comment_entity.dart';
-import 'package:crown/features/feed/utils/content_creation_example.dart';
+import 'package:crimchart/core/models/content_entity.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/feed/domain/entities/comment_entity.dart';
+import 'package:crimchart/features/feed/utils/content_creation_example.dart';
 
 void main() {
   group('ThumbnailLink System Tests', () {

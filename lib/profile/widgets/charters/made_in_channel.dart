@@ -1,8 +1,8 @@
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/allchannels/models/chart_channel.dart';
-import 'package:crown/features/channel/pages/channel_page.dart';
-import 'package:crown/features/widgets/memberimage/channel_avatar.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/allchannels/models/chart_channel.dart';
+import 'package:crimchart/features/channel/pages/channel_page.dart';
+import 'package:crimchart/features/widgets/memberimage/channel_avatar.dart';
 import 'package:flutter/material.dart';
 
 class MadeInChannel extends StatelessWidget {

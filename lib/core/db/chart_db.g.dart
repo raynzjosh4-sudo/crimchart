@@ -1460,6 +1460,74 @@ class $PostsTable extends Posts with TableInfo<$PostsTable, Post> {
     requiredDuringInsert: false,
     defaultValue: const Constant(1),
   );
+  static const VerificationMeta _taggerNameMeta = const VerificationMeta(
+    'taggerName',
+  );
+  @override
+  late final GeneratedColumn<String> taggerName = GeneratedColumn<String>(
+    'tagger_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _taggerAvatarMeta = const VerificationMeta(
+    'taggerAvatar',
+  );
+  @override
+  late final GeneratedColumn<String> taggerAvatar = GeneratedColumn<String>(
+    'tagger_avatar',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceChannelNameMeta = const VerificationMeta(
+    'sourceChannelName',
+  );
+  @override
+  late final GeneratedColumn<String> sourceChannelName =
+      GeneratedColumn<String>(
+        'source_channel_name',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _sourceChannelAvatarMeta =
+      const VerificationMeta('sourceChannelAvatar');
+  @override
+  late final GeneratedColumn<String> sourceChannelAvatar =
+      GeneratedColumn<String>(
+        'source_channel_avatar',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _tagsCountMeta = const VerificationMeta(
+    'tagsCount',
+  );
+  @override
+  late final GeneratedColumn<int> tagsCount = GeneratedColumn<int>(
+    'tags_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _metadataMeta = const VerificationMeta(
+    'metadata',
+  );
+  @override
+  late final GeneratedColumn<String> metadata = GeneratedColumn<String>(
+    'metadata',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1498,6 +1566,12 @@ class $PostsTable extends Posts with TableInfo<$PostsTable, Post> {
     linkDepth,
     isPublic,
     allowComments,
+    taggerName,
+    taggerAvatar,
+    sourceChannelName,
+    sourceChannelAvatar,
+    tagsCount,
+    metadata,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1765,6 +1839,51 @@ class $PostsTable extends Posts with TableInfo<$PostsTable, Post> {
         ),
       );
     }
+    if (data.containsKey('tagger_name')) {
+      context.handle(
+        _taggerNameMeta,
+        taggerName.isAcceptableOrUnknown(data['tagger_name']!, _taggerNameMeta),
+      );
+    }
+    if (data.containsKey('tagger_avatar')) {
+      context.handle(
+        _taggerAvatarMeta,
+        taggerAvatar.isAcceptableOrUnknown(
+          data['tagger_avatar']!,
+          _taggerAvatarMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_channel_name')) {
+      context.handle(
+        _sourceChannelNameMeta,
+        sourceChannelName.isAcceptableOrUnknown(
+          data['source_channel_name']!,
+          _sourceChannelNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_channel_avatar')) {
+      context.handle(
+        _sourceChannelAvatarMeta,
+        sourceChannelAvatar.isAcceptableOrUnknown(
+          data['source_channel_avatar']!,
+          _sourceChannelAvatarMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tags_count')) {
+      context.handle(
+        _tagsCountMeta,
+        tagsCount.isAcceptableOrUnknown(data['tags_count']!, _tagsCountMeta),
+      );
+    }
+    if (data.containsKey('metadata')) {
+      context.handle(
+        _metadataMeta,
+        metadata.isAcceptableOrUnknown(data['metadata']!, _metadataMeta),
+      );
+    }
     return context;
   }
 
@@ -1918,6 +2037,30 @@ class $PostsTable extends Posts with TableInfo<$PostsTable, Post> {
         DriftSqlType.int,
         data['${effectivePrefix}allow_comments'],
       )!,
+      taggerName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tagger_name'],
+      ),
+      taggerAvatar: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tagger_avatar'],
+      ),
+      sourceChannelName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_channel_name'],
+      ),
+      sourceChannelAvatar: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_channel_avatar'],
+      ),
+      tagsCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tags_count'],
+      )!,
+      metadata: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata'],
+      ),
     );
   }
 
@@ -1964,6 +2107,12 @@ class Post extends DataClass implements Insertable<Post> {
   final int linkDepth;
   final int isPublic;
   final int allowComments;
+  final String? taggerName;
+  final String? taggerAvatar;
+  final String? sourceChannelName;
+  final String? sourceChannelAvatar;
+  final int tagsCount;
+  final String? metadata;
   const Post({
     required this.id,
     this.authorId,
@@ -2001,6 +2150,12 @@ class Post extends DataClass implements Insertable<Post> {
     required this.linkDepth,
     required this.isPublic,
     required this.allowComments,
+    this.taggerName,
+    this.taggerAvatar,
+    this.sourceChannelName,
+    this.sourceChannelAvatar,
+    required this.tagsCount,
+    this.metadata,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2095,6 +2250,22 @@ class Post extends DataClass implements Insertable<Post> {
     map['link_depth'] = Variable<int>(linkDepth);
     map['is_public'] = Variable<int>(isPublic);
     map['allow_comments'] = Variable<int>(allowComments);
+    if (!nullToAbsent || taggerName != null) {
+      map['tagger_name'] = Variable<String>(taggerName);
+    }
+    if (!nullToAbsent || taggerAvatar != null) {
+      map['tagger_avatar'] = Variable<String>(taggerAvatar);
+    }
+    if (!nullToAbsent || sourceChannelName != null) {
+      map['source_channel_name'] = Variable<String>(sourceChannelName);
+    }
+    if (!nullToAbsent || sourceChannelAvatar != null) {
+      map['source_channel_avatar'] = Variable<String>(sourceChannelAvatar);
+    }
+    map['tags_count'] = Variable<int>(tagsCount);
+    if (!nullToAbsent || metadata != null) {
+      map['metadata'] = Variable<String>(metadata);
+    }
     return map;
   }
 
@@ -2190,6 +2361,22 @@ class Post extends DataClass implements Insertable<Post> {
       linkDepth: Value(linkDepth),
       isPublic: Value(isPublic),
       allowComments: Value(allowComments),
+      taggerName: taggerName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taggerName),
+      taggerAvatar: taggerAvatar == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taggerAvatar),
+      sourceChannelName: sourceChannelName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceChannelName),
+      sourceChannelAvatar: sourceChannelAvatar == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceChannelAvatar),
+      tagsCount: Value(tagsCount),
+      metadata: metadata == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadata),
     );
   }
 
@@ -2239,6 +2426,16 @@ class Post extends DataClass implements Insertable<Post> {
       linkDepth: serializer.fromJson<int>(json['linkDepth']),
       isPublic: serializer.fromJson<int>(json['isPublic']),
       allowComments: serializer.fromJson<int>(json['allowComments']),
+      taggerName: serializer.fromJson<String?>(json['taggerName']),
+      taggerAvatar: serializer.fromJson<String?>(json['taggerAvatar']),
+      sourceChannelName: serializer.fromJson<String?>(
+        json['sourceChannelName'],
+      ),
+      sourceChannelAvatar: serializer.fromJson<String?>(
+        json['sourceChannelAvatar'],
+      ),
+      tagsCount: serializer.fromJson<int>(json['tagsCount']),
+      metadata: serializer.fromJson<String?>(json['metadata']),
     );
   }
   @override
@@ -2281,6 +2478,12 @@ class Post extends DataClass implements Insertable<Post> {
       'linkDepth': serializer.toJson<int>(linkDepth),
       'isPublic': serializer.toJson<int>(isPublic),
       'allowComments': serializer.toJson<int>(allowComments),
+      'taggerName': serializer.toJson<String?>(taggerName),
+      'taggerAvatar': serializer.toJson<String?>(taggerAvatar),
+      'sourceChannelName': serializer.toJson<String?>(sourceChannelName),
+      'sourceChannelAvatar': serializer.toJson<String?>(sourceChannelAvatar),
+      'tagsCount': serializer.toJson<int>(tagsCount),
+      'metadata': serializer.toJson<String?>(metadata),
     };
   }
 
@@ -2321,6 +2524,12 @@ class Post extends DataClass implements Insertable<Post> {
     int? linkDepth,
     int? isPublic,
     int? allowComments,
+    Value<String?> taggerName = const Value.absent(),
+    Value<String?> taggerAvatar = const Value.absent(),
+    Value<String?> sourceChannelName = const Value.absent(),
+    Value<String?> sourceChannelAvatar = const Value.absent(),
+    int? tagsCount,
+    Value<String?> metadata = const Value.absent(),
   }) => Post(
     id: id ?? this.id,
     authorId: authorId.present ? authorId.value : this.authorId,
@@ -2370,6 +2579,16 @@ class Post extends DataClass implements Insertable<Post> {
     linkDepth: linkDepth ?? this.linkDepth,
     isPublic: isPublic ?? this.isPublic,
     allowComments: allowComments ?? this.allowComments,
+    taggerName: taggerName.present ? taggerName.value : this.taggerName,
+    taggerAvatar: taggerAvatar.present ? taggerAvatar.value : this.taggerAvatar,
+    sourceChannelName: sourceChannelName.present
+        ? sourceChannelName.value
+        : this.sourceChannelName,
+    sourceChannelAvatar: sourceChannelAvatar.present
+        ? sourceChannelAvatar.value
+        : this.sourceChannelAvatar,
+    tagsCount: tagsCount ?? this.tagsCount,
+    metadata: metadata.present ? metadata.value : this.metadata,
   );
   Post copyWithCompanion(PostsCompanion data) {
     return Post(
@@ -2437,6 +2656,20 @@ class Post extends DataClass implements Insertable<Post> {
       allowComments: data.allowComments.present
           ? data.allowComments.value
           : this.allowComments,
+      taggerName: data.taggerName.present
+          ? data.taggerName.value
+          : this.taggerName,
+      taggerAvatar: data.taggerAvatar.present
+          ? data.taggerAvatar.value
+          : this.taggerAvatar,
+      sourceChannelName: data.sourceChannelName.present
+          ? data.sourceChannelName.value
+          : this.sourceChannelName,
+      sourceChannelAvatar: data.sourceChannelAvatar.present
+          ? data.sourceChannelAvatar.value
+          : this.sourceChannelAvatar,
+      tagsCount: data.tagsCount.present ? data.tagsCount.value : this.tagsCount,
+      metadata: data.metadata.present ? data.metadata.value : this.metadata,
     );
   }
 
@@ -2478,7 +2711,13 @@ class Post extends DataClass implements Insertable<Post> {
           ..write('linkChain: $linkChain, ')
           ..write('linkDepth: $linkDepth, ')
           ..write('isPublic: $isPublic, ')
-          ..write('allowComments: $allowComments')
+          ..write('allowComments: $allowComments, ')
+          ..write('taggerName: $taggerName, ')
+          ..write('taggerAvatar: $taggerAvatar, ')
+          ..write('sourceChannelName: $sourceChannelName, ')
+          ..write('sourceChannelAvatar: $sourceChannelAvatar, ')
+          ..write('tagsCount: $tagsCount, ')
+          ..write('metadata: $metadata')
           ..write(')'))
         .toString();
   }
@@ -2521,6 +2760,12 @@ class Post extends DataClass implements Insertable<Post> {
     linkDepth,
     isPublic,
     allowComments,
+    taggerName,
+    taggerAvatar,
+    sourceChannelName,
+    sourceChannelAvatar,
+    tagsCount,
+    metadata,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -2561,7 +2806,13 @@ class Post extends DataClass implements Insertable<Post> {
           other.linkChain == this.linkChain &&
           other.linkDepth == this.linkDepth &&
           other.isPublic == this.isPublic &&
-          other.allowComments == this.allowComments);
+          other.allowComments == this.allowComments &&
+          other.taggerName == this.taggerName &&
+          other.taggerAvatar == this.taggerAvatar &&
+          other.sourceChannelName == this.sourceChannelName &&
+          other.sourceChannelAvatar == this.sourceChannelAvatar &&
+          other.tagsCount == this.tagsCount &&
+          other.metadata == this.metadata);
 }
 
 class PostsCompanion extends UpdateCompanion<Post> {
@@ -2601,6 +2852,12 @@ class PostsCompanion extends UpdateCompanion<Post> {
   final Value<int> linkDepth;
   final Value<int> isPublic;
   final Value<int> allowComments;
+  final Value<String?> taggerName;
+  final Value<String?> taggerAvatar;
+  final Value<String?> sourceChannelName;
+  final Value<String?> sourceChannelAvatar;
+  final Value<int> tagsCount;
+  final Value<String?> metadata;
   final Value<int> rowid;
   const PostsCompanion({
     this.id = const Value.absent(),
@@ -2639,6 +2896,12 @@ class PostsCompanion extends UpdateCompanion<Post> {
     this.linkDepth = const Value.absent(),
     this.isPublic = const Value.absent(),
     this.allowComments = const Value.absent(),
+    this.taggerName = const Value.absent(),
+    this.taggerAvatar = const Value.absent(),
+    this.sourceChannelName = const Value.absent(),
+    this.sourceChannelAvatar = const Value.absent(),
+    this.tagsCount = const Value.absent(),
+    this.metadata = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PostsCompanion.insert({
@@ -2678,6 +2941,12 @@ class PostsCompanion extends UpdateCompanion<Post> {
     this.linkDepth = const Value.absent(),
     this.isPublic = const Value.absent(),
     this.allowComments = const Value.absent(),
+    this.taggerName = const Value.absent(),
+    this.taggerAvatar = const Value.absent(),
+    this.sourceChannelName = const Value.absent(),
+    this.sourceChannelAvatar = const Value.absent(),
+    this.tagsCount = const Value.absent(),
+    this.metadata = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<Post> custom({
@@ -2717,6 +2986,12 @@ class PostsCompanion extends UpdateCompanion<Post> {
     Expression<int>? linkDepth,
     Expression<int>? isPublic,
     Expression<int>? allowComments,
+    Expression<String>? taggerName,
+    Expression<String>? taggerAvatar,
+    Expression<String>? sourceChannelName,
+    Expression<String>? sourceChannelAvatar,
+    Expression<int>? tagsCount,
+    Expression<String>? metadata,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2758,6 +3033,13 @@ class PostsCompanion extends UpdateCompanion<Post> {
       if (linkDepth != null) 'link_depth': linkDepth,
       if (isPublic != null) 'is_public': isPublic,
       if (allowComments != null) 'allow_comments': allowComments,
+      if (taggerName != null) 'tagger_name': taggerName,
+      if (taggerAvatar != null) 'tagger_avatar': taggerAvatar,
+      if (sourceChannelName != null) 'source_channel_name': sourceChannelName,
+      if (sourceChannelAvatar != null)
+        'source_channel_avatar': sourceChannelAvatar,
+      if (tagsCount != null) 'tags_count': tagsCount,
+      if (metadata != null) 'metadata': metadata,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2799,6 +3081,12 @@ class PostsCompanion extends UpdateCompanion<Post> {
     Value<int>? linkDepth,
     Value<int>? isPublic,
     Value<int>? allowComments,
+    Value<String?>? taggerName,
+    Value<String?>? taggerAvatar,
+    Value<String?>? sourceChannelName,
+    Value<String?>? sourceChannelAvatar,
+    Value<int>? tagsCount,
+    Value<String?>? metadata,
     Value<int>? rowid,
   }) {
     return PostsCompanion(
@@ -2838,6 +3126,12 @@ class PostsCompanion extends UpdateCompanion<Post> {
       linkDepth: linkDepth ?? this.linkDepth,
       isPublic: isPublic ?? this.isPublic,
       allowComments: allowComments ?? this.allowComments,
+      taggerName: taggerName ?? this.taggerName,
+      taggerAvatar: taggerAvatar ?? this.taggerAvatar,
+      sourceChannelName: sourceChannelName ?? this.sourceChannelName,
+      sourceChannelAvatar: sourceChannelAvatar ?? this.sourceChannelAvatar,
+      tagsCount: tagsCount ?? this.tagsCount,
+      metadata: metadata ?? this.metadata,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2957,6 +3251,26 @@ class PostsCompanion extends UpdateCompanion<Post> {
     if (allowComments.present) {
       map['allow_comments'] = Variable<int>(allowComments.value);
     }
+    if (taggerName.present) {
+      map['tagger_name'] = Variable<String>(taggerName.value);
+    }
+    if (taggerAvatar.present) {
+      map['tagger_avatar'] = Variable<String>(taggerAvatar.value);
+    }
+    if (sourceChannelName.present) {
+      map['source_channel_name'] = Variable<String>(sourceChannelName.value);
+    }
+    if (sourceChannelAvatar.present) {
+      map['source_channel_avatar'] = Variable<String>(
+        sourceChannelAvatar.value,
+      );
+    }
+    if (tagsCount.present) {
+      map['tags_count'] = Variable<int>(tagsCount.value);
+    }
+    if (metadata.present) {
+      map['metadata'] = Variable<String>(metadata.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3002,6 +3316,12 @@ class PostsCompanion extends UpdateCompanion<Post> {
           ..write('linkDepth: $linkDepth, ')
           ..write('isPublic: $isPublic, ')
           ..write('allowComments: $allowComments, ')
+          ..write('taggerName: $taggerName, ')
+          ..write('taggerAvatar: $taggerAvatar, ')
+          ..write('sourceChannelName: $sourceChannelName, ')
+          ..write('sourceChannelAvatar: $sourceChannelAvatar, ')
+          ..write('tagsCount: $tagsCount, ')
+          ..write('metadata: $metadata, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3216,6 +3536,74 @@ class $ManifestosTable extends Manifestos
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _taggerNameMeta = const VerificationMeta(
+    'taggerName',
+  );
+  @override
+  late final GeneratedColumn<String> taggerName = GeneratedColumn<String>(
+    'tagger_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _taggerAvatarMeta = const VerificationMeta(
+    'taggerAvatar',
+  );
+  @override
+  late final GeneratedColumn<String> taggerAvatar = GeneratedColumn<String>(
+    'tagger_avatar',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceChannelNameMeta = const VerificationMeta(
+    'sourceChannelName',
+  );
+  @override
+  late final GeneratedColumn<String> sourceChannelName =
+      GeneratedColumn<String>(
+        'source_channel_name',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _sourceChannelAvatarMeta =
+      const VerificationMeta('sourceChannelAvatar');
+  @override
+  late final GeneratedColumn<String> sourceChannelAvatar =
+      GeneratedColumn<String>(
+        'source_channel_avatar',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _tagsCountMeta = const VerificationMeta(
+    'tagsCount',
+  );
+  @override
+  late final GeneratedColumn<int> tagsCount = GeneratedColumn<int>(
+    'tags_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _metadataMeta = const VerificationMeta(
+    'metadata',
+  );
+  @override
+  late final GeneratedColumn<String> metadata = GeneratedColumn<String>(
+    'metadata',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3236,6 +3624,12 @@ class $ManifestosTable extends Manifestos
     isLiked,
     aspectRatio,
     createdAt,
+    taggerName,
+    taggerAvatar,
+    sourceChannelName,
+    sourceChannelAvatar,
+    tagsCount,
+    metadata,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3372,6 +3766,51 @@ class $ManifestosTable extends Manifestos
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('tagger_name')) {
+      context.handle(
+        _taggerNameMeta,
+        taggerName.isAcceptableOrUnknown(data['tagger_name']!, _taggerNameMeta),
+      );
+    }
+    if (data.containsKey('tagger_avatar')) {
+      context.handle(
+        _taggerAvatarMeta,
+        taggerAvatar.isAcceptableOrUnknown(
+          data['tagger_avatar']!,
+          _taggerAvatarMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_channel_name')) {
+      context.handle(
+        _sourceChannelNameMeta,
+        sourceChannelName.isAcceptableOrUnknown(
+          data['source_channel_name']!,
+          _sourceChannelNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_channel_avatar')) {
+      context.handle(
+        _sourceChannelAvatarMeta,
+        sourceChannelAvatar.isAcceptableOrUnknown(
+          data['source_channel_avatar']!,
+          _sourceChannelAvatarMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tags_count')) {
+      context.handle(
+        _tagsCountMeta,
+        tagsCount.isAcceptableOrUnknown(data['tags_count']!, _tagsCountMeta),
+      );
+    }
+    if (data.containsKey('metadata')) {
+      context.handle(
+        _metadataMeta,
+        metadata.isAcceptableOrUnknown(data['metadata']!, _metadataMeta),
+      );
+    }
     return context;
   }
 
@@ -3453,6 +3892,30 @@ class $ManifestosTable extends Manifestos
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      taggerName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tagger_name'],
+      ),
+      taggerAvatar: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tagger_avatar'],
+      ),
+      sourceChannelName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_channel_name'],
+      ),
+      sourceChannelAvatar: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_channel_avatar'],
+      ),
+      tagsCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tags_count'],
+      )!,
+      metadata: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata'],
+      ),
     );
   }
 
@@ -3481,6 +3944,12 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
   final int isLiked;
   final double? aspectRatio;
   final DateTime createdAt;
+  final String? taggerName;
+  final String? taggerAvatar;
+  final String? sourceChannelName;
+  final String? sourceChannelAvatar;
+  final int tagsCount;
+  final String? metadata;
   const Manifesto({
     required this.id,
     required this.authorId,
@@ -3500,6 +3969,12 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
     required this.isLiked,
     this.aspectRatio,
     required this.createdAt,
+    this.taggerName,
+    this.taggerAvatar,
+    this.sourceChannelName,
+    this.sourceChannelAvatar,
+    required this.tagsCount,
+    this.metadata,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3536,6 +4011,22 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
       map['aspect_ratio'] = Variable<double>(aspectRatio);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || taggerName != null) {
+      map['tagger_name'] = Variable<String>(taggerName);
+    }
+    if (!nullToAbsent || taggerAvatar != null) {
+      map['tagger_avatar'] = Variable<String>(taggerAvatar);
+    }
+    if (!nullToAbsent || sourceChannelName != null) {
+      map['source_channel_name'] = Variable<String>(sourceChannelName);
+    }
+    if (!nullToAbsent || sourceChannelAvatar != null) {
+      map['source_channel_avatar'] = Variable<String>(sourceChannelAvatar);
+    }
+    map['tags_count'] = Variable<int>(tagsCount);
+    if (!nullToAbsent || metadata != null) {
+      map['metadata'] = Variable<String>(metadata);
+    }
     return map;
   }
 
@@ -3573,6 +4064,22 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
           ? const Value.absent()
           : Value(aspectRatio),
       createdAt: Value(createdAt),
+      taggerName: taggerName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taggerName),
+      taggerAvatar: taggerAvatar == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taggerAvatar),
+      sourceChannelName: sourceChannelName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceChannelName),
+      sourceChannelAvatar: sourceChannelAvatar == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceChannelAvatar),
+      tagsCount: Value(tagsCount),
+      metadata: metadata == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadata),
     );
   }
 
@@ -3600,6 +4107,16 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
       isLiked: serializer.fromJson<int>(json['isLiked']),
       aspectRatio: serializer.fromJson<double?>(json['aspectRatio']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      taggerName: serializer.fromJson<String?>(json['taggerName']),
+      taggerAvatar: serializer.fromJson<String?>(json['taggerAvatar']),
+      sourceChannelName: serializer.fromJson<String?>(
+        json['sourceChannelName'],
+      ),
+      sourceChannelAvatar: serializer.fromJson<String?>(
+        json['sourceChannelAvatar'],
+      ),
+      tagsCount: serializer.fromJson<int>(json['tagsCount']),
+      metadata: serializer.fromJson<String?>(json['metadata']),
     );
   }
   @override
@@ -3624,6 +4141,12 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
       'isLiked': serializer.toJson<int>(isLiked),
       'aspectRatio': serializer.toJson<double?>(aspectRatio),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'taggerName': serializer.toJson<String?>(taggerName),
+      'taggerAvatar': serializer.toJson<String?>(taggerAvatar),
+      'sourceChannelName': serializer.toJson<String?>(sourceChannelName),
+      'sourceChannelAvatar': serializer.toJson<String?>(sourceChannelAvatar),
+      'tagsCount': serializer.toJson<int>(tagsCount),
+      'metadata': serializer.toJson<String?>(metadata),
     };
   }
 
@@ -3646,6 +4169,12 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
     int? isLiked,
     Value<double?> aspectRatio = const Value.absent(),
     DateTime? createdAt,
+    Value<String?> taggerName = const Value.absent(),
+    Value<String?> taggerAvatar = const Value.absent(),
+    Value<String?> sourceChannelName = const Value.absent(),
+    Value<String?> sourceChannelAvatar = const Value.absent(),
+    int? tagsCount,
+    Value<String?> metadata = const Value.absent(),
   }) => Manifesto(
     id: id ?? this.id,
     authorId: authorId ?? this.authorId,
@@ -3669,6 +4198,16 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
     isLiked: isLiked ?? this.isLiked,
     aspectRatio: aspectRatio.present ? aspectRatio.value : this.aspectRatio,
     createdAt: createdAt ?? this.createdAt,
+    taggerName: taggerName.present ? taggerName.value : this.taggerName,
+    taggerAvatar: taggerAvatar.present ? taggerAvatar.value : this.taggerAvatar,
+    sourceChannelName: sourceChannelName.present
+        ? sourceChannelName.value
+        : this.sourceChannelName,
+    sourceChannelAvatar: sourceChannelAvatar.present
+        ? sourceChannelAvatar.value
+        : this.sourceChannelAvatar,
+    tagsCount: tagsCount ?? this.tagsCount,
+    metadata: metadata.present ? metadata.value : this.metadata,
   );
   Manifesto copyWithCompanion(ManifestosCompanion data) {
     return Manifesto(
@@ -3698,6 +4237,20 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
           ? data.aspectRatio.value
           : this.aspectRatio,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      taggerName: data.taggerName.present
+          ? data.taggerName.value
+          : this.taggerName,
+      taggerAvatar: data.taggerAvatar.present
+          ? data.taggerAvatar.value
+          : this.taggerAvatar,
+      sourceChannelName: data.sourceChannelName.present
+          ? data.sourceChannelName.value
+          : this.sourceChannelName,
+      sourceChannelAvatar: data.sourceChannelAvatar.present
+          ? data.sourceChannelAvatar.value
+          : this.sourceChannelAvatar,
+      tagsCount: data.tagsCount.present ? data.tagsCount.value : this.tagsCount,
+      metadata: data.metadata.present ? data.metadata.value : this.metadata,
     );
   }
 
@@ -3721,13 +4274,19 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
           ..write('isPending: $isPending, ')
           ..write('isLiked: $isLiked, ')
           ..write('aspectRatio: $aspectRatio, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('taggerName: $taggerName, ')
+          ..write('taggerAvatar: $taggerAvatar, ')
+          ..write('sourceChannelName: $sourceChannelName, ')
+          ..write('sourceChannelAvatar: $sourceChannelAvatar, ')
+          ..write('tagsCount: $tagsCount, ')
+          ..write('metadata: $metadata')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     authorId,
     username,
@@ -3746,7 +4305,13 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
     isLiked,
     aspectRatio,
     createdAt,
-  );
+    taggerName,
+    taggerAvatar,
+    sourceChannelName,
+    sourceChannelAvatar,
+    tagsCount,
+    metadata,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3768,7 +4333,13 @@ class Manifesto extends DataClass implements Insertable<Manifesto> {
           other.isPending == this.isPending &&
           other.isLiked == this.isLiked &&
           other.aspectRatio == this.aspectRatio &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.taggerName == this.taggerName &&
+          other.taggerAvatar == this.taggerAvatar &&
+          other.sourceChannelName == this.sourceChannelName &&
+          other.sourceChannelAvatar == this.sourceChannelAvatar &&
+          other.tagsCount == this.tagsCount &&
+          other.metadata == this.metadata);
 }
 
 class ManifestosCompanion extends UpdateCompanion<Manifesto> {
@@ -3790,6 +4361,12 @@ class ManifestosCompanion extends UpdateCompanion<Manifesto> {
   final Value<int> isLiked;
   final Value<double?> aspectRatio;
   final Value<DateTime> createdAt;
+  final Value<String?> taggerName;
+  final Value<String?> taggerAvatar;
+  final Value<String?> sourceChannelName;
+  final Value<String?> sourceChannelAvatar;
+  final Value<int> tagsCount;
+  final Value<String?> metadata;
   final Value<int> rowid;
   const ManifestosCompanion({
     this.id = const Value.absent(),
@@ -3810,6 +4387,12 @@ class ManifestosCompanion extends UpdateCompanion<Manifesto> {
     this.isLiked = const Value.absent(),
     this.aspectRatio = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.taggerName = const Value.absent(),
+    this.taggerAvatar = const Value.absent(),
+    this.sourceChannelName = const Value.absent(),
+    this.sourceChannelAvatar = const Value.absent(),
+    this.tagsCount = const Value.absent(),
+    this.metadata = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ManifestosCompanion.insert({
@@ -3831,6 +4414,12 @@ class ManifestosCompanion extends UpdateCompanion<Manifesto> {
     this.isLiked = const Value.absent(),
     this.aspectRatio = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.taggerName = const Value.absent(),
+    this.taggerAvatar = const Value.absent(),
+    this.sourceChannelName = const Value.absent(),
+    this.sourceChannelAvatar = const Value.absent(),
+    this.tagsCount = const Value.absent(),
+    this.metadata = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        authorId = Value(authorId),
@@ -3854,6 +4443,12 @@ class ManifestosCompanion extends UpdateCompanion<Manifesto> {
     Expression<int>? isLiked,
     Expression<double>? aspectRatio,
     Expression<DateTime>? createdAt,
+    Expression<String>? taggerName,
+    Expression<String>? taggerAvatar,
+    Expression<String>? sourceChannelName,
+    Expression<String>? sourceChannelAvatar,
+    Expression<int>? tagsCount,
+    Expression<String>? metadata,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3875,6 +4470,13 @@ class ManifestosCompanion extends UpdateCompanion<Manifesto> {
       if (isLiked != null) 'is_liked': isLiked,
       if (aspectRatio != null) 'aspect_ratio': aspectRatio,
       if (createdAt != null) 'created_at': createdAt,
+      if (taggerName != null) 'tagger_name': taggerName,
+      if (taggerAvatar != null) 'tagger_avatar': taggerAvatar,
+      if (sourceChannelName != null) 'source_channel_name': sourceChannelName,
+      if (sourceChannelAvatar != null)
+        'source_channel_avatar': sourceChannelAvatar,
+      if (tagsCount != null) 'tags_count': tagsCount,
+      if (metadata != null) 'metadata': metadata,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3898,6 +4500,12 @@ class ManifestosCompanion extends UpdateCompanion<Manifesto> {
     Value<int>? isLiked,
     Value<double?>? aspectRatio,
     Value<DateTime>? createdAt,
+    Value<String?>? taggerName,
+    Value<String?>? taggerAvatar,
+    Value<String?>? sourceChannelName,
+    Value<String?>? sourceChannelAvatar,
+    Value<int>? tagsCount,
+    Value<String?>? metadata,
     Value<int>? rowid,
   }) {
     return ManifestosCompanion(
@@ -3919,6 +4527,12 @@ class ManifestosCompanion extends UpdateCompanion<Manifesto> {
       isLiked: isLiked ?? this.isLiked,
       aspectRatio: aspectRatio ?? this.aspectRatio,
       createdAt: createdAt ?? this.createdAt,
+      taggerName: taggerName ?? this.taggerName,
+      taggerAvatar: taggerAvatar ?? this.taggerAvatar,
+      sourceChannelName: sourceChannelName ?? this.sourceChannelName,
+      sourceChannelAvatar: sourceChannelAvatar ?? this.sourceChannelAvatar,
+      tagsCount: tagsCount ?? this.tagsCount,
+      metadata: metadata ?? this.metadata,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3980,6 +4594,26 @@ class ManifestosCompanion extends UpdateCompanion<Manifesto> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (taggerName.present) {
+      map['tagger_name'] = Variable<String>(taggerName.value);
+    }
+    if (taggerAvatar.present) {
+      map['tagger_avatar'] = Variable<String>(taggerAvatar.value);
+    }
+    if (sourceChannelName.present) {
+      map['source_channel_name'] = Variable<String>(sourceChannelName.value);
+    }
+    if (sourceChannelAvatar.present) {
+      map['source_channel_avatar'] = Variable<String>(
+        sourceChannelAvatar.value,
+      );
+    }
+    if (tagsCount.present) {
+      map['tags_count'] = Variable<int>(tagsCount.value);
+    }
+    if (metadata.present) {
+      map['metadata'] = Variable<String>(metadata.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4007,6 +4641,12 @@ class ManifestosCompanion extends UpdateCompanion<Manifesto> {
           ..write('isLiked: $isLiked, ')
           ..write('aspectRatio: $aspectRatio, ')
           ..write('createdAt: $createdAt, ')
+          ..write('taggerName: $taggerName, ')
+          ..write('taggerAvatar: $taggerAvatar, ')
+          ..write('sourceChannelName: $sourceChannelName, ')
+          ..write('sourceChannelAvatar: $sourceChannelAvatar, ')
+          ..write('tagsCount: $tagsCount, ')
+          ..write('metadata: $metadata, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7187,6 +7827,17 @@ class $ChannelStatusesTable extends ChannelStatuses
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _thumbnailUrlMeta = const VerificationMeta(
+    'thumbnailUrl',
+  );
+  @override
+  late final GeneratedColumn<String> thumbnailUrl = GeneratedColumn<String>(
+    'thumbnail_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _audioUrlMeta = const VerificationMeta(
     'audioUrl',
   );
@@ -7280,6 +7931,28 @@ class $ChannelStatusesTable extends ChannelStatuses
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _usernameMeta = const VerificationMeta(
+    'username',
+  );
+  @override
+  late final GeneratedColumn<String> username = GeneratedColumn<String>(
+    'username',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _profileImageUrlMeta = const VerificationMeta(
+    'profileImageUrl',
+  );
+  @override
+  late final GeneratedColumn<String> profileImageUrl = GeneratedColumn<String>(
+    'profile_image_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7288,6 +7961,7 @@ class $ChannelStatusesTable extends ChannelStatuses
     caption,
     imageUrls,
     videoUrl,
+    thumbnailUrl,
     audioUrl,
     isVideo,
     isAudio,
@@ -7296,6 +7970,8 @@ class $ChannelStatusesTable extends ChannelStatuses
     commentsCount,
     createdAt,
     expiresAt,
+    username,
+    profileImageUrl,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7346,6 +8022,15 @@ class $ChannelStatusesTable extends ChannelStatuses
       context.handle(
         _videoUrlMeta,
         videoUrl.isAcceptableOrUnknown(data['video_url']!, _videoUrlMeta),
+      );
+    }
+    if (data.containsKey('thumbnail_url')) {
+      context.handle(
+        _thumbnailUrlMeta,
+        thumbnailUrl.isAcceptableOrUnknown(
+          data['thumbnail_url']!,
+          _thumbnailUrlMeta,
+        ),
       );
     }
     if (data.containsKey('audio_url')) {
@@ -7399,6 +8084,21 @@ class $ChannelStatusesTable extends ChannelStatuses
         expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta),
       );
     }
+    if (data.containsKey('username')) {
+      context.handle(
+        _usernameMeta,
+        username.isAcceptableOrUnknown(data['username']!, _usernameMeta),
+      );
+    }
+    if (data.containsKey('profile_image_url')) {
+      context.handle(
+        _profileImageUrlMeta,
+        profileImageUrl.isAcceptableOrUnknown(
+          data['profile_image_url']!,
+          _profileImageUrlMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -7432,6 +8132,10 @@ class $ChannelStatusesTable extends ChannelStatuses
         DriftSqlType.string,
         data['${effectivePrefix}video_url'],
       ),
+      thumbnailUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thumbnail_url'],
+      ),
       audioUrl: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}audio_url'],
@@ -7464,6 +8168,14 @@ class $ChannelStatusesTable extends ChannelStatuses
         DriftSqlType.string,
         data['${effectivePrefix}expires_at'],
       ),
+      username: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}username'],
+      ),
+      profileImageUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}profile_image_url'],
+      ),
     );
   }
 
@@ -7480,6 +8192,7 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
   final String? caption;
   final String? imageUrls;
   final String? videoUrl;
+  final String? thumbnailUrl;
   final String? audioUrl;
   final int isVideo;
   final int isAudio;
@@ -7488,6 +8201,8 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
   final int commentsCount;
   final String? createdAt;
   final String? expiresAt;
+  final String? username;
+  final String? profileImageUrl;
   const ChannelStatuse({
     required this.id,
     required this.channelId,
@@ -7495,6 +8210,7 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
     this.caption,
     this.imageUrls,
     this.videoUrl,
+    this.thumbnailUrl,
     this.audioUrl,
     required this.isVideo,
     required this.isAudio,
@@ -7503,6 +8219,8 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
     required this.commentsCount,
     this.createdAt,
     this.expiresAt,
+    this.username,
+    this.profileImageUrl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7519,6 +8237,9 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
     if (!nullToAbsent || videoUrl != null) {
       map['video_url'] = Variable<String>(videoUrl);
     }
+    if (!nullToAbsent || thumbnailUrl != null) {
+      map['thumbnail_url'] = Variable<String>(thumbnailUrl);
+    }
     if (!nullToAbsent || audioUrl != null) {
       map['audio_url'] = Variable<String>(audioUrl);
     }
@@ -7532,6 +8253,12 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
     }
     if (!nullToAbsent || expiresAt != null) {
       map['expires_at'] = Variable<String>(expiresAt);
+    }
+    if (!nullToAbsent || username != null) {
+      map['username'] = Variable<String>(username);
+    }
+    if (!nullToAbsent || profileImageUrl != null) {
+      map['profile_image_url'] = Variable<String>(profileImageUrl);
     }
     return map;
   }
@@ -7550,6 +8277,9 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
       videoUrl: videoUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(videoUrl),
+      thumbnailUrl: thumbnailUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailUrl),
       audioUrl: audioUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(audioUrl),
@@ -7564,6 +8294,12 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
       expiresAt: expiresAt == null && nullToAbsent
           ? const Value.absent()
           : Value(expiresAt),
+      username: username == null && nullToAbsent
+          ? const Value.absent()
+          : Value(username),
+      profileImageUrl: profileImageUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(profileImageUrl),
     );
   }
 
@@ -7579,6 +8315,7 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
       caption: serializer.fromJson<String?>(json['caption']),
       imageUrls: serializer.fromJson<String?>(json['imageUrls']),
       videoUrl: serializer.fromJson<String?>(json['videoUrl']),
+      thumbnailUrl: serializer.fromJson<String?>(json['thumbnailUrl']),
       audioUrl: serializer.fromJson<String?>(json['audioUrl']),
       isVideo: serializer.fromJson<int>(json['isVideo']),
       isAudio: serializer.fromJson<int>(json['isAudio']),
@@ -7587,6 +8324,8 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
       commentsCount: serializer.fromJson<int>(json['commentsCount']),
       createdAt: serializer.fromJson<String?>(json['createdAt']),
       expiresAt: serializer.fromJson<String?>(json['expiresAt']),
+      username: serializer.fromJson<String?>(json['username']),
+      profileImageUrl: serializer.fromJson<String?>(json['profileImageUrl']),
     );
   }
   @override
@@ -7599,6 +8338,7 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
       'caption': serializer.toJson<String?>(caption),
       'imageUrls': serializer.toJson<String?>(imageUrls),
       'videoUrl': serializer.toJson<String?>(videoUrl),
+      'thumbnailUrl': serializer.toJson<String?>(thumbnailUrl),
       'audioUrl': serializer.toJson<String?>(audioUrl),
       'isVideo': serializer.toJson<int>(isVideo),
       'isAudio': serializer.toJson<int>(isAudio),
@@ -7607,6 +8347,8 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
       'commentsCount': serializer.toJson<int>(commentsCount),
       'createdAt': serializer.toJson<String?>(createdAt),
       'expiresAt': serializer.toJson<String?>(expiresAt),
+      'username': serializer.toJson<String?>(username),
+      'profileImageUrl': serializer.toJson<String?>(profileImageUrl),
     };
   }
 
@@ -7617,6 +8359,7 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
     Value<String?> caption = const Value.absent(),
     Value<String?> imageUrls = const Value.absent(),
     Value<String?> videoUrl = const Value.absent(),
+    Value<String?> thumbnailUrl = const Value.absent(),
     Value<String?> audioUrl = const Value.absent(),
     int? isVideo,
     int? isAudio,
@@ -7625,6 +8368,8 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
     int? commentsCount,
     Value<String?> createdAt = const Value.absent(),
     Value<String?> expiresAt = const Value.absent(),
+    Value<String?> username = const Value.absent(),
+    Value<String?> profileImageUrl = const Value.absent(),
   }) => ChannelStatuse(
     id: id ?? this.id,
     channelId: channelId ?? this.channelId,
@@ -7632,6 +8377,7 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
     caption: caption.present ? caption.value : this.caption,
     imageUrls: imageUrls.present ? imageUrls.value : this.imageUrls,
     videoUrl: videoUrl.present ? videoUrl.value : this.videoUrl,
+    thumbnailUrl: thumbnailUrl.present ? thumbnailUrl.value : this.thumbnailUrl,
     audioUrl: audioUrl.present ? audioUrl.value : this.audioUrl,
     isVideo: isVideo ?? this.isVideo,
     isAudio: isAudio ?? this.isAudio,
@@ -7640,6 +8386,10 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
     commentsCount: commentsCount ?? this.commentsCount,
     createdAt: createdAt.present ? createdAt.value : this.createdAt,
     expiresAt: expiresAt.present ? expiresAt.value : this.expiresAt,
+    username: username.present ? username.value : this.username,
+    profileImageUrl: profileImageUrl.present
+        ? profileImageUrl.value
+        : this.profileImageUrl,
   );
   ChannelStatuse copyWithCompanion(ChannelStatusesCompanion data) {
     return ChannelStatuse(
@@ -7649,6 +8399,9 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
       caption: data.caption.present ? data.caption.value : this.caption,
       imageUrls: data.imageUrls.present ? data.imageUrls.value : this.imageUrls,
       videoUrl: data.videoUrl.present ? data.videoUrl.value : this.videoUrl,
+      thumbnailUrl: data.thumbnailUrl.present
+          ? data.thumbnailUrl.value
+          : this.thumbnailUrl,
       audioUrl: data.audioUrl.present ? data.audioUrl.value : this.audioUrl,
       isVideo: data.isVideo.present ? data.isVideo.value : this.isVideo,
       isAudio: data.isAudio.present ? data.isAudio.value : this.isAudio,
@@ -7663,6 +8416,10 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
           : this.commentsCount,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
+      username: data.username.present ? data.username.value : this.username,
+      profileImageUrl: data.profileImageUrl.present
+          ? data.profileImageUrl.value
+          : this.profileImageUrl,
     );
   }
 
@@ -7675,6 +8432,7 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
           ..write('caption: $caption, ')
           ..write('imageUrls: $imageUrls, ')
           ..write('videoUrl: $videoUrl, ')
+          ..write('thumbnailUrl: $thumbnailUrl, ')
           ..write('audioUrl: $audioUrl, ')
           ..write('isVideo: $isVideo, ')
           ..write('isAudio: $isAudio, ')
@@ -7682,7 +8440,9 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
           ..write('likesCount: $likesCount, ')
           ..write('commentsCount: $commentsCount, ')
           ..write('createdAt: $createdAt, ')
-          ..write('expiresAt: $expiresAt')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('username: $username, ')
+          ..write('profileImageUrl: $profileImageUrl')
           ..write(')'))
         .toString();
   }
@@ -7695,6 +8455,7 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
     caption,
     imageUrls,
     videoUrl,
+    thumbnailUrl,
     audioUrl,
     isVideo,
     isAudio,
@@ -7703,6 +8464,8 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
     commentsCount,
     createdAt,
     expiresAt,
+    username,
+    profileImageUrl,
   );
   @override
   bool operator ==(Object other) =>
@@ -7714,6 +8477,7 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
           other.caption == this.caption &&
           other.imageUrls == this.imageUrls &&
           other.videoUrl == this.videoUrl &&
+          other.thumbnailUrl == this.thumbnailUrl &&
           other.audioUrl == this.audioUrl &&
           other.isVideo == this.isVideo &&
           other.isAudio == this.isAudio &&
@@ -7721,7 +8485,9 @@ class ChannelStatuse extends DataClass implements Insertable<ChannelStatuse> {
           other.likesCount == this.likesCount &&
           other.commentsCount == this.commentsCount &&
           other.createdAt == this.createdAt &&
-          other.expiresAt == this.expiresAt);
+          other.expiresAt == this.expiresAt &&
+          other.username == this.username &&
+          other.profileImageUrl == this.profileImageUrl);
 }
 
 class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
@@ -7731,6 +8497,7 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
   final Value<String?> caption;
   final Value<String?> imageUrls;
   final Value<String?> videoUrl;
+  final Value<String?> thumbnailUrl;
   final Value<String?> audioUrl;
   final Value<int> isVideo;
   final Value<int> isAudio;
@@ -7739,6 +8506,8 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
   final Value<int> commentsCount;
   final Value<String?> createdAt;
   final Value<String?> expiresAt;
+  final Value<String?> username;
+  final Value<String?> profileImageUrl;
   final Value<int> rowid;
   const ChannelStatusesCompanion({
     this.id = const Value.absent(),
@@ -7747,6 +8516,7 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
     this.caption = const Value.absent(),
     this.imageUrls = const Value.absent(),
     this.videoUrl = const Value.absent(),
+    this.thumbnailUrl = const Value.absent(),
     this.audioUrl = const Value.absent(),
     this.isVideo = const Value.absent(),
     this.isAudio = const Value.absent(),
@@ -7755,6 +8525,8 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
     this.commentsCount = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.expiresAt = const Value.absent(),
+    this.username = const Value.absent(),
+    this.profileImageUrl = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ChannelStatusesCompanion.insert({
@@ -7764,6 +8536,7 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
     this.caption = const Value.absent(),
     this.imageUrls = const Value.absent(),
     this.videoUrl = const Value.absent(),
+    this.thumbnailUrl = const Value.absent(),
     this.audioUrl = const Value.absent(),
     this.isVideo = const Value.absent(),
     this.isAudio = const Value.absent(),
@@ -7772,6 +8545,8 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
     this.commentsCount = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.expiresAt = const Value.absent(),
+    this.username = const Value.absent(),
+    this.profileImageUrl = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        channelId = Value(channelId),
@@ -7783,6 +8558,7 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
     Expression<String>? caption,
     Expression<String>? imageUrls,
     Expression<String>? videoUrl,
+    Expression<String>? thumbnailUrl,
     Expression<String>? audioUrl,
     Expression<int>? isVideo,
     Expression<int>? isAudio,
@@ -7791,6 +8567,8 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
     Expression<int>? commentsCount,
     Expression<String>? createdAt,
     Expression<String>? expiresAt,
+    Expression<String>? username,
+    Expression<String>? profileImageUrl,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7800,6 +8578,7 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
       if (caption != null) 'caption': caption,
       if (imageUrls != null) 'image_urls': imageUrls,
       if (videoUrl != null) 'video_url': videoUrl,
+      if (thumbnailUrl != null) 'thumbnail_url': thumbnailUrl,
       if (audioUrl != null) 'audio_url': audioUrl,
       if (isVideo != null) 'is_video': isVideo,
       if (isAudio != null) 'is_audio': isAudio,
@@ -7808,6 +8587,8 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
       if (commentsCount != null) 'comments_count': commentsCount,
       if (createdAt != null) 'created_at': createdAt,
       if (expiresAt != null) 'expires_at': expiresAt,
+      if (username != null) 'username': username,
+      if (profileImageUrl != null) 'profile_image_url': profileImageUrl,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7819,6 +8600,7 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
     Value<String?>? caption,
     Value<String?>? imageUrls,
     Value<String?>? videoUrl,
+    Value<String?>? thumbnailUrl,
     Value<String?>? audioUrl,
     Value<int>? isVideo,
     Value<int>? isAudio,
@@ -7827,6 +8609,8 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
     Value<int>? commentsCount,
     Value<String?>? createdAt,
     Value<String?>? expiresAt,
+    Value<String?>? username,
+    Value<String?>? profileImageUrl,
     Value<int>? rowid,
   }) {
     return ChannelStatusesCompanion(
@@ -7836,6 +8620,7 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
       caption: caption ?? this.caption,
       imageUrls: imageUrls ?? this.imageUrls,
       videoUrl: videoUrl ?? this.videoUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       audioUrl: audioUrl ?? this.audioUrl,
       isVideo: isVideo ?? this.isVideo,
       isAudio: isAudio ?? this.isAudio,
@@ -7844,6 +8629,8 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
       commentsCount: commentsCount ?? this.commentsCount,
       createdAt: createdAt ?? this.createdAt,
       expiresAt: expiresAt ?? this.expiresAt,
+      username: username ?? this.username,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7869,6 +8656,9 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
     if (videoUrl.present) {
       map['video_url'] = Variable<String>(videoUrl.value);
     }
+    if (thumbnailUrl.present) {
+      map['thumbnail_url'] = Variable<String>(thumbnailUrl.value);
+    }
     if (audioUrl.present) {
       map['audio_url'] = Variable<String>(audioUrl.value);
     }
@@ -7893,6 +8683,12 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
     if (expiresAt.present) {
       map['expires_at'] = Variable<String>(expiresAt.value);
     }
+    if (username.present) {
+      map['username'] = Variable<String>(username.value);
+    }
+    if (profileImageUrl.present) {
+      map['profile_image_url'] = Variable<String>(profileImageUrl.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7908,6 +8704,7 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
           ..write('caption: $caption, ')
           ..write('imageUrls: $imageUrls, ')
           ..write('videoUrl: $videoUrl, ')
+          ..write('thumbnailUrl: $thumbnailUrl, ')
           ..write('audioUrl: $audioUrl, ')
           ..write('isVideo: $isVideo, ')
           ..write('isAudio: $isAudio, ')
@@ -7916,6 +8713,8 @@ class ChannelStatusesCompanion extends UpdateCompanion<ChannelStatuse> {
           ..write('commentsCount: $commentsCount, ')
           ..write('createdAt: $createdAt, ')
           ..write('expiresAt: $expiresAt, ')
+          ..write('username: $username, ')
+          ..write('profileImageUrl: $profileImageUrl, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9101,6 +9900,63 @@ class $ChannelPostsTable extends ChannelPosts
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _taggerNameMeta = const VerificationMeta(
+    'taggerName',
+  );
+  @override
+  late final GeneratedColumn<String> taggerName = GeneratedColumn<String>(
+    'tagger_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _taggerAvatarMeta = const VerificationMeta(
+    'taggerAvatar',
+  );
+  @override
+  late final GeneratedColumn<String> taggerAvatar = GeneratedColumn<String>(
+    'tagger_avatar',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceChannelNameMeta = const VerificationMeta(
+    'sourceChannelName',
+  );
+  @override
+  late final GeneratedColumn<String> sourceChannelName =
+      GeneratedColumn<String>(
+        'source_channel_name',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _sourceChannelAvatarMeta =
+      const VerificationMeta('sourceChannelAvatar');
+  @override
+  late final GeneratedColumn<String> sourceChannelAvatar =
+      GeneratedColumn<String>(
+        'source_channel_avatar',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _tagsCountMeta = const VerificationMeta(
+    'tagsCount',
+  );
+  @override
+  late final GeneratedColumn<int> tagsCount = GeneratedColumn<int>(
+    'tags_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -9158,6 +10014,11 @@ class $ChannelPostsTable extends ChannelPosts
     allowComments,
     isPending,
     isLiked,
+    taggerName,
+    taggerAvatar,
+    sourceChannelName,
+    sourceChannelAvatar,
+    tagsCount,
     createdAt,
     postType,
     metadata,
@@ -9312,6 +10173,45 @@ class $ChannelPostsTable extends ChannelPosts
         isLiked.isAcceptableOrUnknown(data['is_liked']!, _isLikedMeta),
       );
     }
+    if (data.containsKey('tagger_name')) {
+      context.handle(
+        _taggerNameMeta,
+        taggerName.isAcceptableOrUnknown(data['tagger_name']!, _taggerNameMeta),
+      );
+    }
+    if (data.containsKey('tagger_avatar')) {
+      context.handle(
+        _taggerAvatarMeta,
+        taggerAvatar.isAcceptableOrUnknown(
+          data['tagger_avatar']!,
+          _taggerAvatarMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_channel_name')) {
+      context.handle(
+        _sourceChannelNameMeta,
+        sourceChannelName.isAcceptableOrUnknown(
+          data['source_channel_name']!,
+          _sourceChannelNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_channel_avatar')) {
+      context.handle(
+        _sourceChannelAvatarMeta,
+        sourceChannelAvatar.isAcceptableOrUnknown(
+          data['source_channel_avatar']!,
+          _sourceChannelAvatarMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tags_count')) {
+      context.handle(
+        _tagsCountMeta,
+        tagsCount.isAcceptableOrUnknown(data['tags_count']!, _tagsCountMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -9419,6 +10319,26 @@ class $ChannelPostsTable extends ChannelPosts
         DriftSqlType.int,
         data['${effectivePrefix}is_liked'],
       )!,
+      taggerName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tagger_name'],
+      ),
+      taggerAvatar: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tagger_avatar'],
+      ),
+      sourceChannelName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_channel_name'],
+      ),
+      sourceChannelAvatar: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_channel_avatar'],
+      ),
+      tagsCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tags_count'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -9461,6 +10381,11 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
   final int allowComments;
   final int isPending;
   final int isLiked;
+  final String? taggerName;
+  final String? taggerAvatar;
+  final String? sourceChannelName;
+  final String? sourceChannelAvatar;
+  final int tagsCount;
   final DateTime createdAt;
   final String? postType;
   final String? metadata;
@@ -9485,6 +10410,11 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
     required this.allowComments,
     required this.isPending,
     required this.isLiked,
+    this.taggerName,
+    this.taggerAvatar,
+    this.sourceChannelName,
+    this.sourceChannelAvatar,
+    required this.tagsCount,
     required this.createdAt,
     this.postType,
     this.metadata,
@@ -9528,6 +10458,19 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
     map['allow_comments'] = Variable<int>(allowComments);
     map['is_pending'] = Variable<int>(isPending);
     map['is_liked'] = Variable<int>(isLiked);
+    if (!nullToAbsent || taggerName != null) {
+      map['tagger_name'] = Variable<String>(taggerName);
+    }
+    if (!nullToAbsent || taggerAvatar != null) {
+      map['tagger_avatar'] = Variable<String>(taggerAvatar);
+    }
+    if (!nullToAbsent || sourceChannelName != null) {
+      map['source_channel_name'] = Variable<String>(sourceChannelName);
+    }
+    if (!nullToAbsent || sourceChannelAvatar != null) {
+      map['source_channel_avatar'] = Variable<String>(sourceChannelAvatar);
+    }
+    map['tags_count'] = Variable<int>(tagsCount);
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || postType != null) {
       map['post_type'] = Variable<String>(postType);
@@ -9576,6 +10519,19 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
       allowComments: Value(allowComments),
       isPending: Value(isPending),
       isLiked: Value(isLiked),
+      taggerName: taggerName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taggerName),
+      taggerAvatar: taggerAvatar == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taggerAvatar),
+      sourceChannelName: sourceChannelName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceChannelName),
+      sourceChannelAvatar: sourceChannelAvatar == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceChannelAvatar),
+      tagsCount: Value(tagsCount),
       createdAt: Value(createdAt),
       postType: postType == null && nullToAbsent
           ? const Value.absent()
@@ -9612,6 +10568,15 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
       allowComments: serializer.fromJson<int>(json['allowComments']),
       isPending: serializer.fromJson<int>(json['isPending']),
       isLiked: serializer.fromJson<int>(json['isLiked']),
+      taggerName: serializer.fromJson<String?>(json['taggerName']),
+      taggerAvatar: serializer.fromJson<String?>(json['taggerAvatar']),
+      sourceChannelName: serializer.fromJson<String?>(
+        json['sourceChannelName'],
+      ),
+      sourceChannelAvatar: serializer.fromJson<String?>(
+        json['sourceChannelAvatar'],
+      ),
+      tagsCount: serializer.fromJson<int>(json['tagsCount']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       postType: serializer.fromJson<String?>(json['postType']),
       metadata: serializer.fromJson<String?>(json['metadata']),
@@ -9641,6 +10606,11 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
       'allowComments': serializer.toJson<int>(allowComments),
       'isPending': serializer.toJson<int>(isPending),
       'isLiked': serializer.toJson<int>(isLiked),
+      'taggerName': serializer.toJson<String?>(taggerName),
+      'taggerAvatar': serializer.toJson<String?>(taggerAvatar),
+      'sourceChannelName': serializer.toJson<String?>(sourceChannelName),
+      'sourceChannelAvatar': serializer.toJson<String?>(sourceChannelAvatar),
+      'tagsCount': serializer.toJson<int>(tagsCount),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'postType': serializer.toJson<String?>(postType),
       'metadata': serializer.toJson<String?>(metadata),
@@ -9668,6 +10638,11 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
     int? allowComments,
     int? isPending,
     int? isLiked,
+    Value<String?> taggerName = const Value.absent(),
+    Value<String?> taggerAvatar = const Value.absent(),
+    Value<String?> sourceChannelName = const Value.absent(),
+    Value<String?> sourceChannelAvatar = const Value.absent(),
+    int? tagsCount,
     DateTime? createdAt,
     Value<String?> postType = const Value.absent(),
     Value<String?> metadata = const Value.absent(),
@@ -9696,6 +10671,15 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
     allowComments: allowComments ?? this.allowComments,
     isPending: isPending ?? this.isPending,
     isLiked: isLiked ?? this.isLiked,
+    taggerName: taggerName.present ? taggerName.value : this.taggerName,
+    taggerAvatar: taggerAvatar.present ? taggerAvatar.value : this.taggerAvatar,
+    sourceChannelName: sourceChannelName.present
+        ? sourceChannelName.value
+        : this.sourceChannelName,
+    sourceChannelAvatar: sourceChannelAvatar.present
+        ? sourceChannelAvatar.value
+        : this.sourceChannelAvatar,
+    tagsCount: tagsCount ?? this.tagsCount,
     createdAt: createdAt ?? this.createdAt,
     postType: postType.present ? postType.value : this.postType,
     metadata: metadata.present ? metadata.value : this.metadata,
@@ -9732,6 +10716,19 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
           : this.allowComments,
       isPending: data.isPending.present ? data.isPending.value : this.isPending,
       isLiked: data.isLiked.present ? data.isLiked.value : this.isLiked,
+      taggerName: data.taggerName.present
+          ? data.taggerName.value
+          : this.taggerName,
+      taggerAvatar: data.taggerAvatar.present
+          ? data.taggerAvatar.value
+          : this.taggerAvatar,
+      sourceChannelName: data.sourceChannelName.present
+          ? data.sourceChannelName.value
+          : this.sourceChannelName,
+      sourceChannelAvatar: data.sourceChannelAvatar.present
+          ? data.sourceChannelAvatar.value
+          : this.sourceChannelAvatar,
+      tagsCount: data.tagsCount.present ? data.tagsCount.value : this.tagsCount,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       postType: data.postType.present ? data.postType.value : this.postType,
       metadata: data.metadata.present ? data.metadata.value : this.metadata,
@@ -9761,6 +10758,11 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
           ..write('allowComments: $allowComments, ')
           ..write('isPending: $isPending, ')
           ..write('isLiked: $isLiked, ')
+          ..write('taggerName: $taggerName, ')
+          ..write('taggerAvatar: $taggerAvatar, ')
+          ..write('sourceChannelName: $sourceChannelName, ')
+          ..write('sourceChannelAvatar: $sourceChannelAvatar, ')
+          ..write('tagsCount: $tagsCount, ')
           ..write('createdAt: $createdAt, ')
           ..write('postType: $postType, ')
           ..write('metadata: $metadata')
@@ -9790,6 +10792,11 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
     allowComments,
     isPending,
     isLiked,
+    taggerName,
+    taggerAvatar,
+    sourceChannelName,
+    sourceChannelAvatar,
+    tagsCount,
     createdAt,
     postType,
     metadata,
@@ -9818,6 +10825,11 @@ class ChannelPost extends DataClass implements Insertable<ChannelPost> {
           other.allowComments == this.allowComments &&
           other.isPending == this.isPending &&
           other.isLiked == this.isLiked &&
+          other.taggerName == this.taggerName &&
+          other.taggerAvatar == this.taggerAvatar &&
+          other.sourceChannelName == this.sourceChannelName &&
+          other.sourceChannelAvatar == this.sourceChannelAvatar &&
+          other.tagsCount == this.tagsCount &&
           other.createdAt == this.createdAt &&
           other.postType == this.postType &&
           other.metadata == this.metadata);
@@ -9844,6 +10856,11 @@ class ChannelPostsCompanion extends UpdateCompanion<ChannelPost> {
   final Value<int> allowComments;
   final Value<int> isPending;
   final Value<int> isLiked;
+  final Value<String?> taggerName;
+  final Value<String?> taggerAvatar;
+  final Value<String?> sourceChannelName;
+  final Value<String?> sourceChannelAvatar;
+  final Value<int> tagsCount;
   final Value<DateTime> createdAt;
   final Value<String?> postType;
   final Value<String?> metadata;
@@ -9869,6 +10886,11 @@ class ChannelPostsCompanion extends UpdateCompanion<ChannelPost> {
     this.allowComments = const Value.absent(),
     this.isPending = const Value.absent(),
     this.isLiked = const Value.absent(),
+    this.taggerName = const Value.absent(),
+    this.taggerAvatar = const Value.absent(),
+    this.sourceChannelName = const Value.absent(),
+    this.sourceChannelAvatar = const Value.absent(),
+    this.tagsCount = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.postType = const Value.absent(),
     this.metadata = const Value.absent(),
@@ -9895,6 +10917,11 @@ class ChannelPostsCompanion extends UpdateCompanion<ChannelPost> {
     this.allowComments = const Value.absent(),
     this.isPending = const Value.absent(),
     this.isLiked = const Value.absent(),
+    this.taggerName = const Value.absent(),
+    this.taggerAvatar = const Value.absent(),
+    this.sourceChannelName = const Value.absent(),
+    this.sourceChannelAvatar = const Value.absent(),
+    this.tagsCount = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.postType = const Value.absent(),
     this.metadata = const Value.absent(),
@@ -9923,6 +10950,11 @@ class ChannelPostsCompanion extends UpdateCompanion<ChannelPost> {
     Expression<int>? allowComments,
     Expression<int>? isPending,
     Expression<int>? isLiked,
+    Expression<String>? taggerName,
+    Expression<String>? taggerAvatar,
+    Expression<String>? sourceChannelName,
+    Expression<String>? sourceChannelAvatar,
+    Expression<int>? tagsCount,
     Expression<DateTime>? createdAt,
     Expression<String>? postType,
     Expression<String>? metadata,
@@ -9949,6 +10981,12 @@ class ChannelPostsCompanion extends UpdateCompanion<ChannelPost> {
       if (allowComments != null) 'allow_comments': allowComments,
       if (isPending != null) 'is_pending': isPending,
       if (isLiked != null) 'is_liked': isLiked,
+      if (taggerName != null) 'tagger_name': taggerName,
+      if (taggerAvatar != null) 'tagger_avatar': taggerAvatar,
+      if (sourceChannelName != null) 'source_channel_name': sourceChannelName,
+      if (sourceChannelAvatar != null)
+        'source_channel_avatar': sourceChannelAvatar,
+      if (tagsCount != null) 'tags_count': tagsCount,
       if (createdAt != null) 'created_at': createdAt,
       if (postType != null) 'post_type': postType,
       if (metadata != null) 'metadata': metadata,
@@ -9977,6 +11015,11 @@ class ChannelPostsCompanion extends UpdateCompanion<ChannelPost> {
     Value<int>? allowComments,
     Value<int>? isPending,
     Value<int>? isLiked,
+    Value<String?>? taggerName,
+    Value<String?>? taggerAvatar,
+    Value<String?>? sourceChannelName,
+    Value<String?>? sourceChannelAvatar,
+    Value<int>? tagsCount,
     Value<DateTime>? createdAt,
     Value<String?>? postType,
     Value<String?>? metadata,
@@ -10003,6 +11046,11 @@ class ChannelPostsCompanion extends UpdateCompanion<ChannelPost> {
       allowComments: allowComments ?? this.allowComments,
       isPending: isPending ?? this.isPending,
       isLiked: isLiked ?? this.isLiked,
+      taggerName: taggerName ?? this.taggerName,
+      taggerAvatar: taggerAvatar ?? this.taggerAvatar,
+      sourceChannelName: sourceChannelName ?? this.sourceChannelName,
+      sourceChannelAvatar: sourceChannelAvatar ?? this.sourceChannelAvatar,
+      tagsCount: tagsCount ?? this.tagsCount,
       createdAt: createdAt ?? this.createdAt,
       postType: postType ?? this.postType,
       metadata: metadata ?? this.metadata,
@@ -10073,6 +11121,23 @@ class ChannelPostsCompanion extends UpdateCompanion<ChannelPost> {
     if (isLiked.present) {
       map['is_liked'] = Variable<int>(isLiked.value);
     }
+    if (taggerName.present) {
+      map['tagger_name'] = Variable<String>(taggerName.value);
+    }
+    if (taggerAvatar.present) {
+      map['tagger_avatar'] = Variable<String>(taggerAvatar.value);
+    }
+    if (sourceChannelName.present) {
+      map['source_channel_name'] = Variable<String>(sourceChannelName.value);
+    }
+    if (sourceChannelAvatar.present) {
+      map['source_channel_avatar'] = Variable<String>(
+        sourceChannelAvatar.value,
+      );
+    }
+    if (tagsCount.present) {
+      map['tags_count'] = Variable<int>(tagsCount.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -10111,6 +11176,11 @@ class ChannelPostsCompanion extends UpdateCompanion<ChannelPost> {
           ..write('allowComments: $allowComments, ')
           ..write('isPending: $isPending, ')
           ..write('isLiked: $isLiked, ')
+          ..write('taggerName: $taggerName, ')
+          ..write('taggerAvatar: $taggerAvatar, ')
+          ..write('sourceChannelName: $sourceChannelName, ')
+          ..write('sourceChannelAvatar: $sourceChannelAvatar, ')
+          ..write('tagsCount: $tagsCount, ')
           ..write('createdAt: $createdAt, ')
           ..write('postType: $postType, ')
           ..write('metadata: $metadata, ')
@@ -10467,6 +11537,477 @@ class ChannelPostTagsCompanion extends UpdateCompanion<ChannelPostTag> {
           ..write('tagName: $tagName, ')
           ..write('tagValue: $tagValue, ')
           ..write('tagColor: $tagColor')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ChannelContentTagsTable extends ChannelContentTags
+    with TableInfo<$ChannelContentTagsTable, ChannelContentTag> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChannelContentTagsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _postIdMeta = const VerificationMeta('postId');
+  @override
+  late final GeneratedColumn<String> postId = GeneratedColumn<String>(
+    'post_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceChannelIdMeta = const VerificationMeta(
+    'sourceChannelId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceChannelId = GeneratedColumn<String>(
+    'source_channel_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetChannelIdMeta = const VerificationMeta(
+    'targetChannelId',
+  );
+  @override
+  late final GeneratedColumn<String> targetChannelId = GeneratedColumn<String>(
+    'target_channel_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _linkChainMeta = const VerificationMeta(
+    'linkChain',
+  );
+  @override
+  late final GeneratedColumn<String> linkChain = GeneratedColumn<String>(
+    'link_chain',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    postId,
+    userId,
+    sourceChannelId,
+    targetChannelId,
+    linkChain,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'channel_content_tags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChannelContentTag> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('post_id')) {
+      context.handle(
+        _postIdMeta,
+        postId.isAcceptableOrUnknown(data['post_id']!, _postIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_postIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('source_channel_id')) {
+      context.handle(
+        _sourceChannelIdMeta,
+        sourceChannelId.isAcceptableOrUnknown(
+          data['source_channel_id']!,
+          _sourceChannelIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceChannelIdMeta);
+    }
+    if (data.containsKey('target_channel_id')) {
+      context.handle(
+        _targetChannelIdMeta,
+        targetChannelId.isAcceptableOrUnknown(
+          data['target_channel_id']!,
+          _targetChannelIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_targetChannelIdMeta);
+    }
+    if (data.containsKey('link_chain')) {
+      context.handle(
+        _linkChainMeta,
+        linkChain.isAcceptableOrUnknown(data['link_chain']!, _linkChainMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_linkChainMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ChannelContentTag map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChannelContentTag(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      postId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}post_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      sourceChannelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_channel_id'],
+      )!,
+      targetChannelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_channel_id'],
+      )!,
+      linkChain: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}link_chain'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ChannelContentTagsTable createAlias(String alias) {
+    return $ChannelContentTagsTable(attachedDatabase, alias);
+  }
+}
+
+class ChannelContentTag extends DataClass
+    implements Insertable<ChannelContentTag> {
+  final String id;
+  final String postId;
+  final String userId;
+  final String sourceChannelId;
+  final String targetChannelId;
+
+  /// Stores the link chain as a JSON-encoded list of channel IDs
+  final String linkChain;
+  final DateTime createdAt;
+  const ChannelContentTag({
+    required this.id,
+    required this.postId,
+    required this.userId,
+    required this.sourceChannelId,
+    required this.targetChannelId,
+    required this.linkChain,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['post_id'] = Variable<String>(postId);
+    map['user_id'] = Variable<String>(userId);
+    map['source_channel_id'] = Variable<String>(sourceChannelId);
+    map['target_channel_id'] = Variable<String>(targetChannelId);
+    map['link_chain'] = Variable<String>(linkChain);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ChannelContentTagsCompanion toCompanion(bool nullToAbsent) {
+    return ChannelContentTagsCompanion(
+      id: Value(id),
+      postId: Value(postId),
+      userId: Value(userId),
+      sourceChannelId: Value(sourceChannelId),
+      targetChannelId: Value(targetChannelId),
+      linkChain: Value(linkChain),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ChannelContentTag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChannelContentTag(
+      id: serializer.fromJson<String>(json['id']),
+      postId: serializer.fromJson<String>(json['postId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      sourceChannelId: serializer.fromJson<String>(json['sourceChannelId']),
+      targetChannelId: serializer.fromJson<String>(json['targetChannelId']),
+      linkChain: serializer.fromJson<String>(json['linkChain']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'postId': serializer.toJson<String>(postId),
+      'userId': serializer.toJson<String>(userId),
+      'sourceChannelId': serializer.toJson<String>(sourceChannelId),
+      'targetChannelId': serializer.toJson<String>(targetChannelId),
+      'linkChain': serializer.toJson<String>(linkChain),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ChannelContentTag copyWith({
+    String? id,
+    String? postId,
+    String? userId,
+    String? sourceChannelId,
+    String? targetChannelId,
+    String? linkChain,
+    DateTime? createdAt,
+  }) => ChannelContentTag(
+    id: id ?? this.id,
+    postId: postId ?? this.postId,
+    userId: userId ?? this.userId,
+    sourceChannelId: sourceChannelId ?? this.sourceChannelId,
+    targetChannelId: targetChannelId ?? this.targetChannelId,
+    linkChain: linkChain ?? this.linkChain,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ChannelContentTag copyWithCompanion(ChannelContentTagsCompanion data) {
+    return ChannelContentTag(
+      id: data.id.present ? data.id.value : this.id,
+      postId: data.postId.present ? data.postId.value : this.postId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      sourceChannelId: data.sourceChannelId.present
+          ? data.sourceChannelId.value
+          : this.sourceChannelId,
+      targetChannelId: data.targetChannelId.present
+          ? data.targetChannelId.value
+          : this.targetChannelId,
+      linkChain: data.linkChain.present ? data.linkChain.value : this.linkChain,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChannelContentTag(')
+          ..write('id: $id, ')
+          ..write('postId: $postId, ')
+          ..write('userId: $userId, ')
+          ..write('sourceChannelId: $sourceChannelId, ')
+          ..write('targetChannelId: $targetChannelId, ')
+          ..write('linkChain: $linkChain, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    postId,
+    userId,
+    sourceChannelId,
+    targetChannelId,
+    linkChain,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChannelContentTag &&
+          other.id == this.id &&
+          other.postId == this.postId &&
+          other.userId == this.userId &&
+          other.sourceChannelId == this.sourceChannelId &&
+          other.targetChannelId == this.targetChannelId &&
+          other.linkChain == this.linkChain &&
+          other.createdAt == this.createdAt);
+}
+
+class ChannelContentTagsCompanion extends UpdateCompanion<ChannelContentTag> {
+  final Value<String> id;
+  final Value<String> postId;
+  final Value<String> userId;
+  final Value<String> sourceChannelId;
+  final Value<String> targetChannelId;
+  final Value<String> linkChain;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const ChannelContentTagsCompanion({
+    this.id = const Value.absent(),
+    this.postId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.sourceChannelId = const Value.absent(),
+    this.targetChannelId = const Value.absent(),
+    this.linkChain = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ChannelContentTagsCompanion.insert({
+    required String id,
+    required String postId,
+    required String userId,
+    required String sourceChannelId,
+    required String targetChannelId,
+    required String linkChain,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       postId = Value(postId),
+       userId = Value(userId),
+       sourceChannelId = Value(sourceChannelId),
+       targetChannelId = Value(targetChannelId),
+       linkChain = Value(linkChain);
+  static Insertable<ChannelContentTag> custom({
+    Expression<String>? id,
+    Expression<String>? postId,
+    Expression<String>? userId,
+    Expression<String>? sourceChannelId,
+    Expression<String>? targetChannelId,
+    Expression<String>? linkChain,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (postId != null) 'post_id': postId,
+      if (userId != null) 'user_id': userId,
+      if (sourceChannelId != null) 'source_channel_id': sourceChannelId,
+      if (targetChannelId != null) 'target_channel_id': targetChannelId,
+      if (linkChain != null) 'link_chain': linkChain,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ChannelContentTagsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? postId,
+    Value<String>? userId,
+    Value<String>? sourceChannelId,
+    Value<String>? targetChannelId,
+    Value<String>? linkChain,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ChannelContentTagsCompanion(
+      id: id ?? this.id,
+      postId: postId ?? this.postId,
+      userId: userId ?? this.userId,
+      sourceChannelId: sourceChannelId ?? this.sourceChannelId,
+      targetChannelId: targetChannelId ?? this.targetChannelId,
+      linkChain: linkChain ?? this.linkChain,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (postId.present) {
+      map['post_id'] = Variable<String>(postId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (sourceChannelId.present) {
+      map['source_channel_id'] = Variable<String>(sourceChannelId.value);
+    }
+    if (targetChannelId.present) {
+      map['target_channel_id'] = Variable<String>(targetChannelId.value);
+    }
+    if (linkChain.present) {
+      map['link_chain'] = Variable<String>(linkChain.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChannelContentTagsCompanion(')
+          ..write('id: $id, ')
+          ..write('postId: $postId, ')
+          ..write('userId: $userId, ')
+          ..write('sourceChannelId: $sourceChannelId, ')
+          ..write('targetChannelId: $targetChannelId, ')
+          ..write('linkChain: $linkChain, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -11234,6 +12775,17 @@ class $ChannelMessagesTable extends ChannelMessages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _thumbnailUrlMeta = const VerificationMeta(
+    'thumbnailUrl',
+  );
+  @override
+  late final GeneratedColumn<String> thumbnailUrl = GeneratedColumn<String>(
+    'thumbnail_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _mediaTypeMeta = const VerificationMeta(
     'mediaType',
   );
@@ -11330,6 +12882,7 @@ class $ChannelMessagesTable extends ChannelMessages
     senderId,
     textContent,
     mediaUrl,
+    thumbnailUrl,
     mediaType,
     voiceNoteUrl,
     replyToId,
@@ -11385,6 +12938,15 @@ class $ChannelMessagesTable extends ChannelMessages
       context.handle(
         _mediaUrlMeta,
         mediaUrl.isAcceptableOrUnknown(data['media_url']!, _mediaUrlMeta),
+      );
+    }
+    if (data.containsKey('thumbnail_url')) {
+      context.handle(
+        _thumbnailUrlMeta,
+        thumbnailUrl.isAcceptableOrUnknown(
+          data['thumbnail_url']!,
+          _thumbnailUrlMeta,
+        ),
       );
     }
     if (data.containsKey('media_type')) {
@@ -11470,6 +13032,10 @@ class $ChannelMessagesTable extends ChannelMessages
         DriftSqlType.string,
         data['${effectivePrefix}media_url'],
       ),
+      thumbnailUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thumbnail_url'],
+      ),
       mediaType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}media_type'],
@@ -11517,6 +13083,7 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
   final String senderId;
   final String? textContent;
   final String? mediaUrl;
+  final String? thumbnailUrl;
   final String? mediaType;
   final String? voiceNoteUrl;
   final String? replyToId;
@@ -11531,6 +13098,7 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
     required this.senderId,
     this.textContent,
     this.mediaUrl,
+    this.thumbnailUrl,
     this.mediaType,
     this.voiceNoteUrl,
     this.replyToId,
@@ -11551,6 +13119,9 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
     }
     if (!nullToAbsent || mediaUrl != null) {
       map['media_url'] = Variable<String>(mediaUrl);
+    }
+    if (!nullToAbsent || thumbnailUrl != null) {
+      map['thumbnail_url'] = Variable<String>(thumbnailUrl);
     }
     if (!nullToAbsent || mediaType != null) {
       map['media_type'] = Variable<String>(mediaType);
@@ -11584,6 +13155,9 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
       mediaUrl: mediaUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(mediaUrl),
+      thumbnailUrl: thumbnailUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailUrl),
       mediaType: mediaType == null && nullToAbsent
           ? const Value.absent()
           : Value(mediaType),
@@ -11616,6 +13190,7 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
       senderId: serializer.fromJson<String>(json['senderId']),
       textContent: serializer.fromJson<String?>(json['textContent']),
       mediaUrl: serializer.fromJson<String?>(json['mediaUrl']),
+      thumbnailUrl: serializer.fromJson<String?>(json['thumbnailUrl']),
       mediaType: serializer.fromJson<String?>(json['mediaType']),
       voiceNoteUrl: serializer.fromJson<String?>(json['voiceNoteUrl']),
       replyToId: serializer.fromJson<String?>(json['replyToId']),
@@ -11635,6 +13210,7 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
       'senderId': serializer.toJson<String>(senderId),
       'textContent': serializer.toJson<String?>(textContent),
       'mediaUrl': serializer.toJson<String?>(mediaUrl),
+      'thumbnailUrl': serializer.toJson<String?>(thumbnailUrl),
       'mediaType': serializer.toJson<String?>(mediaType),
       'voiceNoteUrl': serializer.toJson<String?>(voiceNoteUrl),
       'replyToId': serializer.toJson<String?>(replyToId),
@@ -11652,6 +13228,7 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
     String? senderId,
     Value<String?> textContent = const Value.absent(),
     Value<String?> mediaUrl = const Value.absent(),
+    Value<String?> thumbnailUrl = const Value.absent(),
     Value<String?> mediaType = const Value.absent(),
     Value<String?> voiceNoteUrl = const Value.absent(),
     Value<String?> replyToId = const Value.absent(),
@@ -11666,6 +13243,7 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
     senderId: senderId ?? this.senderId,
     textContent: textContent.present ? textContent.value : this.textContent,
     mediaUrl: mediaUrl.present ? mediaUrl.value : this.mediaUrl,
+    thumbnailUrl: thumbnailUrl.present ? thumbnailUrl.value : this.thumbnailUrl,
     mediaType: mediaType.present ? mediaType.value : this.mediaType,
     voiceNoteUrl: voiceNoteUrl.present ? voiceNoteUrl.value : this.voiceNoteUrl,
     replyToId: replyToId.present ? replyToId.value : this.replyToId,
@@ -11684,6 +13262,9 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
           ? data.textContent.value
           : this.textContent,
       mediaUrl: data.mediaUrl.present ? data.mediaUrl.value : this.mediaUrl,
+      thumbnailUrl: data.thumbnailUrl.present
+          ? data.thumbnailUrl.value
+          : this.thumbnailUrl,
       mediaType: data.mediaType.present ? data.mediaType.value : this.mediaType,
       voiceNoteUrl: data.voiceNoteUrl.present
           ? data.voiceNoteUrl.value
@@ -11707,6 +13288,7 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
           ..write('senderId: $senderId, ')
           ..write('textContent: $textContent, ')
           ..write('mediaUrl: $mediaUrl, ')
+          ..write('thumbnailUrl: $thumbnailUrl, ')
           ..write('mediaType: $mediaType, ')
           ..write('voiceNoteUrl: $voiceNoteUrl, ')
           ..write('replyToId: $replyToId, ')
@@ -11726,6 +13308,7 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
     senderId,
     textContent,
     mediaUrl,
+    thumbnailUrl,
     mediaType,
     voiceNoteUrl,
     replyToId,
@@ -11744,6 +13327,7 @@ class ChannelMessage extends DataClass implements Insertable<ChannelMessage> {
           other.senderId == this.senderId &&
           other.textContent == this.textContent &&
           other.mediaUrl == this.mediaUrl &&
+          other.thumbnailUrl == this.thumbnailUrl &&
           other.mediaType == this.mediaType &&
           other.voiceNoteUrl == this.voiceNoteUrl &&
           other.replyToId == this.replyToId &&
@@ -11760,6 +13344,7 @@ class ChannelMessagesCompanion extends UpdateCompanion<ChannelMessage> {
   final Value<String> senderId;
   final Value<String?> textContent;
   final Value<String?> mediaUrl;
+  final Value<String?> thumbnailUrl;
   final Value<String?> mediaType;
   final Value<String?> voiceNoteUrl;
   final Value<String?> replyToId;
@@ -11775,6 +13360,7 @@ class ChannelMessagesCompanion extends UpdateCompanion<ChannelMessage> {
     this.senderId = const Value.absent(),
     this.textContent = const Value.absent(),
     this.mediaUrl = const Value.absent(),
+    this.thumbnailUrl = const Value.absent(),
     this.mediaType = const Value.absent(),
     this.voiceNoteUrl = const Value.absent(),
     this.replyToId = const Value.absent(),
@@ -11791,6 +13377,7 @@ class ChannelMessagesCompanion extends UpdateCompanion<ChannelMessage> {
     required String senderId,
     this.textContent = const Value.absent(),
     this.mediaUrl = const Value.absent(),
+    this.thumbnailUrl = const Value.absent(),
     this.mediaType = const Value.absent(),
     this.voiceNoteUrl = const Value.absent(),
     this.replyToId = const Value.absent(),
@@ -11809,6 +13396,7 @@ class ChannelMessagesCompanion extends UpdateCompanion<ChannelMessage> {
     Expression<String>? senderId,
     Expression<String>? textContent,
     Expression<String>? mediaUrl,
+    Expression<String>? thumbnailUrl,
     Expression<String>? mediaType,
     Expression<String>? voiceNoteUrl,
     Expression<String>? replyToId,
@@ -11825,6 +13413,7 @@ class ChannelMessagesCompanion extends UpdateCompanion<ChannelMessage> {
       if (senderId != null) 'sender_id': senderId,
       if (textContent != null) 'text_content': textContent,
       if (mediaUrl != null) 'media_url': mediaUrl,
+      if (thumbnailUrl != null) 'thumbnail_url': thumbnailUrl,
       if (mediaType != null) 'media_type': mediaType,
       if (voiceNoteUrl != null) 'voice_note_url': voiceNoteUrl,
       if (replyToId != null) 'reply_to_id': replyToId,
@@ -11843,6 +13432,7 @@ class ChannelMessagesCompanion extends UpdateCompanion<ChannelMessage> {
     Value<String>? senderId,
     Value<String?>? textContent,
     Value<String?>? mediaUrl,
+    Value<String?>? thumbnailUrl,
     Value<String?>? mediaType,
     Value<String?>? voiceNoteUrl,
     Value<String?>? replyToId,
@@ -11859,6 +13449,7 @@ class ChannelMessagesCompanion extends UpdateCompanion<ChannelMessage> {
       senderId: senderId ?? this.senderId,
       textContent: textContent ?? this.textContent,
       mediaUrl: mediaUrl ?? this.mediaUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       mediaType: mediaType ?? this.mediaType,
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       replyToId: replyToId ?? this.replyToId,
@@ -11888,6 +13479,9 @@ class ChannelMessagesCompanion extends UpdateCompanion<ChannelMessage> {
     }
     if (mediaUrl.present) {
       map['media_url'] = Variable<String>(mediaUrl.value);
+    }
+    if (thumbnailUrl.present) {
+      map['thumbnail_url'] = Variable<String>(thumbnailUrl.value);
     }
     if (mediaType.present) {
       map['media_type'] = Variable<String>(mediaType.value);
@@ -11927,6 +13521,7 @@ class ChannelMessagesCompanion extends UpdateCompanion<ChannelMessage> {
           ..write('senderId: $senderId, ')
           ..write('textContent: $textContent, ')
           ..write('mediaUrl: $mediaUrl, ')
+          ..write('thumbnailUrl: $thumbnailUrl, ')
           ..write('mediaType: $mediaType, ')
           ..write('voiceNoteUrl: $voiceNoteUrl, ')
           ..write('replyToId: $replyToId, ')
@@ -14726,6 +16321,8 @@ abstract class _$ChartDatabase extends GeneratedDatabase {
   late final $ChannelPostTagsTable channelPostTags = $ChannelPostTagsTable(
     this,
   );
+  late final $ChannelContentTagsTable channelContentTags =
+      $ChannelContentTagsTable(this);
   late final $ChannelPostCommentsTable channelPostComments =
       $ChannelPostCommentsTable(this);
   late final $ChannelMessagesTable channelMessages = $ChannelMessagesTable(
@@ -14757,6 +16354,7 @@ abstract class _$ChartDatabase extends GeneratedDatabase {
     channelCreator,
     channelPosts,
     channelPostTags,
+    channelContentTags,
     channelPostComments,
     channelMessages,
     commonChannels,
@@ -15382,6 +16980,12 @@ typedef $$PostsTableCreateCompanionBuilder =
       Value<int> linkDepth,
       Value<int> isPublic,
       Value<int> allowComments,
+      Value<String?> taggerName,
+      Value<String?> taggerAvatar,
+      Value<String?> sourceChannelName,
+      Value<String?> sourceChannelAvatar,
+      Value<int> tagsCount,
+      Value<String?> metadata,
       Value<int> rowid,
     });
 typedef $$PostsTableUpdateCompanionBuilder =
@@ -15422,6 +17026,12 @@ typedef $$PostsTableUpdateCompanionBuilder =
       Value<int> linkDepth,
       Value<int> isPublic,
       Value<int> allowComments,
+      Value<String?> taggerName,
+      Value<String?> taggerAvatar,
+      Value<String?> sourceChannelName,
+      Value<String?> sourceChannelAvatar,
+      Value<int> tagsCount,
+      Value<String?> metadata,
       Value<int> rowid,
     });
 
@@ -15611,6 +17221,36 @@ class $$PostsTableFilterComposer
 
   ColumnFilters<int> get allowComments => $composableBuilder(
     column: $table.allowComments,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taggerName => $composableBuilder(
+    column: $table.taggerName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taggerAvatar => $composableBuilder(
+    column: $table.taggerAvatar,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceChannelName => $composableBuilder(
+    column: $table.sourceChannelName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceChannelAvatar => $composableBuilder(
+    column: $table.sourceChannelAvatar,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tagsCount => $composableBuilder(
+    column: $table.tagsCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadata => $composableBuilder(
+    column: $table.metadata,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -15803,6 +17443,36 @@ class $$PostsTableOrderingComposer
     column: $table.allowComments,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get taggerName => $composableBuilder(
+    column: $table.taggerName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taggerAvatar => $composableBuilder(
+    column: $table.taggerAvatar,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceChannelName => $composableBuilder(
+    column: $table.sourceChannelName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceChannelAvatar => $composableBuilder(
+    column: $table.sourceChannelAvatar,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tagsCount => $composableBuilder(
+    column: $table.tagsCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metadata => $composableBuilder(
+    column: $table.metadata,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PostsTableAnnotationComposer
@@ -15949,6 +17619,32 @@ class $$PostsTableAnnotationComposer
     column: $table.allowComments,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get taggerName => $composableBuilder(
+    column: $table.taggerName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get taggerAvatar => $composableBuilder(
+    column: $table.taggerAvatar,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceChannelName => $composableBuilder(
+    column: $table.sourceChannelName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceChannelAvatar => $composableBuilder(
+    column: $table.sourceChannelAvatar,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get tagsCount =>
+      $composableBuilder(column: $table.tagsCount, builder: (column) => column);
+
+  GeneratedColumn<String> get metadata =>
+      $composableBuilder(column: $table.metadata, builder: (column) => column);
 }
 
 class $$PostsTableTableManager
@@ -16015,6 +17711,12 @@ class $$PostsTableTableManager
                 Value<int> linkDepth = const Value.absent(),
                 Value<int> isPublic = const Value.absent(),
                 Value<int> allowComments = const Value.absent(),
+                Value<String?> taggerName = const Value.absent(),
+                Value<String?> taggerAvatar = const Value.absent(),
+                Value<String?> sourceChannelName = const Value.absent(),
+                Value<String?> sourceChannelAvatar = const Value.absent(),
+                Value<int> tagsCount = const Value.absent(),
+                Value<String?> metadata = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PostsCompanion(
                 id: id,
@@ -16053,6 +17755,12 @@ class $$PostsTableTableManager
                 linkDepth: linkDepth,
                 isPublic: isPublic,
                 allowComments: allowComments,
+                taggerName: taggerName,
+                taggerAvatar: taggerAvatar,
+                sourceChannelName: sourceChannelName,
+                sourceChannelAvatar: sourceChannelAvatar,
+                tagsCount: tagsCount,
+                metadata: metadata,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -16093,6 +17801,12 @@ class $$PostsTableTableManager
                 Value<int> linkDepth = const Value.absent(),
                 Value<int> isPublic = const Value.absent(),
                 Value<int> allowComments = const Value.absent(),
+                Value<String?> taggerName = const Value.absent(),
+                Value<String?> taggerAvatar = const Value.absent(),
+                Value<String?> sourceChannelName = const Value.absent(),
+                Value<String?> sourceChannelAvatar = const Value.absent(),
+                Value<int> tagsCount = const Value.absent(),
+                Value<String?> metadata = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PostsCompanion.insert(
                 id: id,
@@ -16131,6 +17845,12 @@ class $$PostsTableTableManager
                 linkDepth: linkDepth,
                 isPublic: isPublic,
                 allowComments: allowComments,
+                taggerName: taggerName,
+                taggerAvatar: taggerAvatar,
+                sourceChannelName: sourceChannelName,
+                sourceChannelAvatar: sourceChannelAvatar,
+                tagsCount: tagsCount,
+                metadata: metadata,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -16175,6 +17895,12 @@ typedef $$ManifestosTableCreateCompanionBuilder =
       Value<int> isLiked,
       Value<double?> aspectRatio,
       Value<DateTime> createdAt,
+      Value<String?> taggerName,
+      Value<String?> taggerAvatar,
+      Value<String?> sourceChannelName,
+      Value<String?> sourceChannelAvatar,
+      Value<int> tagsCount,
+      Value<String?> metadata,
       Value<int> rowid,
     });
 typedef $$ManifestosTableUpdateCompanionBuilder =
@@ -16197,6 +17923,12 @@ typedef $$ManifestosTableUpdateCompanionBuilder =
       Value<int> isLiked,
       Value<double?> aspectRatio,
       Value<DateTime> createdAt,
+      Value<String?> taggerName,
+      Value<String?> taggerAvatar,
+      Value<String?> sourceChannelName,
+      Value<String?> sourceChannelAvatar,
+      Value<int> tagsCount,
+      Value<String?> metadata,
       Value<int> rowid,
     });
 
@@ -16296,6 +18028,36 @@ class $$ManifestosTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taggerName => $composableBuilder(
+    column: $table.taggerName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taggerAvatar => $composableBuilder(
+    column: $table.taggerAvatar,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceChannelName => $composableBuilder(
+    column: $table.sourceChannelName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceChannelAvatar => $composableBuilder(
+    column: $table.sourceChannelAvatar,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tagsCount => $composableBuilder(
+    column: $table.tagsCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadata => $composableBuilder(
+    column: $table.metadata,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -16398,6 +18160,36 @@ class $$ManifestosTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get taggerName => $composableBuilder(
+    column: $table.taggerName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taggerAvatar => $composableBuilder(
+    column: $table.taggerAvatar,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceChannelName => $composableBuilder(
+    column: $table.sourceChannelName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceChannelAvatar => $composableBuilder(
+    column: $table.sourceChannelAvatar,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tagsCount => $composableBuilder(
+    column: $table.tagsCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metadata => $composableBuilder(
+    column: $table.metadata,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ManifestosTableAnnotationComposer
@@ -16470,6 +18262,32 @@ class $$ManifestosTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get taggerName => $composableBuilder(
+    column: $table.taggerName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get taggerAvatar => $composableBuilder(
+    column: $table.taggerAvatar,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceChannelName => $composableBuilder(
+    column: $table.sourceChannelName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceChannelAvatar => $composableBuilder(
+    column: $table.sourceChannelAvatar,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get tagsCount =>
+      $composableBuilder(column: $table.tagsCount, builder: (column) => column);
+
+  GeneratedColumn<String> get metadata =>
+      $composableBuilder(column: $table.metadata, builder: (column) => column);
 }
 
 class $$ManifestosTableTableManager
@@ -16521,6 +18339,12 @@ class $$ManifestosTableTableManager
                 Value<int> isLiked = const Value.absent(),
                 Value<double?> aspectRatio = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> taggerName = const Value.absent(),
+                Value<String?> taggerAvatar = const Value.absent(),
+                Value<String?> sourceChannelName = const Value.absent(),
+                Value<String?> sourceChannelAvatar = const Value.absent(),
+                Value<int> tagsCount = const Value.absent(),
+                Value<String?> metadata = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ManifestosCompanion(
                 id: id,
@@ -16541,6 +18365,12 @@ class $$ManifestosTableTableManager
                 isLiked: isLiked,
                 aspectRatio: aspectRatio,
                 createdAt: createdAt,
+                taggerName: taggerName,
+                taggerAvatar: taggerAvatar,
+                sourceChannelName: sourceChannelName,
+                sourceChannelAvatar: sourceChannelAvatar,
+                tagsCount: tagsCount,
+                metadata: metadata,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -16563,6 +18393,12 @@ class $$ManifestosTableTableManager
                 Value<int> isLiked = const Value.absent(),
                 Value<double?> aspectRatio = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> taggerName = const Value.absent(),
+                Value<String?> taggerAvatar = const Value.absent(),
+                Value<String?> sourceChannelName = const Value.absent(),
+                Value<String?> sourceChannelAvatar = const Value.absent(),
+                Value<int> tagsCount = const Value.absent(),
+                Value<String?> metadata = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ManifestosCompanion.insert(
                 id: id,
@@ -16583,6 +18419,12 @@ class $$ManifestosTableTableManager
                 isLiked: isLiked,
                 aspectRatio: aspectRatio,
                 createdAt: createdAt,
+                taggerName: taggerName,
+                taggerAvatar: taggerAvatar,
+                sourceChannelName: sourceChannelName,
+                sourceChannelAvatar: sourceChannelAvatar,
+                tagsCount: tagsCount,
+                metadata: metadata,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -18152,6 +19994,7 @@ typedef $$ChannelStatusesTableCreateCompanionBuilder =
       Value<String?> caption,
       Value<String?> imageUrls,
       Value<String?> videoUrl,
+      Value<String?> thumbnailUrl,
       Value<String?> audioUrl,
       Value<int> isVideo,
       Value<int> isAudio,
@@ -18160,6 +20003,8 @@ typedef $$ChannelStatusesTableCreateCompanionBuilder =
       Value<int> commentsCount,
       Value<String?> createdAt,
       Value<String?> expiresAt,
+      Value<String?> username,
+      Value<String?> profileImageUrl,
       Value<int> rowid,
     });
 typedef $$ChannelStatusesTableUpdateCompanionBuilder =
@@ -18170,6 +20015,7 @@ typedef $$ChannelStatusesTableUpdateCompanionBuilder =
       Value<String?> caption,
       Value<String?> imageUrls,
       Value<String?> videoUrl,
+      Value<String?> thumbnailUrl,
       Value<String?> audioUrl,
       Value<int> isVideo,
       Value<int> isAudio,
@@ -18178,6 +20024,8 @@ typedef $$ChannelStatusesTableUpdateCompanionBuilder =
       Value<int> commentsCount,
       Value<String?> createdAt,
       Value<String?> expiresAt,
+      Value<String?> username,
+      Value<String?> profileImageUrl,
       Value<int> rowid,
     });
 
@@ -18220,6 +20068,11 @@ class $$ChannelStatusesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get thumbnailUrl => $composableBuilder(
+    column: $table.thumbnailUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get audioUrl => $composableBuilder(
     column: $table.audioUrl,
     builder: (column) => ColumnFilters(column),
@@ -18257,6 +20110,16 @@ class $$ChannelStatusesTableFilterComposer
 
   ColumnFilters<String> get expiresAt => $composableBuilder(
     column: $table.expiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get username => $composableBuilder(
+    column: $table.username,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get profileImageUrl => $composableBuilder(
+    column: $table.profileImageUrl,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -18300,6 +20163,11 @@ class $$ChannelStatusesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get thumbnailUrl => $composableBuilder(
+    column: $table.thumbnailUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get audioUrl => $composableBuilder(
     column: $table.audioUrl,
     builder: (column) => ColumnOrderings(column),
@@ -18339,6 +20207,16 @@ class $$ChannelStatusesTableOrderingComposer
     column: $table.expiresAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get username => $composableBuilder(
+    column: $table.username,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get profileImageUrl => $composableBuilder(
+    column: $table.profileImageUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ChannelStatusesTableAnnotationComposer
@@ -18367,6 +20245,11 @@ class $$ChannelStatusesTableAnnotationComposer
 
   GeneratedColumn<String> get videoUrl =>
       $composableBuilder(column: $table.videoUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbnailUrl => $composableBuilder(
+    column: $table.thumbnailUrl,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get audioUrl =>
       $composableBuilder(column: $table.audioUrl, builder: (column) => column);
@@ -18397,6 +20280,14 @@ class $$ChannelStatusesTableAnnotationComposer
 
   GeneratedColumn<String> get expiresAt =>
       $composableBuilder(column: $table.expiresAt, builder: (column) => column);
+
+  GeneratedColumn<String> get username =>
+      $composableBuilder(column: $table.username, builder: (column) => column);
+
+  GeneratedColumn<String> get profileImageUrl => $composableBuilder(
+    column: $table.profileImageUrl,
+    builder: (column) => column,
+  );
 }
 
 class $$ChannelStatusesTableTableManager
@@ -18442,6 +20333,7 @@ class $$ChannelStatusesTableTableManager
                 Value<String?> caption = const Value.absent(),
                 Value<String?> imageUrls = const Value.absent(),
                 Value<String?> videoUrl = const Value.absent(),
+                Value<String?> thumbnailUrl = const Value.absent(),
                 Value<String?> audioUrl = const Value.absent(),
                 Value<int> isVideo = const Value.absent(),
                 Value<int> isAudio = const Value.absent(),
@@ -18450,6 +20342,8 @@ class $$ChannelStatusesTableTableManager
                 Value<int> commentsCount = const Value.absent(),
                 Value<String?> createdAt = const Value.absent(),
                 Value<String?> expiresAt = const Value.absent(),
+                Value<String?> username = const Value.absent(),
+                Value<String?> profileImageUrl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ChannelStatusesCompanion(
                 id: id,
@@ -18458,6 +20352,7 @@ class $$ChannelStatusesTableTableManager
                 caption: caption,
                 imageUrls: imageUrls,
                 videoUrl: videoUrl,
+                thumbnailUrl: thumbnailUrl,
                 audioUrl: audioUrl,
                 isVideo: isVideo,
                 isAudio: isAudio,
@@ -18466,6 +20361,8 @@ class $$ChannelStatusesTableTableManager
                 commentsCount: commentsCount,
                 createdAt: createdAt,
                 expiresAt: expiresAt,
+                username: username,
+                profileImageUrl: profileImageUrl,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -18476,6 +20373,7 @@ class $$ChannelStatusesTableTableManager
                 Value<String?> caption = const Value.absent(),
                 Value<String?> imageUrls = const Value.absent(),
                 Value<String?> videoUrl = const Value.absent(),
+                Value<String?> thumbnailUrl = const Value.absent(),
                 Value<String?> audioUrl = const Value.absent(),
                 Value<int> isVideo = const Value.absent(),
                 Value<int> isAudio = const Value.absent(),
@@ -18484,6 +20382,8 @@ class $$ChannelStatusesTableTableManager
                 Value<int> commentsCount = const Value.absent(),
                 Value<String?> createdAt = const Value.absent(),
                 Value<String?> expiresAt = const Value.absent(),
+                Value<String?> username = const Value.absent(),
+                Value<String?> profileImageUrl = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ChannelStatusesCompanion.insert(
                 id: id,
@@ -18492,6 +20392,7 @@ class $$ChannelStatusesTableTableManager
                 caption: caption,
                 imageUrls: imageUrls,
                 videoUrl: videoUrl,
+                thumbnailUrl: thumbnailUrl,
                 audioUrl: audioUrl,
                 isVideo: isVideo,
                 isAudio: isAudio,
@@ -18500,6 +20401,8 @@ class $$ChannelStatusesTableTableManager
                 commentsCount: commentsCount,
                 createdAt: createdAt,
                 expiresAt: expiresAt,
+                username: username,
+                profileImageUrl: profileImageUrl,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -19053,6 +20956,11 @@ typedef $$ChannelPostsTableCreateCompanionBuilder =
       Value<int> allowComments,
       Value<int> isPending,
       Value<int> isLiked,
+      Value<String?> taggerName,
+      Value<String?> taggerAvatar,
+      Value<String?> sourceChannelName,
+      Value<String?> sourceChannelAvatar,
+      Value<int> tagsCount,
       Value<DateTime> createdAt,
       Value<String?> postType,
       Value<String?> metadata,
@@ -19080,6 +20988,11 @@ typedef $$ChannelPostsTableUpdateCompanionBuilder =
       Value<int> allowComments,
       Value<int> isPending,
       Value<int> isLiked,
+      Value<String?> taggerName,
+      Value<String?> taggerAvatar,
+      Value<String?> sourceChannelName,
+      Value<String?> sourceChannelAvatar,
+      Value<int> tagsCount,
       Value<DateTime> createdAt,
       Value<String?> postType,
       Value<String?> metadata,
@@ -19192,6 +21105,31 @@ class $$ChannelPostsTableFilterComposer
 
   ColumnFilters<int> get isLiked => $composableBuilder(
     column: $table.isLiked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taggerName => $composableBuilder(
+    column: $table.taggerName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taggerAvatar => $composableBuilder(
+    column: $table.taggerAvatar,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceChannelName => $composableBuilder(
+    column: $table.sourceChannelName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceChannelAvatar => $composableBuilder(
+    column: $table.sourceChannelAvatar,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tagsCount => $composableBuilder(
+    column: $table.tagsCount,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -19320,6 +21258,31 @@ class $$ChannelPostsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get taggerName => $composableBuilder(
+    column: $table.taggerName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taggerAvatar => $composableBuilder(
+    column: $table.taggerAvatar,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceChannelName => $composableBuilder(
+    column: $table.sourceChannelName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceChannelAvatar => $composableBuilder(
+    column: $table.sourceChannelAvatar,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tagsCount => $composableBuilder(
+    column: $table.tagsCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -19415,6 +21378,29 @@ class $$ChannelPostsTableAnnotationComposer
   GeneratedColumn<int> get isLiked =>
       $composableBuilder(column: $table.isLiked, builder: (column) => column);
 
+  GeneratedColumn<String> get taggerName => $composableBuilder(
+    column: $table.taggerName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get taggerAvatar => $composableBuilder(
+    column: $table.taggerAvatar,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceChannelName => $composableBuilder(
+    column: $table.sourceChannelName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceChannelAvatar => $composableBuilder(
+    column: $table.sourceChannelAvatar,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get tagsCount =>
+      $composableBuilder(column: $table.tagsCount, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -19476,6 +21462,11 @@ class $$ChannelPostsTableTableManager
                 Value<int> allowComments = const Value.absent(),
                 Value<int> isPending = const Value.absent(),
                 Value<int> isLiked = const Value.absent(),
+                Value<String?> taggerName = const Value.absent(),
+                Value<String?> taggerAvatar = const Value.absent(),
+                Value<String?> sourceChannelName = const Value.absent(),
+                Value<String?> sourceChannelAvatar = const Value.absent(),
+                Value<int> tagsCount = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<String?> postType = const Value.absent(),
                 Value<String?> metadata = const Value.absent(),
@@ -19501,6 +21492,11 @@ class $$ChannelPostsTableTableManager
                 allowComments: allowComments,
                 isPending: isPending,
                 isLiked: isLiked,
+                taggerName: taggerName,
+                taggerAvatar: taggerAvatar,
+                sourceChannelName: sourceChannelName,
+                sourceChannelAvatar: sourceChannelAvatar,
+                tagsCount: tagsCount,
                 createdAt: createdAt,
                 postType: postType,
                 metadata: metadata,
@@ -19528,6 +21524,11 @@ class $$ChannelPostsTableTableManager
                 Value<int> allowComments = const Value.absent(),
                 Value<int> isPending = const Value.absent(),
                 Value<int> isLiked = const Value.absent(),
+                Value<String?> taggerName = const Value.absent(),
+                Value<String?> taggerAvatar = const Value.absent(),
+                Value<String?> sourceChannelName = const Value.absent(),
+                Value<String?> sourceChannelAvatar = const Value.absent(),
+                Value<int> tagsCount = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<String?> postType = const Value.absent(),
                 Value<String?> metadata = const Value.absent(),
@@ -19553,6 +21554,11 @@ class $$ChannelPostsTableTableManager
                 allowComments: allowComments,
                 isPending: isPending,
                 isLiked: isLiked,
+                taggerName: taggerName,
+                taggerAvatar: taggerAvatar,
+                sourceChannelName: sourceChannelName,
+                sourceChannelAvatar: sourceChannelAvatar,
+                tagsCount: tagsCount,
                 createdAt: createdAt,
                 postType: postType,
                 metadata: metadata,
@@ -19781,6 +21787,261 @@ typedef $$ChannelPostTagsTableProcessedTableManager =
         BaseReferences<_$ChartDatabase, $ChannelPostTagsTable, ChannelPostTag>,
       ),
       ChannelPostTag,
+      PrefetchHooks Function()
+    >;
+typedef $$ChannelContentTagsTableCreateCompanionBuilder =
+    ChannelContentTagsCompanion Function({
+      required String id,
+      required String postId,
+      required String userId,
+      required String sourceChannelId,
+      required String targetChannelId,
+      required String linkChain,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$ChannelContentTagsTableUpdateCompanionBuilder =
+    ChannelContentTagsCompanion Function({
+      Value<String> id,
+      Value<String> postId,
+      Value<String> userId,
+      Value<String> sourceChannelId,
+      Value<String> targetChannelId,
+      Value<String> linkChain,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$ChannelContentTagsTableFilterComposer
+    extends Composer<_$ChartDatabase, $ChannelContentTagsTable> {
+  $$ChannelContentTagsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get postId => $composableBuilder(
+    column: $table.postId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceChannelId => $composableBuilder(
+    column: $table.sourceChannelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetChannelId => $composableBuilder(
+    column: $table.targetChannelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get linkChain => $composableBuilder(
+    column: $table.linkChain,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ChannelContentTagsTableOrderingComposer
+    extends Composer<_$ChartDatabase, $ChannelContentTagsTable> {
+  $$ChannelContentTagsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get postId => $composableBuilder(
+    column: $table.postId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceChannelId => $composableBuilder(
+    column: $table.sourceChannelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetChannelId => $composableBuilder(
+    column: $table.targetChannelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get linkChain => $composableBuilder(
+    column: $table.linkChain,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ChannelContentTagsTableAnnotationComposer
+    extends Composer<_$ChartDatabase, $ChannelContentTagsTable> {
+  $$ChannelContentTagsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get postId =>
+      $composableBuilder(column: $table.postId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceChannelId => $composableBuilder(
+    column: $table.sourceChannelId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get targetChannelId => $composableBuilder(
+    column: $table.targetChannelId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get linkChain =>
+      $composableBuilder(column: $table.linkChain, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ChannelContentTagsTableTableManager
+    extends
+        RootTableManager<
+          _$ChartDatabase,
+          $ChannelContentTagsTable,
+          ChannelContentTag,
+          $$ChannelContentTagsTableFilterComposer,
+          $$ChannelContentTagsTableOrderingComposer,
+          $$ChannelContentTagsTableAnnotationComposer,
+          $$ChannelContentTagsTableCreateCompanionBuilder,
+          $$ChannelContentTagsTableUpdateCompanionBuilder,
+          (
+            ChannelContentTag,
+            BaseReferences<
+              _$ChartDatabase,
+              $ChannelContentTagsTable,
+              ChannelContentTag
+            >,
+          ),
+          ChannelContentTag,
+          PrefetchHooks Function()
+        > {
+  $$ChannelContentTagsTableTableManager(
+    _$ChartDatabase db,
+    $ChannelContentTagsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChannelContentTagsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChannelContentTagsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChannelContentTagsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> postId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> sourceChannelId = const Value.absent(),
+                Value<String> targetChannelId = const Value.absent(),
+                Value<String> linkChain = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ChannelContentTagsCompanion(
+                id: id,
+                postId: postId,
+                userId: userId,
+                sourceChannelId: sourceChannelId,
+                targetChannelId: targetChannelId,
+                linkChain: linkChain,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String postId,
+                required String userId,
+                required String sourceChannelId,
+                required String targetChannelId,
+                required String linkChain,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ChannelContentTagsCompanion.insert(
+                id: id,
+                postId: postId,
+                userId: userId,
+                sourceChannelId: sourceChannelId,
+                targetChannelId: targetChannelId,
+                linkChain: linkChain,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ChannelContentTagsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$ChartDatabase,
+      $ChannelContentTagsTable,
+      ChannelContentTag,
+      $$ChannelContentTagsTableFilterComposer,
+      $$ChannelContentTagsTableOrderingComposer,
+      $$ChannelContentTagsTableAnnotationComposer,
+      $$ChannelContentTagsTableCreateCompanionBuilder,
+      $$ChannelContentTagsTableUpdateCompanionBuilder,
+      (
+        ChannelContentTag,
+        BaseReferences<
+          _$ChartDatabase,
+          $ChannelContentTagsTable,
+          ChannelContentTag
+        >,
+      ),
+      ChannelContentTag,
       PrefetchHooks Function()
     >;
 typedef $$ChannelPostCommentsTableCreateCompanionBuilder =
@@ -20141,6 +22402,7 @@ typedef $$ChannelMessagesTableCreateCompanionBuilder =
       required String senderId,
       Value<String?> textContent,
       Value<String?> mediaUrl,
+      Value<String?> thumbnailUrl,
       Value<String?> mediaType,
       Value<String?> voiceNoteUrl,
       Value<String?> replyToId,
@@ -20158,6 +22420,7 @@ typedef $$ChannelMessagesTableUpdateCompanionBuilder =
       Value<String> senderId,
       Value<String?> textContent,
       Value<String?> mediaUrl,
+      Value<String?> thumbnailUrl,
       Value<String?> mediaType,
       Value<String?> voiceNoteUrl,
       Value<String?> replyToId,
@@ -20200,6 +22463,11 @@ class $$ChannelMessagesTableFilterComposer
 
   ColumnFilters<String> get mediaUrl => $composableBuilder(
     column: $table.mediaUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get thumbnailUrl => $composableBuilder(
+    column: $table.thumbnailUrl,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -20278,6 +22546,11 @@ class $$ChannelMessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get thumbnailUrl => $composableBuilder(
+    column: $table.thumbnailUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get mediaType => $composableBuilder(
     column: $table.mediaType,
     builder: (column) => ColumnOrderings(column),
@@ -20344,6 +22617,11 @@ class $$ChannelMessagesTableAnnotationComposer
 
   GeneratedColumn<String> get mediaUrl =>
       $composableBuilder(column: $table.mediaUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbnailUrl => $composableBuilder(
+    column: $table.thumbnailUrl,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get mediaType =>
       $composableBuilder(column: $table.mediaType, builder: (column) => column);
@@ -20416,6 +22694,7 @@ class $$ChannelMessagesTableTableManager
                 Value<String> senderId = const Value.absent(),
                 Value<String?> textContent = const Value.absent(),
                 Value<String?> mediaUrl = const Value.absent(),
+                Value<String?> thumbnailUrl = const Value.absent(),
                 Value<String?> mediaType = const Value.absent(),
                 Value<String?> voiceNoteUrl = const Value.absent(),
                 Value<String?> replyToId = const Value.absent(),
@@ -20431,6 +22710,7 @@ class $$ChannelMessagesTableTableManager
                 senderId: senderId,
                 textContent: textContent,
                 mediaUrl: mediaUrl,
+                thumbnailUrl: thumbnailUrl,
                 mediaType: mediaType,
                 voiceNoteUrl: voiceNoteUrl,
                 replyToId: replyToId,
@@ -20448,6 +22728,7 @@ class $$ChannelMessagesTableTableManager
                 required String senderId,
                 Value<String?> textContent = const Value.absent(),
                 Value<String?> mediaUrl = const Value.absent(),
+                Value<String?> thumbnailUrl = const Value.absent(),
                 Value<String?> mediaType = const Value.absent(),
                 Value<String?> voiceNoteUrl = const Value.absent(),
                 Value<String?> replyToId = const Value.absent(),
@@ -20463,6 +22744,7 @@ class $$ChannelMessagesTableTableManager
                 senderId: senderId,
                 textContent: textContent,
                 mediaUrl: mediaUrl,
+                thumbnailUrl: thumbnailUrl,
                 mediaType: mediaType,
                 voiceNoteUrl: voiceNoteUrl,
                 replyToId: replyToId,
@@ -22311,6 +24593,8 @@ class $ChartDatabaseManager {
       $$ChannelPostsTableTableManager(_db, _db.channelPosts);
   $$ChannelPostTagsTableTableManager get channelPostTags =>
       $$ChannelPostTagsTableTableManager(_db, _db.channelPostTags);
+  $$ChannelContentTagsTableTableManager get channelContentTags =>
+      $$ChannelContentTagsTableTableManager(_db, _db.channelContentTags);
   $$ChannelPostCommentsTableTableManager get channelPostComments =>
       $$ChannelPostCommentsTableTableManager(_db, _db.channelPostComments);
   $$ChannelMessagesTableTableManager get channelMessages =>

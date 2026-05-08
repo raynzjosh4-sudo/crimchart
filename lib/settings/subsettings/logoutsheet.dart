@@ -1,7 +1,7 @@
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/router/app_router.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/auth/application/auth_controller.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/router/app_router.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/auth/application/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as p;
 import 'package:go_router/go_router.dart';

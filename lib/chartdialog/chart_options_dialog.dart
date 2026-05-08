@@ -1,4 +1,4 @@
-import 'package:crown/core/localization/localization_provider.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
 import 'package:flutter/material.dart';
 import '../../features/widgets/memberimage/starter_image.dart';
 import '../../features/channel/pages/channel_page.dart';

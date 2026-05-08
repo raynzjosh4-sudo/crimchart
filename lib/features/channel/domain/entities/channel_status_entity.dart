@@ -11,6 +11,7 @@ class ChannelStatusEntity {
   final String? caption;
   final List<String> imageUrls;
   final String? videoUrl;
+  final String? thumbnailUrl; // 👑 ADDED
   final String? audioUrl;
 
   final bool isVideo;
@@ -32,6 +33,7 @@ class ChannelStatusEntity {
     this.caption,
     this.imageUrls = const [],
     this.videoUrl,
+    this.thumbnailUrl, // 👑
     this.audioUrl,
     this.isVideo = false,
     this.isAudio = false,
@@ -45,8 +47,9 @@ class ChannelStatusEntity {
   /// Whether this status has expired (older than 24 hours).
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
-  /// The primary display image (first image URL or null).
-  String? get primaryImageUrl => imageUrls.isNotEmpty ? imageUrls.first : null;
+  /// The primary display image (prefers thumbnail for videos).
+  String? get primaryImageUrl =>
+      imageUrls.isNotEmpty ? imageUrls.first : thumbnailUrl;
 
   /// Build from a raw Supabase / Drift map.
   factory ChannelStatusEntity.fromMap(Map<String, dynamic> map) {
@@ -85,6 +88,7 @@ class ChannelStatusEntity {
       caption: map['caption'] as String?,
       imageUrls: parseImageUrls(map['image_urls'] ?? map['imageUrls']),
       videoUrl: (map['video_url'] ?? map['videoUrl']) as String?,
+      thumbnailUrl: (map['thumbnail_url'] ?? map['thumbnailUrl']) as String?,
       audioUrl: (map['audio_url'] ?? map['audioUrl']) as String?,
       isVideo: _parseBool(map['is_video'] ?? map['isVideo']),
       isAudio: _parseBool(map['is_audio'] ?? map['isAudio']),

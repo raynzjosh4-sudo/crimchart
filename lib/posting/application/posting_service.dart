@@ -5,13 +5,13 @@ import 'package:injectable/injectable.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:crown/core/db/chart_native_db.dart';
-import 'package:crown/core/network/cloud_media_service.dart';
-import 'package:crown/core/native/chart_native_ffi.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
-import 'package:crown/features/feed/domain/repositories/feed_repository.dart';
-import 'package:crown/features/auth/domain/entities/user_entity.dart';
-import 'package:crown/posting/models/media_item.dart';
+import 'package:crimchart/core/db/chart_native_db.dart';
+import 'package:crimchart/core/network/cloud_media_service.dart';
+import 'package:crimchart/core/native/chart_native_ffi.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/feed/domain/repositories/feed_repository.dart';
+import 'package:crimchart/features/auth/domain/entities/user_entity.dart';
+import 'package:crimchart/posting/models/media_item.dart';
 
 @lazySingleton
 class PostingService {
@@ -117,23 +117,37 @@ class PostingService {
         instantVideos.add(item.path); // 👑 COLLECT ALL
 
         // 👑 C++ THUMBNAIL EXTRACTION:
-        // If we don't have a thumbnail yet, run the engine to get a real .jpg frame!
-        if (instantThumbnails.isEmpty) {
+        // Skip for network URLs as the native engine currently only supports local files.
+        if (instantThumbnails.isEmpty && !item.path.startsWith('http')) {
           final thumbPath = '${appDir.path}/t_opt_${newPostId}.jpg';
-          debugPrint('🎬 [C++] Extracting optimistic thumbnail: $thumbPath');
+          debugPrint(
+            '🎬 [PostingService] Extracting thumbnail: $thumbPath from ${item.path}',
+          );
+          if (!File(item.path).existsSync()) {
+            debugPrint(
+              '❌ [PostingService] Video file MISSING at: ${item.path}',
+            );
+          }
           final success = await ChartNativeFFI().extractThumbnail(
             inputPath: item.path,
             outputPath: thumbPath,
             timeSec: 1.0, // Grab frame at 1 second mark
             thumbWidth: 480,
           );
+          debugPrint('🎬 [PostingService] Extraction success: $success');
 
           if (success && File(thumbPath).existsSync()) {
+            debugPrint(
+              '✅ [PostingService] Thumbnail created: ${File(thumbPath).lengthSync()} bytes',
+            );
             instantThumbnails.add(thumbPath);
           } else {
             // Hard fallback to original path if processing fails
             instantThumbnails.add(item.path);
           }
+        } else if (instantThumbnails.isEmpty && item.path.startsWith('http')) {
+          // For remote dummy videos, we use a generic placeholder or the path itself
+          instantThumbnails.add(item.path);
         }
       } else if (item.type == MediaType.audio) {
         instantAudio = item.path;
@@ -160,7 +174,9 @@ class PostingService {
       isVideo: isVideo,
       isAudio: isAudio,
       folderName: folderName,
-      aspectRatio: aspectRatio ?? (media.isNotEmpty ? (media.first.aspectRatio ?? 1.0) : 1.0),
+      aspectRatio:
+          aspectRatio ??
+          (media.isNotEmpty ? (media.first.aspectRatio ?? 1.0) : 1.0),
       linkedPostId: resolvedLinkedPostId,
       linkedAuthorUsername: resolvedLinkedAuthorUsername,
       linkedCaption: resolvedLinkedCaption,
@@ -188,8 +204,9 @@ class PostingService {
             ? instantVideos.first
             : (instantImages.isNotEmpty ? instantImages.first : ''),
         'mediaType': instantVideos.isNotEmpty ? 'video' : 'photo',
-        'thumbnailUrl':
-            instantThumbnails.isNotEmpty ? instantThumbnails.first : null,
+        'thumbnailUrl': instantThumbnails.isNotEmpty
+            ? instantThumbnails.first
+            : null,
         'caption': caption,
         'createdAt': DateTime.now().toIso8601String(),
         'isPending': 1,
@@ -214,7 +231,9 @@ class PostingService {
         'isPublic': isPublicFeed ? 1 : 0,
         'allowComments': allowComments ? 1 : 0,
         'isSponsored': 0,
-        'aspectRatio': aspectRatio ?? (media.isNotEmpty ? (media.first.aspectRatio ?? 1.0) : 1.0),
+        'aspectRatio':
+            aspectRatio ??
+            (media.isNotEmpty ? (media.first.aspectRatio ?? 1.0) : 1.0),
         'isPending': 1,
         'createdAt': DateTime.now().toIso8601String(),
       };
@@ -339,6 +358,13 @@ class PostingService {
         if (item.type == MediaType.video) {
           isVideo = true;
 
+          // 👑 NETWORK GUARD: Skip compression for remote URLs (Dummy Data)
+          if (item.path.startsWith('http')) {
+            hdVideoUrls.add(item.path);
+            sdVideoUrls.add(item.path);
+            continue;
+          }
+
           final originalDb = (File(item.path).lengthSync() / (1024 * 1024))
               .toStringAsFixed(2);
           print(
@@ -350,14 +376,17 @@ class PostingService {
           final sdOut =
               '${appDir.path}/sd_${DateTime.now().millisecondsSinceEpoch}.mp4';
 
-          print('⏳ [UploadMedia] Starting compression for HD output...');
+          print('⏳ [UploadMedia] Starting compression for HD output: $hdOut');
+          if (!File(item.path).existsSync()) {
+            print('❌ [UploadMedia] Video file MISSING: ${item.path}');
+          }
           await ChartNativeFFI().compressVideo(
             inputPath: item.path,
             outputPath: hdOut,
           );
 
           print(
-            '⏳ [UploadMedia] Starting compression for SD (Data Saver) output...',
+            '⏳ [UploadMedia] Starting compression for SD (Data Saver) output: $sdOut',
           );
           await ChartNativeFFI().compressVideo(
             inputPath: item.path,
@@ -525,7 +554,7 @@ class PostingService {
       hdVideoUrls: hdVideoUrls,
       sdVideoUrls: sdVideoUrls,
       audioUrl: audioUrl,
-      thumbnails: uploadedThumbnails,
+      thumbnailUrls: uploadedThumbnails,
       isVideo: isVideo,
       isAudio: isAudio,
     );
@@ -554,7 +583,7 @@ class PostingService {
           ? uploadResults.sdVideoUrls.first
           : null,
       audioUrl: uploadResults.audioUrl,
-      thumbnailUrls: uploadResults.thumbnails,
+      thumbnailUrls: uploadResults.thumbnailUrls,
       isVideo: uploadResults.isVideo,
       isAudio: uploadResults.isAudio,
     );
@@ -593,11 +622,11 @@ class PostingService {
             'mediaUrl': uploadResults.hdVideoUrls.isNotEmpty
                 ? uploadResults.hdVideoUrls.first
                 : (uploadResults.imageUrls.isNotEmpty
-                    ? uploadResults.imageUrls.first
-                    : basePost.imageUrls.first),
+                      ? uploadResults.imageUrls.first
+                      : basePost.imageUrls.first),
             'mediaType': basePost.isVideo ? 'video' : 'photo',
-            'thumbnailUrl': uploadResults.thumbnails.isNotEmpty
-                ? uploadResults.thumbnails.first
+            'thumbnailUrl': uploadResults.thumbnailUrls.isNotEmpty
+                ? uploadResults.thumbnailUrls.first
                 : null,
             'caption': basePost.caption,
             'createdAt': basePost.createdAt.toIso8601String(),
@@ -636,8 +665,9 @@ class PostingService {
             final existing = await ChartNativeDB.instance.getChannelPost(
               basePost.id,
             );
-            final int currentComments =
-                existing != null ? (existing['comments'] as int? ?? 0) : 0;
+            final int currentComments = existing != null
+                ? (existing['comments'] as int? ?? 0)
+                : 0;
 
             await ChartNativeDB.instance.upsertChannelPost({
               'id': basePost.id,
@@ -660,8 +690,8 @@ class PostingService {
                     : basePost.imageUrls,
               ),
               'thumbnailUrls': jsonEncode(
-                uploadResults.thumbnails.isNotEmpty
-                    ? uploadResults.thumbnails
+                uploadResults.thumbnailUrls.isNotEmpty
+                    ? uploadResults.thumbnailUrls
                     : basePost.thumbnailUrls,
               ),
               'isVideo': basePost.isVideo ? 1 : 0,
@@ -717,7 +747,7 @@ class PostingService {
                 : '',
             'audioUrl': uploadResults.audioUrl ?? '',
             'imageUrls': jsonEncode(uploadResults.imageUrls),
-            'thumbnailUrls': jsonEncode(uploadResults.thumbnails),
+            'thumbnailUrls': jsonEncode(uploadResults.thumbnailUrls),
             'isVideo': uploadResults.isVideo ? 1 : 0,
             'isAudio': uploadResults.isAudio ? 1 : 0,
             'folderName': basePost.folderName ?? 'public_posts',
@@ -766,7 +796,7 @@ class PostUploadResult {
   final List<String> hdVideoUrls;
   final List<String> sdVideoUrls;
   final String? audioUrl;
-  final List<String> thumbnails;
+  final List<String> thumbnailUrls;
   final bool isVideo;
   final bool isAudio;
 
@@ -775,7 +805,7 @@ class PostUploadResult {
     required this.hdVideoUrls,
     required this.sdVideoUrls,
     this.audioUrl,
-    required this.thumbnails,
+    required this.thumbnailUrls,
     required this.isVideo,
     required this.isAudio,
   });

@@ -1,4 +1,4 @@
-import 'package:crown/core/widgets/chart_image.dart';
+import 'package:crimchart/core/widgets/chart_image.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/utils/responsive_size.dart';
 import '../../models/chart_message.dart';

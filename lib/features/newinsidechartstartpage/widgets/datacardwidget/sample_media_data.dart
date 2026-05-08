@@ -1,4 +1,4 @@
-import 'package:crown/features/widgets/chartcard/models/media_data.dart';
+import 'package:crimchart/features/widgets/chartcard/models/media_data.dart';
 
 class SampleMediaData {
   final List<MediaData> items = [

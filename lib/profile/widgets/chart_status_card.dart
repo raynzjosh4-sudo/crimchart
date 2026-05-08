@@ -1,4 +1,4 @@
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:flutter/material.dart';
 
 class ChartStatusCard extends StatelessWidget {

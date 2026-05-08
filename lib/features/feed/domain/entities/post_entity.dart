@@ -25,6 +25,7 @@ class PostEntity extends ContentEntity {
   final int likes;
   final int comments;
   final int shares;
+  final int tagsCount;
 
   final bool authorIsOnline;
   final bool authorHasStatus;
@@ -48,6 +49,11 @@ class PostEntity extends ContentEntity {
   final bool isPublic;
   final bool allowComments;
   final Map<String, dynamic> metadata;
+
+  final String? taggerName;
+  final String? taggerAvatar;
+  final String? sourceChannelName;
+  final String? sourceChannelAvatar;
 
   const PostEntity({
     required super.id,
@@ -73,6 +79,7 @@ class PostEntity extends ContentEntity {
     this.likes = 0,
     this.comments = 0,
     this.shares = 0,
+    this.tagsCount = 0,
     this.timeAgo = '',
     this.isPending = 0,
     this.localFileCache = '',
@@ -92,6 +99,10 @@ class PostEntity extends ContentEntity {
     this.isPublic = true,
     this.allowComments = true,
     this.metadata = const {},
+    this.taggerName,
+    this.taggerAvatar,
+    this.sourceChannelName,
+    this.sourceChannelAvatar,
   });
 
   /// Creates an original post (not referencing other content)
@@ -117,6 +128,7 @@ class PostEntity extends ContentEntity {
     int likes = 0,
     int comments = 0,
     int shares = 0,
+    int tagsCount = 0,
     String timeAgo = '',
     String? authorTitle,
     String? authorCategory,
@@ -137,6 +149,10 @@ class PostEntity extends ContentEntity {
     bool isPublic = true,
     bool allowComments = true,
     Map<String, dynamic> metadata = const {},
+    String? taggerName,
+    String? taggerAvatar,
+    String? sourceChannelName,
+    String? sourceChannelAvatar,
   }) {
     final thumbnailLink = ThumbnailLink.original(
       contentId: id,
@@ -169,6 +185,7 @@ class PostEntity extends ContentEntity {
       likes: likes,
       comments: comments,
       shares: shares,
+      tagsCount: tagsCount,
       timeAgo: timeAgo,
       isPending: isPending,
       localFileCache: localFileCache,
@@ -188,6 +205,10 @@ class PostEntity extends ContentEntity {
       isPublic: isPublic,
       allowComments: allowComments,
       metadata: metadata,
+      taggerName: taggerName,
+      taggerAvatar: taggerAvatar,
+      sourceChannelName: sourceChannelName,
+      sourceChannelAvatar: sourceChannelAvatar,
     );
   }
 
@@ -214,6 +235,7 @@ class PostEntity extends ContentEntity {
     int likes = 0,
     int comments = 0,
     int shares = 0,
+    int tagsCount = 0,
     String timeAgo = '',
     int isPending = 0,
     String localFileCache = '',
@@ -233,6 +255,10 @@ class PostEntity extends ContentEntity {
     bool isPublic = true,
     bool allowComments = true,
     Map<String, dynamic> metadata = const {},
+    String? taggerName,
+    String? taggerAvatar,
+    String? sourceChannelName,
+    String? sourceChannelAvatar,
   }) {
     final thumbnailLink = ThumbnailLink.fromParent(
       newContentId: id,
@@ -264,6 +290,7 @@ class PostEntity extends ContentEntity {
       likes: likes,
       comments: comments,
       shares: shares,
+      tagsCount: tagsCount,
       timeAgo: timeAgo,
       authorTitle: authorTitle,
       authorCategory: authorCategory,
@@ -280,6 +307,10 @@ class PostEntity extends ContentEntity {
       isPublic: isPublic,
       allowComments: allowComments,
       metadata: metadata,
+      taggerName: taggerName,
+      taggerAvatar: taggerAvatar,
+      sourceChannelName: sourceChannelName,
+      sourceChannelAvatar: sourceChannelAvatar,
     );
   }
 
@@ -292,6 +323,7 @@ class PostEntity extends ContentEntity {
     int? likes,
     int? comments,
     int? shares,
+    int? tagsCount,
     String? folderName,
     int? isPending,
     List<String>? imageUrls,
@@ -309,6 +341,10 @@ class PostEntity extends ContentEntity {
     bool? allowComments,
     double? aspectRatio,
     Map<String, dynamic>? metadata,
+    String? taggerName,
+    String? taggerAvatar,
+    String? sourceChannelName,
+    String? sourceChannelAvatar,
   }) {
     return PostEntity(
       id: id,
@@ -335,6 +371,7 @@ class PostEntity extends ContentEntity {
       likes: likes ?? this.likes,
       comments: comments ?? this.comments,
       shares: shares ?? this.shares,
+      tagsCount: tagsCount ?? this.tagsCount,
       timeAgo: timeAgo,
       isPending: isPending ?? this.isPending,
       localFileCache: localFileCache,
@@ -351,6 +388,10 @@ class PostEntity extends ContentEntity {
       isPublic: isPublic ?? this.isPublic,
       allowComments: allowComments ?? this.allowComments,
       metadata: metadata ?? this.metadata,
+      taggerName: taggerName ?? this.taggerName,
+      taggerAvatar: taggerAvatar ?? this.taggerAvatar,
+      sourceChannelName: sourceChannelName ?? this.sourceChannelName,
+      sourceChannelAvatar: sourceChannelAvatar ?? this.sourceChannelAvatar,
     );
   }
 
@@ -455,6 +496,11 @@ class PostEntity extends ContentEntity {
         shares: map['shares'] is int
             ? map['shares'] as int
             : int.tryParse(map['shares']?.toString() ?? '') ?? 0,
+        tagsCount: map['tagsCount'] is int
+            ? map['tagsCount'] as int
+            : map['tags_count'] is int
+                ? map['tags_count'] as int
+                : int.tryParse(map['tags_count']?.toString() ?? map['tagsCount']?.toString() ?? '') ?? 0,
         timeAgo: map['timeAgo']?.toString() ?? '',
         isPending: map['isPending'] ?? map['is_pending'] ?? 0,
         isLiked:
@@ -510,6 +556,10 @@ class PostEntity extends ContentEntity {
             : map['metadata'] is Map
             ? Map<String, dynamic>.from(map['metadata'] as Map)
             : {},
+        taggerName: map['tagger_name']?.toString() ?? map['taggerName']?.toString(),
+        taggerAvatar: map['tagger_avatar']?.toString() ?? map['taggerAvatar']?.toString(),
+        sourceChannelName: map['source_channel_name']?.toString() ?? map['sourceChannelName']?.toString(),
+        sourceChannelAvatar: map['source_channel_avatar']?.toString() ?? map['sourceChannelAvatar']?.toString(),
       );
     } catch (e, stack) {
       debugPrint('🚨 [Mapper Crash] PostEntity.fromMap FAILED!');
@@ -548,6 +598,7 @@ class PostEntity extends ContentEntity {
     likes,
     comments,
     shares,
+    tagsCount,
     timeAgo,
     isPending,
     localFileCache,

@@ -1,4 +1,4 @@
-import 'package:crown/core/db/chart_db.dart';
+import 'package:crimchart/core/db/chart_db.dart';
 
 class ChannelMomentEntity {
   final String id;

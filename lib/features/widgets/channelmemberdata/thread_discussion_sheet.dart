@@ -1,20 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/channel/application/manifesto_comments_provider.dart';
-import 'package:crown/features/auth/application/auth_controller.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
-import 'package:crown/posting/pages/post_page.dart';
-import 'package:crown/posting/models/media_item.dart';
-import 'package:crown/commentingsheets/widgets/comment_input_field.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/channel/application/manifesto_comments_provider.dart';
+import 'package:crimchart/features/channel/application/channel_feed_provider.dart';
+import 'package:crimchart/features/auth/application/auth_controller.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/posting/pages/post_page.dart';
+import 'package:crimchart/posting/models/media_item.dart';
+import 'package:crimchart/commentingsheets/widgets/comment_input_field.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 import 'manifesto_chat_bubble_shimmer.dart';
 import 'manifesto_chat_bubble.dart';
+import 'package:crimchart/profile/pages/profile_page.dart';
 
 class ThreadDiscussionSheet extends ConsumerStatefulWidget {
   final String threadId;
@@ -35,95 +36,42 @@ class ThreadDiscussionSheet extends ConsumerStatefulWidget {
 
 class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
   final TextEditingController _commentController = TextEditingController();
-  late final PagingController<int, PostEntity> _pagingController;
+  final ScrollController _scrollController = ScrollController();
   StreamSubscription? _connectivitySubscription;
   bool _isOffline = false;
-  List<MediaItem> _selectedMedia = []; // 👑 ATTACHMENT STATE
+  List<MediaItem> _selectedMedia = [];
 
   @override
   void initState() {
     super.initState();
-
-    _pagingController = PagingController<int, PostEntity>(
-      fetchPage: (pageKey) async {
-        debugPrint(
-          '🔄 [ThreadDiscussionSheet] fetchPage called for page: $pageKey',
-        );
-        await ref
-            .read(manifestoCommentsProvider(widget.threadId).notifier)
-            .loadMore();
-        return [];
-      },
-      getNextPageKey: (state) {
-        final commentsState = ref.read(
-          manifestoCommentsProvider(widget.threadId),
-        );
-        return commentsState.value != null &&
-                commentsState.value!.length % 15 == 0
-            ? (commentsState.value!.length ~/ 15) + 1
-            : null;
-      },
-    );
     _checkInitialConnection();
+
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
       results,
     ) {
       if (results.isEmpty) return;
       final status = results.first;
       setState(() => _isOffline = status == ConnectivityResult.none);
-      if (status != ConnectivityResult.none) {
-        _pagingController.refresh();
-      }
     });
 
-    // ── INITIAL SYNC ──
-    // ── INITIAL SYNC ──
+    // Load comments on open
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-
-      final initialState = ref.read(
-        manifestoCommentsProvider(widget.threadId),
-      );
-
-      _pagingController.value = PagingState(
-        pages: initialState.value != null && initialState.value!.isNotEmpty
-            ? [initialState.value!]
-            : [],
-        keys: initialState.value != null && initialState.value!.isNotEmpty
-            ? [1]
-            : [],
-        hasNextPage:
-            (initialState.value?.isNotEmpty ?? false) &&
-            (initialState.value!.length % 15 == 0),
-        isLoading: initialState.isLoading,
-        error: initialState.error,
-      );
-
-      // If NOT loading and NO data, trigger first fetch
-      if (!initialState.isLoading && (initialState.value?.isEmpty ?? true)) {
+      final state = ref.read(manifestoCommentsProvider(widget.threadId));
+      if (!state.isLoading && (state.value?.isEmpty ?? true)) {
         ref
             .read(manifestoCommentsProvider(widget.threadId).notifier)
             .fetchComments();
       }
     });
 
-    // ── SYNC PAGING WITH PROVIDER ──
-    ref.listenManual(manifestoCommentsProvider(widget.threadId), (
-      previous,
-      next,
-    ) {
-      if (!mounted) return;
-
-      _pagingController.value = PagingState(
-        pages: next.value != null && next.value!.isNotEmpty
-            ? [next.value!]
-            : [],
-        keys: next.value != null && next.value!.isNotEmpty ? [1] : [],
-        hasNextPage:
-            (next.value?.isNotEmpty ?? false) && (next.value!.length % 15 == 0),
-        isLoading: next.isLoading,
-        error: next.error,
-      );
+    // Pagination on scroll-to-top
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels < 80) {
+        ref
+            .read(manifestoCommentsProvider(widget.threadId).notifier)
+            .loadMore();
+      }
     });
   }
 
@@ -137,7 +85,7 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
   @override
   void dispose() {
     _commentController.dispose();
-    _pagingController.dispose();
+    _scrollController.dispose();
     _connectivitySubscription?.cancel();
     super.dispose();
   }
@@ -174,19 +122,33 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
       ),
     );
 
-    // ── 2. PERSIST IN BACKGROUND ──
+    // ── 2. OPTIMISTIC COUNT INCREMENT ──
+    // Immediately update the ManifestoCard count on the feed without waiting for the server.
+    if (widget.channelId != null) {
+      ref
+          .read(channelFeedProvider(widget.channelId!).notifier)
+          .incrementCommentCount(widget.threadId);
+    }
+
+    // ── 3. PERSIST IN BACKGROUND ──
     try {
       await Supabase.instance.client.from('channel_post_comments').insert({
         'post_id': widget.threadId,
         'author_id': user?.id,
         'message': text,
         'channel_id': widget.channelId,
-        'image_urls': _selectedMedia
-            .map((m) => m.path)
-            .toList(), // 👑 PERSIST PATHS
+        'image_urls': _selectedMedia.map((m) => m.path).toList(),
       });
 
-      // ── 3. CLEANUP ──
+      // ── 4. RECORD IN COMMENT COUNTS TABLE (triggers Realtime for other users) ──
+      Supabase.instance.client
+          .rpc(
+            'increment_post_comment_count',
+            params: {'target_post_id': widget.threadId},
+          )
+          .then((_) => debugPrint('✅ [Comment Count] RPC success'))
+          .catchError((e) => debugPrint('🚨 [Comment Count] RPC failed: $e'));
+
       setState(() => _selectedMedia = []);
     } catch (e) {
       debugPrint('🚨 Failed to persist comment: $e');
@@ -195,8 +157,8 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🏗️ [ThreadDiscussionSheet] build() START');
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final commentsAsync = ref.watch(manifestoCommentsProvider(widget.threadId));
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -269,52 +231,51 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
             ),
           ),
 
-          // ── PAGINATED COMMENTS LIST ──
+          // ── COMMENTS LIST ──
           Expanded(
-            child: ValueListenableBuilder<PagingState<int, PostEntity>>(
-              valueListenable: _pagingController,
-              builder: (context, state, _) {
-                return PagedListView<int, PostEntity>(
-                  reverse: false, // 👑 Start from the top
-                  state: state,
-                  fetchNextPage: _pagingController.fetchNextPage,
-                  padding: EdgeInsets.fromLTRB(
-                    16.w,
-                    12.h,
-                    16.w,
-                    80.h,
-                  ), // 👑 More bottom padding for input
-                  builderDelegate: PagedChildBuilderDelegate<PostEntity>(
-                    itemBuilder: (context, c, index) => ManifestoChatBubble(
+            child: commentsAsync.when(
+              loading: () => Column(
+                children: List.generate(
+                  6,
+                  (_) => const ManifestoChatBubbleShimmer(),
+                ),
+              ),
+              error: (e, _) => Center(
+                child: Text(
+                  'Failed to load comments',
+                  style: TextStyle(color: Colors.white38, fontSize: 14.sp),
+                ),
+              ),
+              data: (comments) {
+                if (comments.isEmpty) {
+                  return _buildEmptyState();
+                }
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: EdgeInsets.fromLTRB(0, 12.h, 0, 80.h),
+                  itemCount: comments.length,
+                  itemBuilder: (context, index) {
+                    final c = comments[index];
+                    return ManifestoChatBubble(
                       username: c.authorUsername,
                       avatarUrl: c.authorAvatarUrl,
-                      message: c.caption,
+                      message: c.caption ?? '',
                       themeColor: const Color(0xFFFFD700),
                       isMe: c.authorId == currentUserId,
                       imageUrls: c.imageUrls,
-                    ),
-                    firstPageProgressIndicatorBuilder: (_) => Column(
-                      children: List.generate(
-                        6,
-                        (_) => const ManifestoChatBubbleShimmer(),
-                      ),
-                    ),
-                    newPageProgressIndicatorBuilder: (_) =>
-                        const ManifestoChatBubbleShimmer(),
-                    noItemsFoundIndicatorBuilder: (_) => _buildEmptyState(),
-                    noMoreItemsIndicatorBuilder: (_) => Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20.h),
-                      child: Center(
-                        child: Text(
-                          'End of discussion',
-                          style: TextStyle(
-                            color: Colors.white10,
-                            fontSize: 12.sp,
-                          ),
+                      // 👑 Long-press → delete sheet (only for own messages)
+                      onLongPress: c.authorId == currentUserId
+                          ? () => _showDeleteSheet(context, c.id)
+                          : null,
+                      // 👑 Avatar tap → profile page
+                      onAvatarTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProfilePage(userId: c.authorId),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -395,7 +356,6 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
                   ),
                 ),
               );
-
               if (result != null && result.isNotEmpty) {
                 setState(() => _selectedMedia = [..._selectedMedia, ...result]);
               }
@@ -424,5 +384,117 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
         ],
       ),
     );
+  }
+
+  // 👑 Shows a premium bottom sheet with a delete action for own messages
+  void _showDeleteSheet(BuildContext context, String commentId) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 24.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1C1E),
+          borderRadius: BorderRadius.circular(20.r),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── DRAG HANDLE ──
+            Container(
+              margin: EdgeInsets.only(top: 10.h, bottom: 4.h),
+              width: 36.w,
+              height: 4.h,
+              decoration: BoxDecoration(
+                color: Colors.white12,
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+            // ── DELETE BUTTON ──
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.delete_outline_rounded,
+                    color: Colors.redAccent),
+              ),
+              title: Text(
+                'Delete Comment',
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                'This cannot be undone',
+                style: TextStyle(
+                  color: Colors.white30,
+                  fontSize: 12.sp,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _deleteComment(commentId);
+              },
+            ),
+            // ── CANCEL ──
+            Padding(
+              padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 16.h),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.06),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 👑 Deletes the comment from Supabase and removes it from the local state
+  Future<void> _deleteComment(String commentId) async {
+    // 1. Optimistic removal from local state
+    ref
+        .read(manifestoCommentsProvider(widget.threadId).notifier)
+        .removeComment(commentId);
+
+    // 1.5 👑 OPTIMISTIC COUNT DECREMENT
+    if (widget.channelId != null) {
+      ref
+          .read(channelFeedProvider(widget.channelId!).notifier)
+          .decrementCommentCount(widget.threadId);
+    }
+
+    // 2. Persist deletion to Supabase
+    try {
+      await Supabase.instance.client
+          .from('channel_post_comments')
+          .delete()
+          .eq('id', commentId);
+      debugPrint('✅ [Comment] Deleted: $commentId');
+    } catch (e) {
+      debugPrint('🚨 [Comment] Delete failed: $e');
+    }
   }
 }

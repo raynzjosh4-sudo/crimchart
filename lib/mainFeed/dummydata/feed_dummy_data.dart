@@ -2,7 +2,7 @@ import 'charter_star_dummy_data.dart';
 import 'common_channel_dummy_data.dart';
 import 'channel_post_dummy_data.dart';
 import 'elite_dummy_data.dart';
-import 'package:crown/mainFeed/features/mainfeedcard/models/main_feed_card_type_model.dart';
+import 'package:crimchart/mainFeed/features/mainfeedcard/models/main_feed_card_type_model.dart';
 
 /// Composes all feed items into a single typed list for the main feed.
 /// Each item carries its [MainFeedCardType], its [ScrollViewType],

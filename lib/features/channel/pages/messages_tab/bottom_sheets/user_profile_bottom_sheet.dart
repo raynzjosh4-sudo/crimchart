@@ -1,10 +1,10 @@
-import 'package:crown/features/allchannels/models/chart_channel.dart';
-import 'package:crown/features/channel/application/common_channels_provider.dart';
+import 'package:crimchart/features/allchannels/models/chart_channel.dart';
+import 'package:crimchart/features/channel/application/common_channels_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crown/core/theme/design_system.dart';
+import 'package:crimchart/core/theme/design_system.dart';
 import '../models/user_model.dart';
 
 class UserProfileBottomSheet extends StatelessWidget {

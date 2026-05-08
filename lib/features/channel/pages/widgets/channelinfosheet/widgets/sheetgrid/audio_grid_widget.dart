@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/theme/theme_provider.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/theme/theme_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
 import '../audioplayer/audio_player_page.dart';
 import '../dummy_data.dart';
 

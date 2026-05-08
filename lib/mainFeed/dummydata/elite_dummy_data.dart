@@ -1,4 +1,4 @@
-import 'package:crown/mainFeed/features/cardwidgets/models/hiness_model.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/models/hiness_model.dart';
 
 final List<EliteModel> dummyEliteItems = [
   EliteModel(

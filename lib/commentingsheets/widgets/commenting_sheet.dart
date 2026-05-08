@@ -1,22 +1,22 @@
-import 'package:crown/commentingsheets/widgets/tabs/charted_members_tab.dart';
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/features/channel/application/channel_feed_provider.dart';
+import 'package:crimchart/commentingsheets/widgets/tabs/charted_members_tab.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/channel/application/channel_feed_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:crown/features/auth/application/auth_controller.dart';
-import 'package:crown/posting/application/posting_controller.dart';
-import 'package:crown/posting/models/media_item.dart';
-import 'package:crown/commentingsheets/widgets/comment_input_field.dart';
+import 'package:crimchart/features/auth/application/auth_controller.dart';
+import 'package:crimchart/posting/application/posting_controller.dart';
+import 'package:crimchart/posting/models/media_item.dart';
+import 'package:crimchart/commentingsheets/widgets/comment_input_field.dart';
 import 'tabs/your_data_tab.dart';
 import 'tabs/device_media_tab.dart';
 import 'tabs/gif_selection_tab.dart';
 import '../../features/newinsidechartstartpage/widgets/datacardwidget/sample_media_data.dart';
 import '../../features/widgets/chartcard/models/media_data.dart' as legacy;
-import 'package:crown/core/widgets/chart_image.dart';
+import 'package:crimchart/core/widgets/chart_image.dart';
 
 class CommentingSheet extends ConsumerStatefulWidget {
   final String? channelId;
@@ -38,8 +38,9 @@ class CommentingSheet extends ConsumerStatefulWidget {
     this.onMediaSelected,
     this.showInputField = true,
     this.isStatus = false,
-    this.isMoment = false, // 👑
-    this.showPostSettings = false, // 👑
+    this.isMoment = false,
+    this.showPostSettings = false,
+    this.isRepost = false,
     this.linkedPostId,
     this.linkedAuthorUsername,
     this.linkedCaption,
@@ -52,6 +53,7 @@ class CommentingSheet extends ConsumerStatefulWidget {
   final String? linkedCaption;
   final String? linkedChannelId;
   final String? linkedThumbnailUrl;
+  final bool isRepost;
 
   @override
   ConsumerState<CommentingSheet> createState() => _CommentingSheetState();
@@ -202,6 +204,8 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
       determinedType = 'moment';
     } else if (widget.isStatus) {
       determinedType = PostType.status;
+    } else if (widget.isRepost) {
+      determinedType = 'repost'; // 👑 Tagging logic
     } else if (widget.linkedPostId != null) {
       determinedType = PostType.comment; // It's a reply!
     } else if (widget.channelId != null && widget.channelId != 'general') {
@@ -465,7 +469,9 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Replying to ${widget.linkedAuthorUsername ?? "Original"}',
+                            widget.isRepost 
+                                ? 'Tagging ${widget.linkedAuthorUsername ?? "Original"}'
+                                : 'Replying to ${widget.linkedAuthorUsername ?? "Original"}',
                             style: TextStyle(
                               color: colorScheme.primary,
                               fontSize: 12.sp,

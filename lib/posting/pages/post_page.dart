@@ -1,12 +1,12 @@
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 import '../models/media_item.dart';
 import '../tabs/photos_tab.dart';
 import '../tabs/videos_tab.dart';
 import '../tabs/audio_tab.dart';
 import '../pages/finalpostpage/finalize_post_page.dart';
-import 'package:crown/backicon/custom_back_button.dart';
+import 'package:crimchart/backicon/custom_back_button.dart';
 
 // EditPostPage is commented out (editing tools pending implementation):
 // import 'editing/edit_post_page.dart';

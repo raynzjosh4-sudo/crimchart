@@ -5,6 +5,7 @@ import '../domain/entities/channel_moment_entity.dart';
 import '../domain/repositories/moment_repository.dart';
 import '../../../../core/db/chart_native_db.dart';
 import '../../../../core/di/injection.dart';
+import '../application/channels_list_controller.dart';
 
 final channelMomentsProvider = StateNotifierProvider.autoDispose
     .family<
@@ -12,6 +13,26 @@ final channelMomentsProvider = StateNotifierProvider.autoDispose
       AsyncValue<List<ChannelMomentEntity>>,
       String
     >((ref, channelId) => ChannelMomentsNotifier(channelId));
+
+/// 👑 NEW: Watch all moments for all joined channels
+final joinedMomentsProvider = StreamProvider.autoDispose<List<ChannelMomentEntity>>((ref) {
+  // We watch joined channels to ensure they are being synced, 
+  final channelsState = ref.watch(channelsListControllerProvider('joined'));
+  final channelIds = channelsState.channels.map((c) => c.id).toList();
+
+  if (channelIds.isNotEmpty) {
+    // ☁️ BACKGROUND SYNC: Kick off a batch fetch for these channels
+    getIt<MomentRepository>().syncJoinedMoments(channelIds);
+  }
+  
+  return ChartNativeDB.instance.watchAllMoments().map((rows) {
+    final now = DateTime.now();
+    return rows
+        .map(ChannelMomentEntity.fromMap)
+        .where((m) => m.expiresAt == null || m.expiresAt!.isAfter(now))
+        .toList();
+  });
+});
 
 class ChannelMomentsNotifier
     extends StateNotifier<AsyncValue<List<ChannelMomentEntity>>> {

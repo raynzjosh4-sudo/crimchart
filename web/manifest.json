@@ -1,11 +1,11 @@
 {
-    "name": "Crimchat",
-    "short_name": "Crimchat",
+    "name": "crimchart",
+    "short_name": "crimchart",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Crimchat - A new Flutter project.",
+    "description": "crimchart - A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

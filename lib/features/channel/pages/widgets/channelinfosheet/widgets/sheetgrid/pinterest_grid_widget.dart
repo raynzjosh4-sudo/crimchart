@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:crown/core/widgets/chart_image.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/widgets/chart_image.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
-import 'package:crown/features/channel/pages/widgets/channelinfosheet/widgets/imageviewer/image_viewer_page.dart';
-import 'package:crown/features/channel/pages/widgets/channelinfosheet/widgets/videoviewer/video_viewer_page.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/channel/pages/widgets/channelinfosheet/widgets/imageviewer/image_viewer_page.dart';
+import 'package:crimchart/features/channel/pages/widgets/channelinfosheet/widgets/videoviewer/video_viewer_page.dart';
 
 class PinterestGridWidget extends StatefulWidget {
   final List<PostEntity> posts;

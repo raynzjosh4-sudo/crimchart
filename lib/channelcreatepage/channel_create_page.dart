@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:crown/core/localization/localization_provider.dart';
-import 'package:crown/core/widgets/chart_linear_loader.dart';
+import 'package:crimchart/core/localization/localization_provider.dart';
+import 'package:crimchart/core/widgets/chart_linear_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

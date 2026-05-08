@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/core/theme/design_system.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/user_model.dart';
 import '../bottom_sheets/user_profile_bottom_sheet.dart';
 import '../models/media_model.dart';
 import 'message_media_grid.dart';
 import 'voice_message_player.dart';
-import 'package:crown/profile/chart/widgets/poll_carousel.dart';
+import 'package:crimchart/profile/chart/widgets/poll_carousel.dart';
 
 class ChatBubble extends StatelessWidget {
   final String message;
@@ -20,18 +19,20 @@ class ChatBubble extends StatelessWidget {
   final Map<String, dynamic>? replyTo;
   final List<MessageMediaItem> mediaItems;
   final Map<String, dynamic>? poll;
+  final VoidCallback? onDelete;
 
   const ChatBubble({
     super.key,
     required this.message,
     this.messageId,
     this.channelId,
-    required this.isMe,
+    this.isMe = false,
     this.time,
     this.sender,
     this.replyTo,
     this.mediaItems = const [],
     this.poll,
+    this.onDelete,
   });
 
   @override
@@ -44,8 +45,9 @@ class ChatBubble extends StatelessWidget {
         Padding(
           padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
           child: Column(
-            crossAxisAlignment:
-                isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: isMe
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,8 +93,9 @@ class ChatBubble extends StatelessWidget {
                         // Header: Username + Time
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          textDirection:
-                              isMe ? TextDirection.rtl : TextDirection.ltr,
+                          textDirection: isMe
+                              ? TextDirection.rtl
+                              : TextDirection.ltr,
                           children: [
                             Text(
                               sender?.name ?? 'Anonymous',
@@ -112,6 +115,47 @@ class ChatBubble extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                            if (isMe)
+                              SizedBox(
+                                width: 24.w,
+                                height: 24.w,
+                                child: PopupMenuButton<String>(
+                                  padding: EdgeInsets.zero,
+                                  icon: Icon(
+                                    Icons.more_horiz,
+                                    size: 16.sp,
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                  ),
+                                  onSelected: (value) {
+                                    if (value == 'delete') {
+                                      onDelete?.call();
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.delete,
+                                            color: Colors.redAccent,
+                                            size: 20.sp,
+                                          ),
+                                          SizedBox(width: 8.w),
+                                          const Text(
+                                            'Delete',
+                                            style: TextStyle(
+                                              color: Colors.redAccent,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
                         SizedBox(height: 4.h),
@@ -126,9 +170,8 @@ class ChatBubble extends StatelessWidget {
                             }
                           },
                           child: Column(
-                            crossAxisAlignment: isMe
-                                ? CrossAxisAlignment.end
-                                : CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment
+                                .start, // 👑 Left aligned for readability
                             children: [
                               if (replyTo != null) ...[
                                 Container(
@@ -143,23 +186,22 @@ class ChatBubble extends StatelessWidget {
                                       left: isMe
                                           ? BorderSide.none
                                           : BorderSide(
-                                            color: theme.primaryColor
-                                                .withValues(alpha: 0.5),
-                                            width: 3.w,
-                                          ),
+                                              color: theme.primaryColor
+                                                  .withValues(alpha: 0.5),
+                                              width: 3.w,
+                                            ),
                                       right: isMe
                                           ? BorderSide(
-                                            color: theme.primaryColor
-                                                .withValues(alpha: 0.5),
-                                            width: 3.w,
-                                          )
+                                              color: theme.primaryColor
+                                                  .withValues(alpha: 0.5),
+                                              width: 3.w,
+                                            )
                                           : BorderSide.none,
                                     ),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: isMe
-                                        ? CrossAxisAlignment.end
-                                        : CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment
+                                        .start, // 👑 Left aligned for readability
                                     children: [
                                       Text(
                                         replyTo?['senderName'] ?? 'Member',
@@ -174,10 +216,8 @@ class ChatBubble extends StatelessWidget {
                                         replyTo?['text'] ?? '',
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
-                                        textAlign:
-                                            isMe
-                                                ? TextAlign.right
-                                                : TextAlign.left,
+                                        textAlign: TextAlign
+                                            .left, // 👑 Always left align
                                         style: TextStyle(
                                           fontSize: 13.sp,
                                           color: colorScheme.onSurface
@@ -194,7 +234,7 @@ class ChatBubble extends StatelessWidget {
                                   child: Text(
                                     message,
                                     textAlign:
-                                        isMe ? TextAlign.right : TextAlign.left,
+                                        TextAlign.left, // 👑 Always left align
                                     style: TextStyle(
                                       color: colorScheme.onSurface,
                                       fontSize: 15.sp,
@@ -231,10 +271,7 @@ class ChatBubble extends StatelessWidget {
               if (mediaItems.isNotEmpty &&
                   !mediaItems.any((m) => m.type == MessageMediaType.audio)) ...[
                 SizedBox(height: 12.h),
-                MessageMediaGrid(
-                  items: mediaItems,
-                  channelId: channelId,
-                ),
+                MessageMediaGrid(items: mediaItems, channelId: channelId),
               ],
               // Polls - MOVED OUT of Row to fill left gap
               if (poll != null) ...[
@@ -243,24 +280,22 @@ class ChatBubble extends StatelessWidget {
                   isFullWidth: true,
                   title: poll!['title'] ?? 'Active Poll',
                   onPointAdd: (item) => debugPrint('Points added'),
-                  items:
-                      (poll!['items'] as List<Map<String, dynamic>>).map((
-                        item,
-                      ) {
-                        return PollItem(
-                          id: item['id'],
-                          title: item['title'],
-                          mediaUrl: item['mediaUrl'],
-                          type:
-                              item['type'] == 'image'
-                                  ? PollMediaType.image
-                                  : (item['type'] == 'video'
-                                      ? PollMediaType.video
-                                      : PollMediaType.text),
-                          points: item['points'] ?? 0,
-                          suggestedBy: item['suggestedBy'],
-                        );
-                      }).toList(),
+                  items: (poll!['items'] as List<Map<String, dynamic>>).map((
+                    item,
+                  ) {
+                    return PollItem(
+                      id: item['id'],
+                      title: item['title'],
+                      mediaUrl: item['mediaUrl'],
+                      type: item['type'] == 'image'
+                          ? PollMediaType.image
+                          : (item['type'] == 'video'
+                                ? PollMediaType.video
+                                : PollMediaType.text),
+                      points: item['points'] ?? 0,
+                      suggestedBy: item['suggestedBy'],
+                    );
+                  }).toList(),
                 ),
               ],
             ],

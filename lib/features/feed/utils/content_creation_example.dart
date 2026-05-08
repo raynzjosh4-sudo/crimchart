@@ -1,7 +1,7 @@
-import 'package:crown/core/models/content_entity.dart';
-import 'package:crown/features/feed/domain/entities/comment_entity.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
-import 'package:crown/features/messaging/domain/entities/message_entity.dart';
+import 'package:crimchart/core/models/content_entity.dart';
+import 'package:crimchart/features/feed/domain/entities/comment_entity.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/messaging/domain/entities/message_entity.dart';
 
 /// Utility class demonstrating how to create content with ThumbnailLinks.
 /// This shows the complete flow of content creation and linTop.

@@ -1,5 +1,5 @@
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/mainFeed/features/cardwidgets/models/hiness_model.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/models/hiness_model.dart';
 import 'package:flutter/material.dart';
 import '../../../../features/widgets/memberimage/starter_image.dart';
 

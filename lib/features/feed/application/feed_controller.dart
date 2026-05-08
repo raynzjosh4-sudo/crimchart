@@ -1,13 +1,13 @@
-import 'package:crown/core/network/api_client.dart';
-import 'package:crown/features/feed/data/repositories/feed_repository_impl.dart';
-import 'package:crown/features/feed/data/sources/feed_local_source.dart';
-import 'package:crown/features/feed/data/sources/feed_remote_source.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
-import 'package:crown/features/feed/domain/repositories/feed_repository.dart';
-import 'package:crown/features/feed/domain/use_cases/fetch_feed.dart';
-import 'package:crown/features/feed/domain/use_cases/toggle_like.dart';
+import 'package:crimchart/core/network/api_client.dart';
+import 'package:crimchart/features/feed/data/repositories/feed_repository_impl.dart';
+import 'package:crimchart/features/feed/data/sources/feed_local_source.dart';
+import 'package:crimchart/features/feed/data/sources/feed_remote_source.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/feed/domain/repositories/feed_repository.dart';
+import 'package:crimchart/features/feed/domain/use_cases/fetch_feed.dart';
+import 'package:crimchart/features/feed/domain/use_cases/toggle_like.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/core/db/chart_native_db.dart';
+import 'package:crimchart/core/db/chart_native_db.dart';
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 

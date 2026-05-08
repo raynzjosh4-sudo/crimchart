@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 
 /// Professional WhatsApp-style emoji picker with categories.
 class EmojiPickerPanel extends StatefulWidget {

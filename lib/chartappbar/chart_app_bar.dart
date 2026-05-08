@@ -1,5 +1,5 @@
-import 'package:crown/backicon/custom_back_button.dart';
-import 'package:crown/core/widgets/chart_linear_loader.dart';
+import 'package:crimchart/backicon/custom_back_button.dart';
+import 'package:crimchart/core/widgets/chart_linear_loader.dart';
 import 'package:flutter/material.dart';
 
 /// A reusable premium Instagram-style AppBar for the Chart app.

@@ -1,10 +1,10 @@
 import 'dart:convert';
-import 'package:crown/features/channel/domain/entities/channel_entity.dart';
+import 'package:crimchart/features/channel/domain/entities/channel_entity.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import 'chart_db.dart';
-import 'package:crown/core/di/injection.dart';
+import 'package:crimchart/core/di/injection.dart';
 
 /// The high-performance Drift Database Engine for Chart.
 /// Handles cross-platform persistence with zero UI lag.
@@ -105,9 +105,36 @@ class ChartNativeDB {
 
   Future<void> upsertChannelPost(Map<String, dynamic> data) async {
     try {
+      // 👑 Ensure all List/Map types are JSON-encoded for SQLite String columns
+      final Map<String, dynamic> processedData = Map.from(data);
+
+      final listFields = [
+        'image_urls',
+        'imageUrls',
+        'video_urls',
+        'videoUrls',
+        'thumbnail_urls',
+        'thumbnailUrls',
+        'link_chain',
+        'linkChain',
+      ];
+
+      for (final field in listFields) {
+        if (processedData[field] is List) {
+          processedData[field] = jsonEncode(processedData[field]);
+        }
+      }
+
+      if (processedData['metadata'] is Map) {
+        processedData['metadata'] = jsonEncode(processedData['metadata']);
+      }
+
       await _db
           .into(_db.channelPosts)
-          .insert(ChannelPost.fromJson(data), mode: InsertMode.insertOrReplace);
+          .insert(
+            ChannelPost.fromJson(processedData),
+            mode: InsertMode.insertOrReplace,
+          );
     } catch (e) {
       debugPrint('🚨 [SQLite Error] upsertChannelPost FAILED: $e');
     }
@@ -136,9 +163,35 @@ class ChartNativeDB {
   }
 
   Future<void> upsertPost(Map<String, dynamic> data) async {
-    await _db
-        .into(_db.posts)
-        .insert(Post.fromJson(data), mode: InsertMode.insertOrReplace);
+    try {
+      final Map<String, dynamic> processedData = Map.from(data);
+
+      final listFields = [
+        'image_urls',
+        'imageUrls',
+        'video_urls',
+        'videoUrls',
+        'thumbnail_urls',
+        'thumbnailUrls',
+        'link_chain',
+        'linkChain',
+      ];
+
+      for (final field in listFields) {
+        if (processedData[field] is List) {
+          processedData[field] = jsonEncode(processedData[field]);
+        }
+      }
+
+      await _db
+          .into(_db.posts)
+          .insert(
+            Post.fromJson(processedData),
+            mode: InsertMode.insertOrReplace,
+          );
+    } catch (e) {
+      debugPrint('🚨 [SQLite Error] upsertPost FAILED: $e');
+    }
   }
 
   Future<void> upsertChannelStatus(Map<String, dynamic> data) async {
@@ -152,6 +205,7 @@ class ChartNativeDB {
             caption: Value(data['caption'] as String?),
             imageUrls: Value(data['imageUrls'] as String?),
             videoUrl: Value(data['videoUrl'] as String?),
+            thumbnailUrl: Value(data['thumbnailUrl'] as String?),
             audioUrl: Value(data['audioUrl'] as String?),
             isVideo: Value((data['isVideo'] as int?) ?? 0),
             isAudio: Value((data['isAudio'] as int?) ?? 0),
@@ -248,6 +302,31 @@ class ChartNativeDB {
                 OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
           ])
           ..limit(limit))
+        .watch()
+        .map((rows) => rows.map((r) => r.toJson()).toList());
+  }
+
+  /// Watch all moments for a list of channel IDs.
+  Stream<List<Map<String, dynamic>>> watchJoinedChannelsMoments(
+    List<String> channelIds,
+  ) {
+    return (_db.select(_db.channelMoments)
+          ..where((t) => t.channelId.isIn(channelIds))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+          ]))
+        .watch()
+        .map((rows) => rows.map((r) => r.toJson()).toList());
+  }
+
+  /// Watch all moments in the local cache, ordered by creation time.
+  Stream<List<Map<String, dynamic>>> watchAllMoments() {
+    return (_db.select(_db.channelMoments)
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+          ]))
         .watch()
         .map((rows) => rows.map((r) => r.toJson()).toList());
   }
@@ -445,6 +524,9 @@ class ChartNativeDB {
               (data['text_content'] ?? data['textContent']) as String?,
             ),
             mediaUrl: Value((data['media_url'] ?? data['mediaUrl']) as String?),
+            thumbnailUrl: Value(
+              (data['thumbnail_url'] ?? data['thumbnailUrl']) as String?,
+            ),
             mediaType: Value(
               (data['media_type'] ?? data['mediaType']) as String?,
             ),
@@ -477,6 +559,13 @@ class ChartNativeDB {
           ),
         );
     print('👑 [upsertChannelMessage] ✅ Message inserted successfully');
+  }
+
+  Future<void> deleteChannelMessage(String messageId) async {
+    await (_db.delete(
+      _db.channelMessages,
+    )..where((t) => t.id.equals(messageId))).go();
+    print('👑 [deleteChannelMessage] ✅ Deleted local message $messageId');
   }
 
   /// Normalizes any timestamp value (String, DateTime, or null) to a
@@ -806,6 +895,19 @@ class ChartNativeDB {
         safeItem['allowComments'] ??= safeItem['allow_comments'] ?? 1;
         safeItem['isPending'] ??= safeItem['is_pending'] ?? 0;
 
+        if (safeItem['videoUrls'] is List) {
+          safeItem['videoUrls'] = jsonEncode(safeItem['videoUrls']);
+        }
+        if (safeItem['imageUrls'] is List) {
+          safeItem['imageUrls'] = jsonEncode(safeItem['imageUrls']);
+        }
+        if (safeItem['thumbnailUrls'] is List) {
+          safeItem['thumbnailUrls'] = jsonEncode(safeItem['thumbnailUrls']);
+        }
+        if (safeItem['metadata'] is Map) {
+          safeItem['metadata'] = jsonEncode(safeItem['metadata']);
+        }
+
         batch.insert(
           _db.manifestos,
           Manifesto.fromJson(safeItem),
@@ -840,6 +942,15 @@ class ChartNativeDB {
         }
         if (safePost['thumbnailUrls'] is List) {
           safePost['thumbnailUrls'] = jsonEncode(safePost['thumbnailUrls']);
+        }
+        if (safePost['videoUrls'] is List) {
+          safePost['videoUrls'] = jsonEncode(safePost['videoUrls']);
+        }
+        if (safePost['linkChain'] is List) {
+          safePost['linkChain'] = jsonEncode(safePost['linkChain']);
+        }
+        if (safePost['metadata'] is Map) {
+          safePost['metadata'] = jsonEncode(safePost['metadata']);
         }
         batch.insert(
           _db.posts,
@@ -882,6 +993,9 @@ class ChartNativeDB {
           }
           if (safeItem['videoUrls'] is List) {
             safeItem['videoUrls'] = jsonEncode(safeItem['videoUrls']);
+          }
+          if (safeItem['metadata'] is Map) {
+            safeItem['metadata'] = jsonEncode(safeItem['metadata']);
           }
 
           batch.insert(
@@ -1370,5 +1484,64 @@ class ChartNativeDB {
       await _db.delete(_db.users).go();
     });
     await _db.customStatement('VACUUM');
+  }
+  // 👑 TAGGING SYSTEM (UI -> LOCAL -> REMOTE)
+
+  /// Stores or updates a tag in the local Native DB.
+  Future<void> upsertChannelContentTag(Map<String, dynamic> data) async {
+    try {
+      await _db
+          .into(_db.channelContentTags)
+          .insert(
+            ChannelContentTagsCompanion.insert(
+              id: (data['id'] ?? '') as String,
+              postId: (data['post_id'] ?? data['postId'] ?? '') as String,
+              userId: (data['user_id'] ?? data['userId'] ?? '') as String,
+              sourceChannelId:
+                  (data['source_channel_id'] ?? data['sourceChannelId'] ?? '')
+                      as String,
+              targetChannelId:
+                  (data['target_channel_id'] ?? data['targetChannelId'] ?? '')
+                      as String,
+              linkChain: jsonEncode(
+                data['link_chain'] ?? data['linkChain'] ?? [],
+              ),
+              createdAt: Value(
+                data['created_at'] != null
+                    ? DateTime.parse(data['created_at'].toString())
+                    : DateTime.now(),
+              ),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+      debugPrint('💾 [SQLite] Tag saved locally: ${data['id']}');
+    } catch (e) {
+      debugPrint('🚨 [SQLite Error] upsertChannelContentTag FAILED: $e');
+    }
+  }
+
+  /// Retrieves all tags for a specific post from the local cache.
+  Future<List<Map<String, dynamic>>> getChannelContentTags(
+    String postId,
+  ) async {
+    final rows =
+        await (_db.select(_db.channelContentTags)
+              ..where((t) => t.postId.equals(postId))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    return rows.map((r) => r.toJson()).toList();
+  }
+
+  /// Removes a tag from the local cache.
+  Future<void> deleteChannelContentTag(String tagId) async {
+    await (_db.delete(
+      _db.channelContentTags,
+    )..where((t) => t.id.equals(tagId))).go();
+    debugPrint('💾 [SQLite] Tag deleted locally: $tagId');
   }
 }

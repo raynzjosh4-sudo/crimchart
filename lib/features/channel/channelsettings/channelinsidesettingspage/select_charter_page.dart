@@ -1,8 +1,8 @@
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/core/di/injection.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/core/di/injection.dart';
 import '../../application/channels_list_controller.dart';
 import '../../domain/entities/channel_entity.dart';
 import '../../domain/repositories/channel_repository.dart';

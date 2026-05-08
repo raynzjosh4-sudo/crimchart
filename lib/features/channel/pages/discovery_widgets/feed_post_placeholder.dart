@@ -1,14 +1,15 @@
-import 'package:crown/core/db/chart_db.dart';
+import 'package:crimchart/core/db/chart_db.dart';
+import 'package:crimchart/video/core/widgets/video_player_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:drift/drift.dart' show Value;
-import 'package:crown/core/db/chart_native_db.dart';
+import 'package:crimchart/core/db/chart_native_db.dart';
 import '../widgets/channelinfosheet/widgets/imageviewer/image_viewer_page.dart';
 import '../widgets/channelinfosheet/widgets/videoviewer/video_viewer_page.dart';
 
@@ -24,6 +25,7 @@ class FeedPostPlaceholder extends StatefulWidget {
   final String? type;
   final int likesCount;
   final int commentsCount;
+  final int tagsCount;
   final bool isLiked;
   final VoidCallback? onLikeTap;
   final VoidCallback? onCommentTap;
@@ -32,6 +34,13 @@ class FeedPostPlaceholder extends StatefulWidget {
   final String? inviteChannelImage;
   final String? inviteChannelTitle;
   final VoidCallback? onJoinPressed;
+  final VoidCallback? onTagTap; // 👑 NEW: For Tag/Repost logic
+
+  final String? taggerName;
+  final String? taggerAvatar;
+  final String? sourceChannelName;
+  final String? sourceChannelAvatar;
+  final String? currentChannelAvatar;
 
   const FeedPostPlaceholder({
     super.key,
@@ -46,6 +55,7 @@ class FeedPostPlaceholder extends StatefulWidget {
     this.type,
     this.likesCount = 0,
     this.commentsCount = 0,
+    this.tagsCount = 0,
     this.isLiked = false,
     this.onLikeTap,
     this.onCommentTap,
@@ -54,6 +64,12 @@ class FeedPostPlaceholder extends StatefulWidget {
     this.inviteChannelImage,
     this.inviteChannelTitle,
     this.onJoinPressed,
+    this.onTagTap,
+    this.taggerName,
+    this.taggerAvatar,
+    this.sourceChannelName,
+    this.sourceChannelAvatar,
+    this.currentChannelAvatar,
   });
 
   @override
@@ -61,10 +77,8 @@ class FeedPostPlaceholder extends StatefulWidget {
 }
 
 class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
-  VideoPlayerController? _videoController;
   int _currentImageIndex = 0;
   final PageController _pageController = PageController();
-  bool _isInitialized = false;
   bool _isLiked = false;
 
   // 👑 Live-fetched invite channel data
@@ -80,9 +94,6 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
   @override
   void initState() {
     super.initState();
-    if (widget.videoUrl != null) {
-      _initializeVideo();
-    }
     if (widget.type == 'invite' && widget.inviteChannelId != null) {
       _fetchChannelData();
     }
@@ -199,26 +210,8 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
     return count.toString();
   }
 
-  Future<void> _initializeVideo() async {
-    _videoController = VideoPlayerController.networkUrl(
-      Uri.parse(widget.videoUrl!),
-    );
-    try {
-      await _videoController!.initialize();
-      _videoController!.setLooping(true);
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-        });
-      }
-    } catch (e) {
-      debugPrint("Video initialization failed: $e");
-    }
-  }
-
   @override
   void dispose() {
-    _videoController?.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -257,21 +250,76 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 20.r,
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  backgroundImage: widget.authorImageUrl != null
-                      ? CachedNetworkImageProvider(widget.authorImageUrl!)
-                      : null,
-                  child: widget.authorImageUrl == null
-                      ? Icon(
-                          LucideIcons.user,
-                          size: 20.sp,
-                          color: colorScheme.onSurface,
-                        )
-                      : null,
+                if (widget.sourceChannelAvatar != null)
+                  SizedBox(
+                    width: 48.w,
+                    height: 40.r,
+                    child: Stack(
+                      children: [
+                        // Target Channel (Main) - Current Channel
+                        CircleAvatar(
+                          radius: 20.r,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
+                          backgroundImage: widget.currentChannelAvatar != null
+                              ? CachedNetworkImageProvider(
+                                  widget.currentChannelAvatar!,
+                                )
+                              : null,
+                          child: widget.currentChannelAvatar == null
+                              ? Icon(
+                                  LucideIcons.users,
+                                  size: 20.sp,
+                                  color: colorScheme.onSurface,
+                                )
+                              : null,
+                        ),
+                        // Source Channel (Overlapping)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: theme.scaffoldBackgroundColor,
+                                width: 2.w,
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 12.r,
+                              backgroundColor:
+                                  colorScheme.surfaceContainerHighest,
+                              backgroundImage: CachedNetworkImageProvider(
+                                widget.sourceChannelAvatar!,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  CircleAvatar(
+                    radius: 20.r,
+                    backgroundColor: colorScheme.surfaceContainerHighest,
+                    backgroundImage:
+                        widget.authorImageUrl != null &&
+                            widget.authorImageUrl!.isNotEmpty
+                        ? CachedNetworkImageProvider(widget.authorImageUrl!)
+                        : null,
+                    child:
+                        (widget.authorImageUrl == null ||
+                            widget.authorImageUrl!.isEmpty)
+                        ? Icon(
+                            LucideIcons.user,
+                            size: 20.sp,
+                            color: colorScheme.onSurface,
+                          )
+                        : null,
+                  ),
+                SizedBox(
+                  width: widget.sourceChannelAvatar != null ? 8.w : 12.w,
                 ),
-                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,6 +332,15 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                      if (widget.sourceChannelName != null)
+                        Text(
+                          'Tagged from ${widget.sourceChannelName}',
+                          style: TextStyle(
+                            color: colorScheme.onSurface.withValues(alpha: 0.5),
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -294,6 +351,7 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
               ],
             ),
           ),
+
           SizedBox(height: 12.h),
 
           // Content
@@ -317,6 +375,85 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
             _buildImageCarousel(images),
 
           if (widget.type == 'invite') _buildInviteSection(),
+
+          // 👑 MOVED: Tagger Attribution (Social Proof)
+          if (widget.taggerName != null)
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
+              child: Row(
+                children: [
+                  // Tagger Avatar with optional "+" badge
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CircleAvatar(
+                        radius: 12.r,
+                        backgroundImage: widget.taggerAvatar != null
+                            ? CachedNetworkImageProvider(widget.taggerAvatar!)
+                            : null,
+                        backgroundColor: colorScheme.surfaceContainerHighest,
+                        child: widget.taggerAvatar == null
+                            ? Icon(LucideIcons.user, size: 12.sp)
+                            : null,
+                      ),
+                      if (widget.tagsCount > 3)
+                        Positioned(
+                          right: -4.w,
+                          bottom: -4.h,
+                          child: Container(
+                            padding: EdgeInsets.all(1.r),
+                            decoration: BoxDecoration(
+                              color: theme.primaryColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: theme.scaffoldBackgroundColor,
+                                width: 2.w,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.add,
+                              size: 8.sp,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          color: colorScheme.onSurface.withValues(alpha: 0.7),
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: widget.taggerName,
+                            style: TextStyle(
+                              color: theme.primaryColor,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (widget.tagsCount > 1) ...[
+                            const TextSpan(text: ' and '),
+                            TextSpan(
+                              text: '${widget.tagsCount - 1} others ',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ] else
+                            const TextSpan(text: ' '),
+                          const TextSpan(text: 'tagged this post'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // Actions Row
           Padding(
@@ -343,9 +480,9 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
                 ],
                 _AnimatedActionButton(
                   icon: LucideIcons.tag,
-                  label: 'Tag',
+                  label: _formatCount(widget.tagsCount),
                   color: colorScheme.onSurface,
-                  onTap: () {},
+                  onTap: widget.onTagTap ?? () {},
                 ),
                 const Spacer(),
                 Text(
@@ -387,16 +524,7 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
             ),
             clipBehavior: Clip.antiAlias,
             child: _isFetchingChannel
-                ? Center(
-                    child: SizedBox(
-                      width: 20.w,
-                      height: 20.w,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  )
+                ? const SizedBox.shrink()
                 : (_resolvedChannelImage?.isNotEmpty == true
                       ? CachedNetworkImage(
                           imageUrl: _resolvedChannelImage!,
@@ -471,17 +599,7 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
           ),
           // 👑 Smart JOIN / JOINED Button
           _isJoining
-              ? SizedBox(
-                  width: 60.w,
-                  height: 36.h,
-                  child: const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                )
+              ? const SizedBox.shrink()
               : ElevatedButton(
                   onPressed: _isMember ? null : _joinChannel,
                   style: ElevatedButton.styleFrom(
@@ -520,116 +638,60 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
   }
 
   Widget _buildVideoPlayer() {
-    if (_videoController == null || !_isInitialized) {
-      return Container(
-        width: double.infinity,
-        height: 250.h,
-        color: Theme.of(
+    return GestureDetector(
+      onTap: () {
+        // 👑 Navigate to TikTok-style VideoViewerPage
+        final dummyPost = PostEntity.original(
+          id: 'video_${widget.videoUrl.hashCode}',
+          authorId: 'author_${widget.authorName.hashCode}',
+          authorUsername: widget.authorName.toLowerCase().replaceAll(' ', '_'),
+          authorDisplayName: widget.authorName,
+          authorAvatarUrl: widget.authorImageUrl,
+          createdAt: DateTime.now(),
+          channelId: 'feed_channel',
+          channelName: 'Channel Feed',
+          caption: widget.content,
+          videoUrl: widget.videoUrl,
+          isVideo: true,
+          likes: 3400,
+          comments: 156,
+          shares: 845,
+          timeAgo: widget.timeAgo,
+        );
+
+        Navigator.push(
           context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        child: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return VisibilityDetector(
-      key: Key(widget.videoUrl!),
-      onVisibilityChanged: (info) {
-        if (info.visibleFraction < 0.5) {
-          _videoController?.pause();
-        }
-      },
-      child: GestureDetector(
-        onTap: () {
-          // 👑 Navigate to TikTok-style VideoViewerPage
-          final dummyPost = PostEntity.original(
-            id: 'video_${widget.videoUrl.hashCode}',
-            authorId: 'author_${widget.authorName.hashCode}',
-            authorUsername: widget.authorName.toLowerCase().replaceAll(
-              ' ',
-              '_',
-            ),
-            authorDisplayName: widget.authorName,
-            authorAvatarUrl: widget.authorImageUrl,
-            createdAt: DateTime.now(),
-            channelId: 'feed_channel',
-            channelName: 'Channel Feed',
-            caption: widget.content,
-            videoUrl: widget.videoUrl,
-            isVideo: true,
-            likes: 3400,
-            comments: 156,
-            shares: 845,
-            timeAgo: widget.timeAgo,
-          );
-
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              transitionDuration: const Duration(milliseconds: 500),
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  VideoViewerPage(initialVideos: [dummyPost], initialIndex: 0),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: ScaleTransition(
-                        scale: Tween<double>(begin: 0.95, end: 1.0).animate(
-                          CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutCubic,
-                          ),
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 500),
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                VideoViewerPage(initialVideos: [dummyPost], initialIndex: 0),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
                         ),
-                        child: child,
                       ),
-                    );
-                  },
-            ),
-          );
-        },
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            AspectRatio(
-              aspectRatio: _videoController!.value.aspectRatio,
-              child: VideoPlayer(_videoController!),
-            ),
-            if (!_videoController!.value.isPlaying)
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.surface.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                ),
-                padding: const EdgeInsets.all(12),
-                child: Icon(
-                  Icons.play_arrow,
-                  size: 40.sp,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            Positioned(
-              bottom: 8.h,
-              right: 8.w,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.surface.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-                child: Text(
-                  "Video",
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
+                      child: child,
+                    ),
+                  );
+                },
+          ),
+        );
+      },
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: 250.h,
+          maxHeight: 700.h, // Increased for taller vertical videos
+        ),
+        child: VideoPlayerWidget(
+          key: ValueKey(widget.videoUrl),
+          videoUrl: widget.videoUrl!,
+          autoPlay: false,
         ),
       ),
     );

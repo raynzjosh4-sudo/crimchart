@@ -1,5 +1,5 @@
-import 'package:crown/mainFeed/features/cardwidgets/chartsandstars/widgets/charter_star_avatar_stack.dart';
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/chartsandstars/widgets/charter_star_avatar_stack.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:flutter/material.dart';
 import '../../../../../../features/channel/pages/channel_page.dart';
 import '../../../../../../gifts/horizontalgiftscroll/horizontal_gift_scroll.dart';

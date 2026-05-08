@@ -1,5 +1,5 @@
-import 'package:crown/core/errors/exceptions.dart';
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/core/errors/exceptions.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/channel_entity.dart';
@@ -82,7 +82,7 @@ class ChannelRemoteSource {
   Future<List<ChannelEntity>> getChannels(String filter, {int page = 0}) async {
     final supabase = Supabase.instance.client;
     final currentUserId = supabase.auth.currentUser?.id;
-    const int pageSize = 20;
+    const int pageSize = 10;
 
     try {
       // Base Query: JOIN profiles to get the creator's real profile image explicitly using the foreign key
@@ -256,6 +256,16 @@ class ChannelRemoteSource {
         .eq('channel_id', channelId)
         .order('created_at', ascending: false)
         .limit(10);
+  }
+
+  Future<void> deleteChannelMessage(String messageId) async {
+    try {
+      await _supabase.from('channel_messages').delete().eq('id', messageId);
+      debugPrint('👑 [deleteChannelMessage] ✅ Deleted remote message $messageId');
+    } catch (e) {
+      debugPrint('❌ [deleteChannelMessage Error]: $e');
+      throw ServerException('Failed to delete message: $e');
+    }
   }
 
   Future<List<Map<String, dynamic>>> getChannelMessages(

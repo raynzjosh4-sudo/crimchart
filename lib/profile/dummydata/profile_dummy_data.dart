@@ -1,5 +1,5 @@
-import 'package:crown/profile/models/charter_model.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
 
 final CharterModel currentUserProfile = CharterModel(
   id: 'u_1',

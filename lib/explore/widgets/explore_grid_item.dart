@@ -1,4 +1,4 @@
-import 'package:crown/profile/models/charter_model.dart';
+import 'package:crimchart/profile/models/charter_model.dart';
 import 'package:flutter/material.dart';
 import '../../features/channel/pages/channel_page.dart';
 import '../models/explore_item_model.dart';
@@ -6,7 +6,7 @@ import '../../../features/widgets/memberimage/starter_image.dart';
 import '../../../features/widgets/channelinfo/stacked_contestants.dart';
 import '../../../features/widgets/chartcard/card/media/video_media.dart';
 import '../../../features/widgets/chartcard/card/media/audio_media.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 
 class ExploreGridItem extends StatelessWidget {
   final ExploreItemModel item;

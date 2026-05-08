@@ -1,7 +1,7 @@
-import 'package:crown/features/channel/pages/discovery_widgets/cards/status_card_component.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/cards/status_card_carousel_component.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/cards/user_profile_card_component.dart';
-import 'package:crown/features/channel/pages/discovery_widgets/cards/premium_post_component.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/cards/status_card_component.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/cards/status_card_carousel_component.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/cards/user_profile_card_component.dart';
+import 'package:crimchart/features/channel/pages/discovery_widgets/cards/premium_post_component.dart';
 import 'feed_component.dart';
 import 'fallback_components.dart';
 

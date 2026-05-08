@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:crown/posting/models/media_item.dart';
-import 'package:crown/posting/pages/editing/functioning/edit_post_controller.dart';
+import 'package:crimchart/posting/models/media_item.dart';
+import 'package:crimchart/posting/pages/editing/functioning/edit_post_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:lucide_icons/lucide_icons.dart';

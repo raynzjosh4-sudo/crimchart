@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:crown/core/widgets/chart_image.dart';
+import 'package:crimchart/core/widgets/chart_image.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 

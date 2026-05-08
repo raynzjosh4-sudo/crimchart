@@ -1,4 +1,4 @@
-import 'package:crown/core/di/injection.dart';
+import 'package:crimchart/core/di/injection.dart';
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter/foundation.dart';

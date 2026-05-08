@@ -1,4 +1,4 @@
-import 'package:crown/posting/application/music_service.dart';
+import 'package:crimchart/posting/application/music_service.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/media_item.dart';

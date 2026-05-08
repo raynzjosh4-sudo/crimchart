@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 
 import '../models/user_model.dart';
@@ -191,7 +191,7 @@ class _ActiveUserItem extends StatelessWidget {
                         color: Colors.greenAccent,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: theme.scaffoldBackgroundColor,
+                          color: theme.colorScheme.surface,
                           width: 2,
                         ),
                       ),

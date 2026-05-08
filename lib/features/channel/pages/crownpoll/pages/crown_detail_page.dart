@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:crown/core/utils/responsive_size.dart';
-import 'package:crown/chartappbar/chart_app_bar.dart';
-import 'package:crown/commentingsheets/widgets/commenting_sheet.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/chartappbar/chart_app_bar.dart';
+import 'package:crimchart/commentingsheets/widgets/commenting_sheet.dart';
 import '../crown_option_model.dart';
 import '../../../../widgets/chartbutton/chart_button.dart';
 import '../../../../widgets/channelmemberdata/comment_card.dart';
@@ -12,7 +12,7 @@ import '../widgets/mediatype/crown_media_type.dart';
 import '../../widgets/channelinfosheet/widgets/imageviewer/image_viewer_page.dart';
 import '../../widgets/channelinfosheet/widgets/videoviewer/video_viewer_page.dart';
 import '../../widgets/channelinfosheet/widgets/audioplayer/audio_player_page.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 class CrownDetailPage extends StatefulWidget {

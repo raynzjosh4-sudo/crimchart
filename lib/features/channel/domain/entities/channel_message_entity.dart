@@ -12,6 +12,7 @@ class ChannelMessageEntity extends Equatable {
 
   final String? textContent;
   final String? mediaUrl;
+  final String? thumbnailUrl; // 👑 ADDED
   final ChannelMessageType messageType;
 
   final String? replyToId;
@@ -27,6 +28,7 @@ class ChannelMessageEntity extends Equatable {
     this.senderAvatarUrl,
     this.textContent,
     this.mediaUrl,
+    this.thumbnailUrl, // 👑
     this.messageType = ChannelMessageType.text,
     this.replyToId,
     required this.createdAt,
@@ -80,6 +82,7 @@ class ChannelMessageEntity extends Equatable {
       senderAvatarUrl: map['sender_avatar_url'] ?? map['senderAvatarUrl'],
       textContent: map['text_content'] ?? map['textContent'],
       mediaUrl: map['media_url'] ?? map['mediaUrl'],
+      thumbnailUrl: map['thumbnail_url'] ?? map['thumbnailUrl'],
       messageType: type,
       replyToId: map['reply_to_id'] ?? map['replyToId'],
       createdAt: map['created_at'] != null || map['createdAt'] != null
@@ -104,6 +107,7 @@ class ChannelMessageEntity extends Equatable {
       'sender_id': senderId,
       'text_content': textContent,
       'media_url': mediaUrl,
+      'thumbnail_url': thumbnailUrl,
       'media_type': messageType.name,
       'reply_to_id': replyToId,
       'created_at': createdAt.toUtc().toIso8601String(),
@@ -120,6 +124,7 @@ class ChannelMessageEntity extends Equatable {
     String? senderAvatarUrl,
     String? textContent,
     String? mediaUrl,
+    String? thumbnailUrl,
     ChannelMessageType? messageType,
     String? replyToId,
     DateTime? createdAt,
@@ -134,6 +139,7 @@ class ChannelMessageEntity extends Equatable {
       senderAvatarUrl: senderAvatarUrl ?? this.senderAvatarUrl,
       textContent: textContent ?? this.textContent,
       mediaUrl: mediaUrl ?? this.mediaUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       messageType: messageType ?? this.messageType,
       replyToId: replyToId ?? this.replyToId,
       createdAt: createdAt ?? this.createdAt,

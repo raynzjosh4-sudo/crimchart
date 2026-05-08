@@ -1,8 +1,7 @@
-import 'package:crown/core/utils/responsive_size.dart';
+import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'dummydata/videos_dummy_data.dart';
 import '../models/media_item.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_manager/photo_manager.dart';
@@ -28,12 +27,10 @@ class _VideosTabState extends State<VideosTab> {
   final ScrollController _scrollController = ScrollController();
 
   final List<AssetEntity> _realAssets = [];
-  final List<String> _displayedItems = [];
 
   bool _isLoadingMore = false;
   bool _hasMore = true;
   int _page = 0;
-  bool _useDummyFallback = false;
 
   @override
   void initState() {
@@ -61,7 +58,7 @@ class _VideosTabState extends State<VideosTab> {
 
     try {
       if (kIsWeb || Platform.isWindows || Platform.isLinux) {
-        throw Exception('Not running on mobile device');
+        throw Exception('Gallery access is only available on mobile devices.');
       }
 
       final PermissionState ps = await PhotoManager.requestPermissionExtend();
@@ -88,13 +85,11 @@ class _VideosTabState extends State<VideosTab> {
         });
       }
     } catch (e) {
-      _useDummyFallback = true;
+      debugPrint('Error loading videos: $e');
       if (mounted) {
         setState(() {
-          _displayedItems.addAll(videosDummyData);
-          _page++;
           _isLoadingMore = false;
-          if (_page >= 3) _hasMore = false;
+          _hasMore = false;
         });
       }
     }
@@ -105,16 +100,23 @@ class _VideosTabState extends State<VideosTab> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    if (_realAssets.isEmpty && !_isLoadingMore) {
+      return Center(
+        child: Text(
+          'No videos found',
+          style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
+        ),
+      );
+    }
+
+
     return MasonryGridView.count(
       controller: _scrollController,
       padding: EdgeInsets.all(1.w),
       crossAxisCount: 3,
       mainAxisSpacing: 1.5.w,
       crossAxisSpacing: 1.5.w,
-      itemCount:
-          (_useDummyFallback ? _displayedItems.length : _realAssets.length) +
-          1 +
-          (_isLoadingMore ? 3 : 0),
+      itemCount: _realAssets.length + 1 + (_isLoadingMore ? 3 : 0),
       itemBuilder: (context, index) {
         if (index == 0) {
           return AspectRatio(
@@ -142,9 +144,7 @@ class _VideosTabState extends State<VideosTab> {
           );
         }
 
-        final int listLength = _useDummyFallback
-            ? _displayedItems.length
-            : _realAssets.length;
+        final int listLength = _realAssets.length;
 
         if (index > listLength) {
           return AspectRatio(
@@ -163,9 +163,7 @@ class _VideosTabState extends State<VideosTab> {
         }
 
         final mediaIndex = index - 1;
-        final String mediaId = _useDummyFallback
-            ? _displayedItems[mediaIndex]
-            : _realAssets[mediaIndex].id;
+        final String mediaId = _realAssets[mediaIndex].id;
         final isSelected = widget.selectedItems.containsKey(mediaId);
         final double aspectRatio = (index % 5 == 1 || index % 7 == 3)
             ? 0.7
@@ -173,30 +171,23 @@ class _VideosTabState extends State<VideosTab> {
 
         return GestureDetector(
           onTap: () async {
-            if (_useDummyFallback) {
+            final file = await _realAssets[mediaIndex].file;
+            if (file != null) {
+              final asset = _realAssets[mediaIndex];
+              final thumb = await asset.thumbnailDataWithSize(const ThumbnailSize(500, 500));
+
+              // 📏 Calculate the real "Real Data" ratio
+              final double ratio = asset.width / asset.height.clamp(1, 10000);
+
               widget.onToggleSelection(
                 mediaId,
-                MediaItem(path: mediaId, type: MediaType.video),
+                MediaItem(
+                  path: file.path,
+                  type: MediaType.video,
+                  thumbnailBytes: thumb,
+                  aspectRatio: ratio,
+                ),
               );
-            } else {
-              final file = await _realAssets[mediaIndex].file;
-              if (file != null) {
-                final asset = _realAssets[mediaIndex];
-                final thumb = await asset.thumbnailDataWithSize(const ThumbnailSize(500, 500));
-
-                // 📏 Calculate the real "Real Data" ratio
-                final double ratio = asset.width / asset.height.clamp(1, 10000);
-
-                widget.onToggleSelection(
-                  mediaId,
-                  MediaItem(
-                    path: file.path,
-                    type: MediaType.video,
-                    thumbnailBytes: thumb,
-                    aspectRatio: ratio,
-                  ),
-                );
-              }
             }
           },
           child: AspectRatio(
@@ -204,22 +195,10 @@ class _VideosTabState extends State<VideosTab> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (_useDummyFallback)
-                  Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: CachedNetworkImageProvider(
-                          _displayedItems[mediaIndex],
-                        ),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  )
-                else
-                  _MediaThumbnailWidget(
-                    asset: _realAssets[mediaIndex],
-                    colorScheme: colorScheme,
-                  ),
+                _MediaThumbnailWidget(
+                  asset: _realAssets[mediaIndex],
+                  colorScheme: colorScheme,
+                ),
                 Positioned(
                   top: 8.h,
                   right: 8.w,

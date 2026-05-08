@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
-import 'package:crown/features/channel/pages/channel_page.dart';
-import 'package:crown/features/allchannels/models/chart_channel.dart';
-import 'package:crown/profile/pages/profile_page.dart';
-import 'package:crown/posting/models/media_item.dart';
-import 'package:crown/features/channel/pages/channel_post_detail_page.dart';
-import 'package:crown/mainFeed/features/cardwidgets/models/channel_post_model.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/features/channel/pages/channel_page.dart';
+import 'package:crimchart/features/allchannels/models/chart_channel.dart';
+import 'package:crimchart/profile/pages/profile_page.dart';
+import 'package:crimchart/posting/models/media_item.dart';
+import 'package:crimchart/features/channel/pages/channel_post_detail_page.dart';
+import 'package:crimchart/mainFeed/features/cardwidgets/models/channel_post_model.dart';
 
 class FeedNavigator {
   FeedNavigator._();

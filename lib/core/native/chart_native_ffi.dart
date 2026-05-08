@@ -110,10 +110,15 @@ class VideoInfo {
 /// The Universal Media Engine.
 /// Automatically picks between Native C++ FFI (Windows/Linux) and FFmpegKit (Android/iOS).
 class ChartNativeFFI {
-  static ChartNativeFFI? _instance;
+  static final ChartNativeFFI _instance = ChartNativeFFI._internal();
+
+  /// 👑 STABILITY TOGGLE: If the Native C++ engine (FFI) is causing crashes (SIGSEGV),
+  /// set this to 'false' to force the app to use FFmpegKit fallback instead.
+  static bool useNativeEngine =
+      !Platform.isAndroid; // Disable on Android by default if crashing
+
   factory ChartNativeFFI() {
-    _instance ??= ChartNativeFFI._internal();
-    return _instance!;
+    return _instance;
   }
 
   ffi.DynamicLibrary? _lib;
@@ -134,7 +139,7 @@ class ChartNativeFFI {
         _lib = ffi.DynamicLibrary.open('chart_native.dll');
       } else if (Platform.isAndroid) {
         // 👑 UNLOCK ANDROID C++: Loads the NDK-compiled shared library
-        _lib = ffi.DynamicLibrary.open('libcrimchat_native.so');
+        _lib = ffi.DynamicLibrary.open('libcrimchart_native.so');
       } else if (Platform.isIOS || Platform.isMacOS) {
         // 👑 UNLOCK IOS/MacOS C++: Uses the main process symbol lookups
         _lib = ffi.DynamicLibrary.process();
@@ -194,24 +199,40 @@ class ChartNativeFFI {
     required String outputPath,
     bool isDataSaver = false,
   }) async {
-    if (_compressVideoNative != null) {
-      print("🎬 [C++] Transcoding video natively...");
+    if (useNativeEngine && _compressVideoNative != null) {
+      if (inputPath.startsWith('http')) {
+        print(
+          "🌐 [C++] Skipping native compression for remote URL: $inputPath",
+        );
+        return false;
+      }
+      print("🎬 [C++] Starting native transcode...");
+      print("🎬 [C++] Input: $inputPath");
+      print("🎬 [C++] Output: $outputPath");
+
       final inPtr = inputPath.toNativeUtf8();
       final outPtr = outputPath.toNativeUtf8();
 
-      print('🎬 [C++] Starting native compression wrapper...');
-      final result = _compressVideoNative!(inPtr, outPtr);
-      print('🎬 [C++] Native compression returned: $result');
+      try {
+        print('🎬 [C++] Invoking native _compressVideoNative...');
+        final result = _compressVideoNative!(inPtr, outPtr);
+        print('🎬 [C++] Native compression call finished. Result: $result');
 
-      malloc.free(inPtr);
-      malloc.free(outPtr);
+        malloc.free(inPtr);
+        malloc.free(outPtr);
 
-      if (result == 0 && File(outputPath).existsSync()) {
-        return true;
-      } else {
-        print(
-          '⚠️ [C++] Native compression FAILED (code: $result). Falling back to FFmpeg...',
-        );
+        if (result == 0 && File(outputPath).existsSync()) {
+          print('✅ [C++] Native compression SUCCESS');
+          return true;
+        } else {
+          print(
+            '⚠️ [C++] Native compression FAILED (code: $result or file missing).',
+          );
+        }
+      } catch (e) {
+        print('❌ [C++] CRASH/ERROR during native compression: $e');
+        malloc.free(inPtr);
+        malloc.free(outPtr);
       }
     }
 
@@ -241,7 +262,7 @@ class ChartNativeFFI {
     int bitrate = 24000,
   }) async {
     // 👑 Use Native C++ if available on ANY platform
-    if (_compressAudioNative != null) {
+    if (useNativeEngine && _compressAudioNative != null) {
       final inPtr = inputPath.toNativeUtf8();
       final outPtr = outputPath.toNativeUtf8();
       final ret = _compressAudioNative!(inPtr, outPtr, bitrate);
@@ -260,8 +281,14 @@ class ChartNativeFFI {
 
   /// PROXY: Fetch Metadata in O(1)
   Future<VideoInfo?> getVideoInfo(String path) async {
-    // 👑 Use Native C++ if available on ANY platform
-    if (_getVideoInfoNative != null) {
+    // 👑 NETWORK GUARD
+    if (path.startsWith('http')) {
+      print("🌐 [C++] Skipping native metadata for remote URL: $path");
+      return null;
+    }
+
+    // 👑 Use Native C++ if available
+    if (useNativeEngine && _getVideoInfoNative != null) {
       final pathPtr = path.toNativeUtf8();
       final dur = malloc<ffi.Double>();
       final w = malloc<ffi.Int32>();
@@ -283,19 +310,48 @@ class ChartNativeFFI {
       malloc.free(fps);
       return info;
     } else {
-      // Fallback to FFprobe tool
+      // 👑 FALLBACK: Use FFprobe (Mobile standard)
+      print('⚡ [FFprobe] Fetching metadata for $path...');
       final session = await FFprobeKit.getMediaInformation(path);
-      final info = session.getMediaInformation();
-      if (info == null) return null;
-      final streams = info.getStreams();
-      final video = streams.firstWhere((s) => s.getType() == 'video');
-      return VideoInfo(
-        durationSec: double.tryParse(info.getDuration() ?? '0') ?? 0.0,
-        width: video.getWidth() ?? 0,
-        height: video.getHeight() ?? 0,
-        fps: double.tryParse(video.getAverageFrameRate() ?? '30') ?? 30.0,
-      );
+      final info = await session.getMediaInformation();
+
+      if (info != null) {
+        final duration = double.tryParse(info.getDuration() ?? '0') ?? 0.0;
+        final streams = info.getStreams();
+        int width = 0;
+        int height = 0;
+        double fps = 0.0;
+
+        for (final stream in streams) {
+          if (stream.getType() == 'video') {
+            width = stream.getWidth() ?? 0;
+            height = stream.getHeight() ?? 0;
+            final rFrameRate = stream.getRealFrameRate();
+            if (rFrameRate != null && rFrameRate.contains('/')) {
+              final parts = rFrameRate.split('/');
+              final num = double.tryParse(parts[0]) ?? 0;
+              final den = double.tryParse(parts[1]) ?? 1;
+              fps = num / den;
+            } else {
+              fps = double.tryParse(rFrameRate ?? '0') ?? 0.0;
+            }
+            break;
+          }
+        }
+
+        print(
+          '✅ [FFprobe] Metadata: ${width}x${height}, ${duration}s, ${fps}fps',
+        );
+        return VideoInfo(
+          durationSec: duration,
+          width: width,
+          height: height > 0 ? height : 1, // Guard against division by zero
+          fps: fps,
+        );
+      }
     }
+
+    return null;
   }
 
   /// PROXY: Instant Thumbnails
@@ -305,22 +361,48 @@ class ChartNativeFFI {
     double timeSec = 0.0,
     int thumbWidth = 320,
   }) async {
-    // 👑 Use Native C++ if available on ANY platform
-    if (_extractThumbnailNative != null) {
+    // 👑 NETWORK GUARD
+    if (inputPath.startsWith('http')) {
+      print("🌐 [C++] Skipping native thumbnail for remote URL: $inputPath");
+      return false;
+    }
+
+    // 👑 Use Native C++ if available
+    if (useNativeEngine && _extractThumbnailNative != null) {
       final inPtr = inputPath.toNativeUtf8();
       final outPtr = outputPath.toNativeUtf8();
 
       print('🎬 [C++] Extracting thumbnail natively...');
-      final ret = _extractThumbnailNative!(inPtr, outPtr, timeSec, thumbWidth);
-      print('🎬 [C++] Native thumbnail extraction returned: $ret');
+      print('🎬 [C++] Input: $inputPath');
+      print('🎬 [C++] Output: $outputPath');
 
-      malloc.free(inPtr);
-      malloc.free(outPtr);
+      try {
+        final ret = _extractThumbnailNative!(
+          inPtr,
+          outPtr,
+          timeSec,
+          thumbWidth,
+        );
+        print(
+          '🎬 [C++] Native thumbnail extraction finished. Return code: $ret',
+        );
 
-      if (ret == 0 && File(outputPath).existsSync()) {
-        return true;
-      } else {
-        print('⚠️ [C++] Native thumbnail FAILED (code: $ret). Falling back...');
+        malloc.free(inPtr);
+        malloc.free(outPtr);
+
+        if (ret == 0 && File(outputPath).existsSync()) {
+          print('✅ [C++] Native thumbnail extraction SUCCESS');
+          return true;
+        } else {
+          print(
+            '⚠️ [C++] Native thumbnail FAILED (code: $ret or file missing).',
+          );
+          return false;
+        }
+      } catch (e) {
+        print('❌ [C++] CRASH/ERROR during native thumbnail extraction: $e');
+        malloc.free(inPtr);
+        malloc.free(outPtr);
         return false;
       }
     } else {

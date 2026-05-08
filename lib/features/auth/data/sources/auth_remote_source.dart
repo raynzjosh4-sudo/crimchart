@@ -1,8 +1,8 @@
-import 'package:crown/core/errors/exceptions.dart';
-import 'package:crown/core/network/api_client.dart';
-import 'package:crown/core/supabase/supabase_config.dart';
-import 'package:crown/features/auth/domain/entities/auth_params.dart';
-import 'package:crown/features/auth/domain/entities/user_entity.dart';
+import 'package:crimchart/core/errors/exceptions.dart';
+import 'package:crimchart/core/network/api_client.dart';
+import 'package:crimchart/core/supabase/supabase_config.dart';
+import 'package:crimchart/features/auth/domain/entities/auth_params.dart';
+import 'package:crimchart/features/auth/domain/entities/user_entity.dart';
 import 'package:injectable/injectable.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;

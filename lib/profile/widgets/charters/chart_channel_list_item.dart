@@ -1,5 +1,5 @@
-import 'package:crown/features/allchannels/models/chart_channel.dart';
-import 'package:crown/profile/widgets/charters/charted_in_channel.dart';
+import 'package:crimchart/features/allchannels/models/chart_channel.dart';
+import 'package:crimchart/profile/widgets/charters/charted_in_channel.dart';
 import 'package:flutter/material.dart';
 
 import 'made_in_channel.dart';

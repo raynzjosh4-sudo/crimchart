@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/features/channel/application/is_member_provider.dart';
+import 'package:crimchart/features/channel/application/is_member_provider.dart';
 
 /// 👑 A Reusable Wrapper Widget for enforcing Channel Membership rules.
 /// Uses an instant Drift read to determine initial state, then switches to
@@ -27,8 +27,9 @@ class ChannelGatekeeper extends ConsumerWidget {
     final liveStream = ref.watch(isMemberProvider(channelId));
 
     // 2. Determine membership: prioritize the live stream, but fall back to initialIsMember immediately
+    // 👑 CRITICAL: If initialIsMember is true, don't let a stale local DB stream override it to false!
     final isMember = liveStream.maybeWhen(
-      data: (val) => val,
+      data: (val) => val || initialIsMember,
       orElse: () => initialIsMember,
     );
 

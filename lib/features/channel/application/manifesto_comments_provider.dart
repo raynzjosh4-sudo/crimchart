@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crown/core/di/injection.dart';
-import 'package:crown/features/feed/domain/repositories/feed_repository.dart';
-import 'package:crown/features/feed/domain/entities/post_entity.dart';
+import 'package:crimchart/core/di/injection.dart';
+import 'package:crimchart/features/feed/domain/repositories/feed_repository.dart';
+import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
 
 /// Provider that fetches and caches comments specifically for a single Manifesto.
 /// Targets the 'manifesto_comments_view' in Supabase for a clean, threaded experience.
@@ -79,6 +79,15 @@ class ManifestoCommentsNotifier
       if (!current.any((p) => p.id == comment.id)) {
         state = AsyncValue.data([...current, comment]);
       }
+    });
+  }
+
+  /// Optimistically remove a deleted comment from UI
+  void removeComment(String commentId) {
+    state.whenData((current) {
+      state = AsyncValue.data(
+        current.where((p) => p.id != commentId).toList(),
+      );
     });
   }
 }
