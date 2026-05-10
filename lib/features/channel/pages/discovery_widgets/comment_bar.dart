@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/core/widgets/app_avatar.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class CommentBar extends StatelessWidget {
   final String? userImageUrl;
@@ -42,15 +42,10 @@ class CommentBar extends StatelessWidget {
       child: Row(
         children: [
           // User Avatar
-          CircleAvatar(
-            radius: 18.r,
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            backgroundImage: userImageUrl != null
-                ? CachedNetworkImageProvider(userImageUrl!)
-                : null,
-            child: userImageUrl == null
-                ? Icon(LucideIcons.user, size: 20.sp, color: colorScheme.onSurface)
-                : null,
+          AppAvatar(
+            size: 36,
+            imageUrl: userImageUrl,
+            fallbackIcon: LucideIcons.user,
           ),
           SizedBox(width: 12.w),
           

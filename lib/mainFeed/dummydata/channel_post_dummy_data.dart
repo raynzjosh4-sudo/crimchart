@@ -309,10 +309,10 @@ final List<ChannelPostModel> dummyChannelPosts = [
     channelName: 'Fashion Hub',
     channelId: 'ch_fashion',
     imageUrls: [
-      'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJmZzI5ZzFmZzI5ZzFmZzI5ZzFmZzI5ZzFmZzI5ZzFmZzI5ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKMGpxVf7N5P9Xq/giphy.gif',
+      'https://media3.giphy.com/media/3o7TKMGpxVf7N5P9Xq/giphy.gif',
     ],
     gifUrl:
-        'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJmZzI5ZzFmZzI5ZzFmZzI5ZzFmZzI5ZzFmZzI5ZzFmZzI5ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKMGpxVf7N5P9Xq/giphy.gif',
+        'https://media3.giphy.com/media/3o7TKMGpxVf7N5P9Xq/giphy.gif',
     isGif: true,
     caption: 'Check out this new trend! 👗✨ #Fashion #Style',
     thumbnailLinkUrl:

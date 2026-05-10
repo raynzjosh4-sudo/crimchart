@@ -11,6 +11,7 @@ import 'core/router/app_router.dart';
 import 'core/supabase/supabase_config.dart';
 import 'core/di/injection.dart';
 import 'package:toastification/toastification.dart';
+import 'core/video_engine/native_engine.dart';
 
 void main() async {
   try {
@@ -88,6 +89,8 @@ class ChartAppRoot extends StatelessWidget {
   }
 }
 
+final ValueNotifier<int?> _nativeTextureId = ValueNotifier<int?>(null);
+
 class ChartApp extends ConsumerWidget {
   const ChartApp({super.key});
 
@@ -118,13 +121,68 @@ class ChartApp extends ConsumerWidget {
                 context,
                 userScaleFactor: themeProvider.displayScale,
               );
-              final isDark = themeProvider.themeMode == ThemeMode.dark ||
+              final isDark =
+                  themeProvider.themeMode == ThemeMode.dark ||
                   (themeProvider.themeMode == ThemeMode.system &&
                       MediaQuery.platformBrightnessOf(context) ==
                           Brightness.dark);
-              return Container(
-                decoration: AppTheme.globalBackgroundDecoration(context, isDark: isDark),
-                child: child!,
+              return Stack(
+                children: [
+                  Container(
+                    decoration: AppTheme.globalBackgroundDecoration(
+                      context,
+                      isDark: isDark,
+                    ),
+                    child: child!,
+                  ),
+                  ValueListenableBuilder<int?>(
+                    valueListenable: _nativeTextureId,
+                    builder: (context, textureId, _) {
+                      if (textureId == null) return const SizedBox.shrink();
+                      return Positioned(
+                        top: 100,
+                        right: 20,
+                        width: 150,
+                        height: 266,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Texture(textureId: textureId),
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: FloatingActionButton(
+                        backgroundColor: Colors.purple,
+                        onPressed: () async {
+                          try {
+                            NativeVideoEngine.initialize();
+                            final res = NativeVideoEngine.ping(42);
+                            print("Dart received: $res");
+                            NativeVideoEngine.prefetch(
+                              "https://example.com/tiktok.mp4",
+                            );
+
+                            // TEST PHASE 2: Texture Bridge
+                            final textureId =
+                                await NativeVideoEngine.createTexture();
+                            print(
+                              "🚀 SUCCESS: Hardware Texture ID $textureId passed from Android to Flutter!",
+                            );
+                            _nativeTextureId.value = textureId;
+                          } catch (e) {
+                            print("Engine test failed: $e");
+                          }
+                        },
+                        child: const Icon(Icons.videocam, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
               );
             },
           ),

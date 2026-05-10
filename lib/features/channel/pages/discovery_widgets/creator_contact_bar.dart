@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/core/widgets/app_avatar.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class CreatorContactBar extends StatelessWidget {
   final String? creatorImageUrl;
@@ -42,19 +42,10 @@ class CreatorContactBar extends StatelessWidget {
       child: Row(
         children: [
           // Creator Avatar
-          CircleAvatar(
-            radius: 24.r,
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            backgroundImage: creatorImageUrl != null
-                ? CachedNetworkImageProvider(creatorImageUrl!)
-                : null,
-            child: creatorImageUrl == null
-                ? Icon(
-                    LucideIcons.user,
-                    size: 24.sp,
-                    color: colorScheme.onSurface,
-                  )
-                : null,
+          AppAvatar(
+            size: 48,
+            imageUrl: creatorImageUrl,
+            fallbackIcon: LucideIcons.user,
           ),
           SizedBox(width: 16.w),
 

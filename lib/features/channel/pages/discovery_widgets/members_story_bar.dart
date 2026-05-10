@@ -1,7 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:crimchart/core/utils/responsive_size.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:math' as math;
+import 'package:crimchart/core/widgets/app_avatar.dart';
 
 import '../../../../mainFeed/features/cardwidgets/storychacrdwidget/status_page.dart';
 import '../../domain/entities/channel_status_entity.dart';
@@ -59,7 +60,8 @@ class MembersStoryBar extends StatelessWidget {
             // +1 for the "Add status" card if allowed
             itemCount: statuses.length + (canPostStatus ? 1 : 0),
             itemBuilder: (context, index) {
-              if (canPostStatus && index == 0) return _buildAddStatusCard(context);
+              if (canPostStatus && index == 0)
+                return _buildAddStatusCard(context);
               final statusIndex = canPostStatus ? index - 1 : index;
               final status = statuses[statusIndex];
               return _buildStatusCard(context, status, index);
@@ -189,25 +191,22 @@ class MembersStoryBar extends StatelessWidget {
               transitionDuration: const Duration(milliseconds: 600),
               reverseTransitionDuration: const Duration(milliseconds: 400),
               pageBuilder: (context, animation, secondaryAnimation) =>
-                  StatusPage(
-                status: status,
-                heroTag: heroTag,
-              ),
+                  StatusPage(status: status, heroTag: heroTag),
               transitionsBuilder:
                   (context, animation, secondaryAnimation, child) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(
-                    scale: Tween<double>(begin: 0.95, end: 1.0).animate(
-                      CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
+                    return FadeTransition(
+                      opacity: animation,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          ),
+                        ),
+                        child: child,
                       ),
-                    ),
-                    child: child,
-                  ),
-                );
-              },
+                    );
+                  },
             ),
           );
         },
@@ -253,20 +252,12 @@ class MembersStoryBar extends StatelessWidget {
                 Positioned(
                   top: 8.h,
                   left: 8.w,
-                  child: CustomPaint(
-                    painter: StatusRingPainter(
-                      color: theme.primaryColor,
-                      segmentCount: status.imageUrls.length,
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      child: CircleAvatar(
-                        radius: 16.r,
-                        backgroundImage: CachedNetworkImageProvider(
-                          status.authorAvatarUrl!,
-                        ),
-                      ),
-                    ),
+                  child: AppAvatar(
+                    size: 32,
+                    imageUrl: status.authorAvatarUrl,
+                    hasStatus: true,
+                    statusSegmentCount: status.imageUrls.length,
+                    isStatusRead: false, // 👑 TODO: Link to real seen state
                   ),
                 ),
               // Author name
@@ -303,46 +294,4 @@ class MembersStoryBar extends StatelessWidget {
       ),
     );
   }
-}
-
-class StatusRingPainter extends CustomPainter {
-  final Color color;
-  final int segmentCount;
-  final double spacing;
-
-  StatusRingPainter({
-    required this.color,
-    required this.segmentCount,
-    this.spacing = 0.1,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = color
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    if (segmentCount <= 1) {
-      canvas.drawCircle(size.center(Offset.zero), size.width / 2, paint);
-      return;
-    }
-
-    final double arcLength = (2 * math.pi - (segmentCount * spacing)) / segmentCount;
-
-    for (int i = 0; i < segmentCount; i++) {
-      final double startAngle = -math.pi / 2 + (i * (arcLength + spacing));
-      canvas.drawArc(
-        Rect.fromCircle(center: size.center(Offset.zero), radius: size.width / 2),
-        startAngle,
-        arcLength,
-        false,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

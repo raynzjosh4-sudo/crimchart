@@ -201,6 +201,12 @@ class _MessagesTabViewState extends ConsumerState<MessagesTabView> {
     final colorScheme = theme.colorScheme;
     final currentUser = ref.watch(authControllerProvider).user;
     final messagesAsync = ref.watch(channelMessagesProvider(widget.channelId));
+    
+    debugPrint('🖼️ [ChatUI] Building MessagesTabView. Status: ${messagesAsync.isLoading ? "Loading" : "Ready"}');
+
+    if (messagesAsync.hasValue) {
+      debugPrint('🖼️ [ChatUI] Data received by UI: ${messagesAsync.value?.length} messages');
+    }
 
     final membersAsync = ref.watch(channelMembersProvider(widget.channelId));
     final rawMembers = widget.members.isNotEmpty
@@ -495,59 +501,17 @@ class _MessagesTabViewState extends ConsumerState<MessagesTabView> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          ChannelGatekeeper(
-                            channelId: widget.channelId,
-                            initialIsMember: widget.initialIsMember,
-                            memberUI: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (_replyingTo != null)
-                                  _buildReplyPreview(theme, colorScheme),
-                                ChatInputField(
-                                  channelId: widget.channelId,
-                                  onSubmitted: _handleSendMessage,
-                                  onMultiMediaSubmitted: _handleSendMultiMedia,
-                                ),
-                              ],
-                            ),
-                            guestUI: Container(
-                              padding: EdgeInsets.all(16.w),
-                              decoration: BoxDecoration(
-                                color: theme
-                                    .colorScheme
-                                    .surface, // 👑 SOLID BACKGROUND
-                                border: Border(
-                                  top: BorderSide(
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.05),
-                                  ),
-                                ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_replyingTo != null)
+                                _buildReplyPreview(theme, colorScheme),
+                              ChatInputField(
+                                channelId: widget.channelId,
+                                onSubmitted: _handleSendMessage,
+                                onMultiMediaSubmitted: _handleSendMultiMedia,
                               ),
-                              child: SizedBox(
-                                width: double.infinity,
-                                height: 50.h,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    // TODO: Dispatch join channel action via provider
-                                    debugPrint('Join channel pressed');
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: theme.primaryColor,
-                                    foregroundColor: Colors.black,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12.r),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Join Channel to Participate',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
+                            ],
                           ),
                         ],
                       ),

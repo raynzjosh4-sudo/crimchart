@@ -29,6 +29,7 @@ import 'package:crimchart/features/channel/pages/discovery_widgets/feed_post_pla
 import 'package:crimchart/features/widgets/channelmemberdata/thread_discussion_sheet.dart';
 import 'package:crimchart/features/channel/pages/discovery_widgets/feed_post_shimmer.dart';
 import 'package:crimchart/features/channel/pages/widgets/pagination_error_footer.dart';
+import 'package:crimchart/features/channel/application/unread_count_provider.dart';
 
 import 'package:crimchart/features/channel/application/channels_list_controller.dart';
 import 'dart:math';
@@ -65,6 +66,15 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
     super.initState();
     _audioRecorder = AudioRecorder();
     _randomSuggestionIndex = Random().nextInt(3) + 2; // 2, 3, or 4
+
+    // 👑 REFRESH CHANNEL DATA: Ensure counts (members, likes) are accurate
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.channel != null) {
+        ref
+            .read(channelsListControllerProvider('all').notifier)
+            .loadChannels(refresh: true);
+      }
+    });
   }
 
   @override
@@ -317,53 +327,92 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
               ],
               bottom: PreferredSize(
                 preferredSize: Size.fromHeight(
-                  _currentTabIndex == 1 ? 166.h : 56.h,
+                  _currentTabIndex == 1 ? 166.h : 72.h,
                 ),
                 child: Container(
                   color: backgroundColor,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ChannelNavBar(
-                        selectedIndex: _currentTabIndex,
-                        onTabSelected: (index) {
-                          if (index == 1) {
-                            Navigator.push(
-                              context,
-                              PageRouteBuilder(
-                                transitionDuration: const Duration(
-                                  milliseconds: 300,
-                                ),
-                                pageBuilder: (context, anim, sec) =>
-                                    MessagesPage(
-                                      channelId: displayChannel.id,
-                                      channelName: displayChannel.title,
-                                      contestants: widget.contestants,
-                                      initialIsMember:
-                                          displayChannel.isOwnChannel ||
-                                          displayChannel.isCharted ||
-                                          widget.contestants.any((c) => c.isMe),
-                                    ),
-                                transitionsBuilder:
-                                    (context, anim, sec, child) {
-                                      const begin = Offset(1.0, 0.0);
-                                      const end = Offset.zero;
-                                      final tween =
-                                          Tween(begin: begin, end: end).chain(
-                                            CurveTween(
-                                              curve: Curves.easeOutCubic,
-                                            ),
-                                          );
-                                      return SlideTransition(
-                                        position: anim.drive(tween),
-                                        child: child,
-                                      );
-                                    },
-                              ),
-                            );
-                          } else {
-                            setState(() => _currentTabIndex = index);
+                      Consumer(
+                        builder: (context, ref, child) {
+                          debugPrint('👑 [UI-V3-DNA] Nav Bar Consumer: Checking unread counts for ${displayChannel.id}...');
+                          final unreadCountAsync = ref.watch(
+                            unreadCountProviderV2(displayChannel.id),
+                          );
+                          final unreadMessages =
+                              unreadCountAsync.value ??
+                              displayChannel.unreadCount;
+                          
+                          if (unreadCountAsync.hasValue) {
+                             debugPrint('👑 [UI-V3-DNA] Nav Bar: Received unread count = $unreadMessages');
                           }
+
+                          final unreadMomentsAsync = ref.watch(
+                            unreadMomentsCountProviderV2(displayChannel.id),
+                          );
+                          final unreadMoments = unreadMomentsAsync.value ?? 0;
+
+                          return ChannelNavBar(
+                            selectedIndex: _currentTabIndex,
+                            unreadMessages: unreadMessages,
+                            unreadMoments: unreadMoments,
+                            totalMembers: displayChannel.memberCount,
+                            onTabSelected: (index) {
+                              if (index == 1) {
+                                // 👑 MARK MESSAGES AS READ
+                                ref.read(markAsReadProvider)(displayChannel.id);
+                                // ... existing navigation ...
+
+                                Navigator.push(
+                                  context,
+                                  PageRouteBuilder(
+                                    transitionDuration: const Duration(
+                                      milliseconds: 300,
+                                    ),
+                                    pageBuilder: (context, anim, sec) =>
+                                        MessagesPage(
+                                          channelId: displayChannel.id,
+                                          channelName: displayChannel.title,
+                                          contestants: widget.contestants,
+                                          initialIsMember:
+                                              displayChannel.isOwnChannel ||
+                                              displayChannel.isCharted ||
+                                              widget.contestants.any(
+                                                (c) => c.isMe,
+                                              ),
+                                        ),
+                                    transitionsBuilder:
+                                        (context, anim, sec, child) {
+                                          const begin = Offset(1.0, 0.0);
+                                          const end = Offset.zero;
+                                          final tween =
+                                              Tween(
+                                                begin: begin,
+                                                end: end,
+                                              ).chain(
+                                                CurveTween(
+                                                  curve: Curves.easeOutCubic,
+                                                ),
+                                              );
+                                          return SlideTransition(
+                                            position: anim.drive(tween),
+                                            child: child,
+                                          );
+                                        },
+                                  ),
+                                );
+                              } else if (index == 2) {
+                                // 👑 MARK MOMENTS AS READ
+                                ref.read(markMomentsAsReadProvider)(
+                                  displayChannel.id,
+                                );
+                                setState(() => _currentTabIndex = index);
+                              } else {
+                                setState(() => _currentTabIndex = index);
+                              }
+                            },
+                          );
                         },
                       ),
                     ],
@@ -431,7 +480,12 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
                       .toList();
 
                   if (feedState.isLoading && feedState.channelItems.isEmpty) {
-                    return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 20.h),
+                        child: const FeedPostShimmer(),
+                      ),
+                    );
                   }
 
                   final items = feedState.channelItems;
@@ -440,8 +494,9 @@ class _ChannelPageState extends ConsumerState<ChannelPage> {
                     final canPost =
                         displayChannel.isOwnChannel ||
                         displayChannel.allowCommentingBy == 'all';
-                    if (!canPost)
+                    if (!canPost) {
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
                     return SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 60.h),

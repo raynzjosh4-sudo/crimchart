@@ -30,10 +30,12 @@ add_library(avfilter SHARED IMPORTED)
 set_target_properties(avfilter PROPERTIES IMPORTED_LOCATION ${FFMPEG_DIR}/lib/${ANDROID_ABI}/libavfilter.so)
 
 # 4. Build Your Custom C++ Engine
-add_library(crimchart_native SHARED media_processor.cpp)
+add_library(crimchart_native SHARED media_processor.cpp video_engine.cpp video_engine_jni.cpp video_decoder.cpp)
 
-# 5. Find the native Android logging library (so your std::cout prints to the terminal)
+# 5. Find the native Android logging and window libraries
 find_library(log-lib log)
+find_library(android-lib android)
+find_library(aaudio-lib aaudio)
 
 # 6. Stitch everything together into one ultra-fast libcrimchart_native.so file
 target_link_libraries(
@@ -45,4 +47,6 @@ target_link_libraries(
     swscale
     swresample
     ${log-lib}
+    ${android-lib}
+    ${aaudio-lib}
 )

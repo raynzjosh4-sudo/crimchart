@@ -328,4 +328,40 @@ class ChannelRemoteSource {
         .stream(primaryKey: ['channel_id', 'user_id'])
         .eq('channel_id', channelId);
   }
+
+  /// 👑 PROFESSIONAL TRACKING: Reset unread count for current user
+  Future<void> resetUnreadCount(String channelId) async {
+    final userId = currentUserId;
+    if (userId == null) return;
+    try {
+      // Professional way: call an RPC to reset. 
+      // If no RPC, we update the channel_members table directly.
+      await _supabase
+          .from('channel_members')
+          .update({'unread_count': 0})
+          .eq('channel_id', channelId)
+          .eq('user_id', userId);
+          
+      debugPrint('🔔 [resetUnreadCount] ✅ Reset count for $channelId');
+    } catch (e) {
+      debugPrint('❌ [resetUnreadCount Error]: $e');
+    }
+  }
+
+  /// 👑 MOMENTS TRACKING: Reset unread moments count for current user
+  Future<void> resetUnreadMomentsCount(String channelId) async {
+    final userId = currentUserId;
+    if (userId == null) return;
+    try {
+      await _supabase
+          .from('channel_members')
+          .update({'unread_moments_count': 0})
+          .eq('channel_id', channelId)
+          .eq('user_id', userId);
+          
+      debugPrint('🎬 [resetUnreadMomentsCount] ✅ Reset moments count for $channelId');
+    } catch (e) {
+      debugPrint('❌ [resetUnreadMomentsCount Error]: $e');
+    }
+  }
 }

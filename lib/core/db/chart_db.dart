@@ -63,7 +63,7 @@ class ChartDatabase extends _$ChartDatabase {
   ChartDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration {
@@ -73,6 +73,12 @@ class ChartDatabase extends _$ChartDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         debugPrint('🛠️ [Drift] Migrating from $from to $to...');
+
+        if (from < 21) {
+          debugPrint('👑 [Drift] Adding unread_moments_count to channel_members (Version 21)...');
+          // Add column to channel_members
+          await customStatement('ALTER TABLE channel_members ADD COLUMN unread_moments_count INTEGER DEFAULT 0');
+        }
 
         if (from < 20) {
           debugPrint('👑 [Drift] Adding Tagging Metadata columns (Version 20)...');

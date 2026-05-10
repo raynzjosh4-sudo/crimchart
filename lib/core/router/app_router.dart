@@ -22,6 +22,7 @@ import '../../signing/channel_intro_page.dart';
 import '../../signing/channel_suggestions_page.dart';
 import '../../signing/login_page.dart';
 import '../../signing/account_selector_page.dart';
+import '../../signing/otp_verification_page.dart';
 import '../../settings/settings_page.dart';
 
 class AppRoutes {
@@ -41,6 +42,7 @@ class AppRoutes {
   static const ChartTitle = '/signup/Chart-title';
   static const profilePicture = '/signup/profile-picture';
   static const accountSelector = '/account-selector';
+  static const otpVerification = '/signup/otp';
   static const channelIntro = '/signup/channel-intro';
   static const channelSuggestions = '/signup/channel-suggestions';
 
@@ -95,6 +97,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Special Rule: Authenticated users can stay on signup-related setup pages
       final bool isSignupSetupRoute =
+          path == AppRoutes.otpVerification ||
           path == AppRoutes.birthday ||
           path == AppRoutes.ChartTitle ||
           path == AppRoutes.profilePicture ||
@@ -141,6 +144,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.password,
         builder: (_, __) => const PasswordPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.otpVerification,
+        builder: (_, __) => const OtpVerificationPage(),
       ),
       GoRoute(
         path: AppRoutes.birthday,

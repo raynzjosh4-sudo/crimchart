@@ -82,9 +82,13 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> signOut() async {
     try {
-      final tokens = await _local.getTokens();
-      if (tokens != null && tokens['access'] != null) {
-        await _remote.signOut(tokens['access']!);
+      // 👑 We use SignOutScope.local to clear Supabase's local cache
+      // WITHOUT hitting the remote endpoint. If we hit the remote endpoint,
+      // Supabase revokes the refresh token, breaking our "Switch Accounts" functionality!
+      try {
+        await Supabase.instance.client.auth.signOut(scope: SignOutScope.local);
+      } catch (_) {
+        // Fallback or ignore if local scope fails
       }
       await _local.clearAll();
       return const Right(null);

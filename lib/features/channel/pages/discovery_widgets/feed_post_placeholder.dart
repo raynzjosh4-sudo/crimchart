@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:video_player/video_player.dart';
-import 'package:visibility_detector/visibility_detector.dart';
+import 'package:crimchart/core/widgets/app_avatar.dart';
 import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:drift/drift.dart' show Value;
@@ -253,69 +252,33 @@ class _FeedPostPlaceholderState extends State<FeedPostPlaceholder> {
                 if (widget.sourceChannelAvatar != null)
                   SizedBox(
                     width: 48.w,
-                    height: 40.r,
+                    height: 48.r,
                     child: Stack(
                       children: [
                         // Target Channel (Main) - Current Channel
-                        CircleAvatar(
-                          radius: 20.r,
-                          backgroundColor: colorScheme.surfaceContainerHighest,
-                          backgroundImage: widget.currentChannelAvatar != null
-                              ? CachedNetworkImageProvider(
-                                  widget.currentChannelAvatar!,
-                                )
-                              : null,
-                          child: widget.currentChannelAvatar == null
-                              ? Icon(
-                                  LucideIcons.users,
-                                  size: 20.sp,
-                                  color: colorScheme.onSurface,
-                                )
-                              : null,
+                        AppAvatar(
+                          size: 40,
+                          imageUrl: widget.currentChannelAvatar,
+                          fallbackIcon: LucideIcons.users,
                         ),
                         // Source Channel (Overlapping)
                         Positioned(
                           right: 0,
                           bottom: 0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: theme.scaffoldBackgroundColor,
-                                width: 2.w,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 12.r,
-                              backgroundColor:
-                                  colorScheme.surfaceContainerHighest,
-                              backgroundImage: CachedNetworkImageProvider(
-                                widget.sourceChannelAvatar!,
-                              ),
-                            ),
+                          child: AppAvatar(
+                            size: 24,
+                            imageUrl: widget.sourceChannelAvatar,
                           ),
                         ),
                       ],
                     ),
                   )
                 else
-                  CircleAvatar(
-                    radius: 20.r,
-                    backgroundColor: colorScheme.surfaceContainerHighest,
-                    backgroundImage:
-                        widget.authorImageUrl != null &&
-                            widget.authorImageUrl!.isNotEmpty
-                        ? CachedNetworkImageProvider(widget.authorImageUrl!)
-                        : null,
-                    child:
-                        (widget.authorImageUrl == null ||
-                            widget.authorImageUrl!.isEmpty)
-                        ? Icon(
-                            LucideIcons.user,
-                            size: 20.sp,
-                            color: colorScheme.onSurface,
-                          )
-                        : null,
+                  AppAvatar(
+                    size: 40,
+                    imageUrl: widget.authorImageUrl,
+                    hasStatus: false, // 👑 TODO: Link to real status state
+                    isOnline: false, // 👑 TODO: Link to real presence state
                   ),
                 SizedBox(
                   width: widget.sourceChannelAvatar != null ? 8.w : 12.w,

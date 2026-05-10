@@ -211,13 +211,18 @@ class _PasswordPageState extends ConsumerState<PasswordPage> {
                           // Move to Phase 3: Metadata Updates
                           context.push(AppRoutes.birthday);
                         } else {
-                          // Handle Error
+                          // Handle Error or OTP
                           final authState = ref.read(authControllerProvider);
-                          ChartToast.showError(
-                            context,
-                            title: localization.tr('error_title'),
-                            message: authState.errorMessage!,
-                          );
+                          if (authState.errorMessage == 'OTP_REQUIRED') {
+                            ref.read(authControllerProvider.notifier).clearError();
+                            context.push(AppRoutes.otpVerification);
+                          } else {
+                            ChartToast.showError(
+                              context,
+                              title: localization.tr('error_title'),
+                              message: authState.errorMessage ?? 'Unknown error',
+                            );
+                          }
                         }
                       },
                 style: ElevatedButton.styleFrom(

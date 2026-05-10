@@ -209,4 +209,14 @@ class ChannelRepositoryImpl implements ChannelRepository {
     final nativeDb = getIt<ChartNativeDB>();
     return await nativeDb.getInvitedChannelIds(targetChannelId);
   }
+
+  @override
+  Future<void> resetUnreadCount(String channelId) async {
+    await remoteSource.resetUnreadCount(channelId);
+  }
+
+  @override
+  Future<void> resetUnreadMomentsCount(String channelId) async {
+    await remoteSource.resetUnreadMomentsCount(channelId);
+  }
 }

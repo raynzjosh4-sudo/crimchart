@@ -36,4 +36,6 @@ abstract class ChannelRepository {
   });
 
   Future<Set<String>> getInvitedChannelIds(String targetChannelId);
+  Future<void> resetUnreadCount(String channelId);
+  Future<void> resetUnreadMomentsCount(String channelId);
 }

@@ -10,8 +10,11 @@ import 'package:crimchart/features/auth/domain/use_cases/auth_use_cases.dart';
 import 'package:crimchart/features/auth/domain/use_cases/login.dart';
 import 'package:crimchart/features/auth/domain/use_cases/sign_up.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:crimchart/core/db/chart_native_db.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 
@@ -149,6 +152,20 @@ class AuthController extends StateNotifier<AuthState> {
        super(const AuthState()) {
     _checkSession();
     _loadPendingSignUp();
+    _listenToAuthChanges();
+  }
+
+  void _listenToAuthChanges() {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      final session = data.session;
+      if (session != null && session.refreshToken != null) {
+        await ChartNativeDB.instance.updateUserTokens(
+          session.user.id,
+          session.accessToken,
+          session.refreshToken!,
+        );
+      }
+    });
   }
 
   // ── Session Check (on app start) ─────────────────────────────────────────
@@ -325,6 +342,70 @@ class AuthController extends StateNotifier<AuthState> {
     );
   }
 
+  /// Verifies the 6-digit OTP sent to the user's email
+  Future<bool> verifyOtp(String token) async {
+    final pending = state.pendingSignUp;
+    if (pending == null) return false;
+
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final res = await Supabase.instance.client.auth.verifyOTP(
+        email: pending.email,
+        token: token,
+        type: OtpType.signup,
+      );
+
+      if (res.session != null && res.user != null) {
+        // Now that they are authenticated, insert the profile data
+        final profileData = {
+          'id': res.user!.id,
+          'username': pending.username,
+          'display_name': pending.displayName,
+          'Chart_title': pending.ChartTitle,
+          'birthday': pending.birthday?.toIso8601String(),
+          'gender': pending.gender,
+        };
+        try {
+          await Supabase.instance.client.from('profiles').insert(profileData);
+        } catch (e) {
+          debugPrint("Profile insert failed during OTP: $e");
+        }
+
+        final user = UserEntity(
+          id: res.user!.id,
+          username: pending.username,
+          displayName: pending.displayName,
+          profileImageUrl: null,
+          ChartTitle: pending.ChartTitle,
+          birthday: pending.birthday,
+          gender: pending.gender,
+          createdAt: DateTime.now(),
+        );
+
+        await _local.saveUser(
+          user,
+          accessToken: res.session!.accessToken,
+          refreshToken: res.session!.refreshToken,
+        );
+
+        await _storage.delete(key: _pendingKey);
+        state = state.copyWith(
+          isLoading: false,
+          status: AuthStatus.authenticated,
+          user: user,
+          clearPendingSignUp: true,
+        );
+        return true;
+      } else {
+        state = state.copyWith(isLoading: false, errorMessage: 'Invalid or expired code.');
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: 'Verification failed. Please check the code and try again.');
+      return false;
+    }
+  }
+
   /// Triggered at Birthday, Title, and Profile Picture pages for direct DB updates
   Future<bool> updateProfile(Map<String, dynamic> updates) async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -424,16 +505,48 @@ class AuthController extends StateNotifier<AuthState> {
     );
   }
 
+  Future<bool> switchAccount(String userId) async {
+    if (state.user?.id == userId) return true; // Already logged in
+
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final db = ChartNativeDB.instance.db;
+      final row = await (db.select(
+        db.users,
+      )..where((t) => t.id.equals(userId))).getSingleOrNull();
+
+      if (row != null && row.refreshToken != null) {
+        final supabase = Supabase.instance.client;
+        await supabase.auth.setSession(row.refreshToken!);
+        await _storage.write(key: 'active_user_id', value: userId);
+        await _checkSession();
+        return true;
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Account session not found. Please log in again.',
+        );
+        return false;
+      }
+    } on AuthException catch (e) {
+      debugPrint('🚨 [Auth Controller] switchAccount AuthException: $e');
+      String msg = e.message;
+      if (msg.toLowerCase().contains('refresh token') || 
+          msg.toLowerCase().contains('invalid grant')) {
+        msg = 'Your session has expired. Please log in with your password to continue.';
+      }
+      state = state.copyWith(isLoading: false, errorMessage: msg);
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint('🚨 [Auth Controller] switchAccount Unknown Error: $e');
+      debugPrint('🚨 [Auth Controller] StackTrace: $stackTrace');
+      state = state.copyWith(
+        isLoading: false, 
+        errorMessage: 'Unable to switch accounts right now. Please try again later.',
+      );
+      return false;
+    }
+  }
+
   void clearError() => state = state.copyWith(clearError: true);
 }
-
-
-
-
-
-
-
-
-
-
-

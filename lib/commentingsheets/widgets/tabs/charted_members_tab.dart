@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:crimchart/core/widgets/app_avatar.dart';
 import '../../../profile/models/charter_model.dart';
 import '../../../backicon/custom_back_button.dart';
 import 'your_data_tab.dart';
@@ -104,8 +105,10 @@ class _ChartedMembersTabState extends State<ChartedMembersTab> {
       itemBuilder: (context, index) {
         final item = _realMembers[index];
         return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: NetworkImage(item.profileImageUrl),
+          leading: AppAvatar(
+            size: 40,
+            imageUrl: item.profileImageUrl,
+            fallbackIcon: LucideIcons.user,
           ),
           title: Text(
             item.displayName,
@@ -147,9 +150,10 @@ class _ChartedMembersTabState extends State<ChartedMembersTab> {
                   });
                 },
               ),
-              CircleAvatar(
-                radius: 14,
-                backgroundImage: NetworkImage(_selectedMember!.profileImageUrl),
+              AppAvatar(
+                size: 28,
+                imageUrl: _selectedMember!.profileImageUrl,
+                fallbackIcon: LucideIcons.user,
               ),
               const SizedBox(width: 8),
               Expanded(

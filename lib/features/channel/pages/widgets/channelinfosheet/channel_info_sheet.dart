@@ -14,6 +14,7 @@ import 'package:crimchart/features/newinsidechartstartpage/models/channel_post.d
 import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
 import 'package:crimchart/posting/pages/post_page.dart';
 import 'package:crimchart/core/widgets/chart_image.dart';
+import 'package:crimchart/core/widgets/app_avatar.dart';
 
 class ChannelInfoSheet extends StatefulWidget {
   final String? channelId;
@@ -219,21 +220,16 @@ class _ChannelInfoSheetState extends State<ChannelInfoSheet> {
   Widget _buildMemberAvatarStack(ColorScheme colorScheme) {
     final urls = widget.memberAvatarUrls.take(5).toList();
     return SizedBox(
-      height: 22.h,
+      height: 24.h,
       child: Stack(
         children: [
           for (int i = 0; i < urls.length; i++)
             Positioned(
               left: i * 16.0.w,
-              child: CircleAvatar(
-                radius: 11.r,
-                backgroundImage: urls[i] != null
-                    ? CachedNetworkImageProvider(urls[i]!) as ImageProvider
-                    : null,
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                child: urls[i] == null
-                    ? Icon(LucideIcons.user, size: 10.sp)
-                    : null,
+              child: AppAvatar(
+                size: 22,
+                imageUrl: urls[i],
+                fallbackIcon: LucideIcons.user,
               ),
             ),
         ],

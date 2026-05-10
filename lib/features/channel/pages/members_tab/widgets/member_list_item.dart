@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:crimchart/core/utils/responsive_size.dart';
-import 'package:crimchart/core/theme/design_system.dart';
-import 'package:crimchart/features/widgets/memberimage/starter_image.dart';
+import 'package:crimchart/core/widgets/app_avatar.dart';
 
 class MemberListItem extends StatelessWidget {
   final String id;
@@ -40,15 +39,15 @@ class MemberListItem extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
           child: Row(
             children: [
-              // Avatar using MemberImage
-              MemberImage(
-                imageUrl: profileImageUrl ?? '',
-                size: 52.w,
-                showStatusRing: hasStatus,
-                statusCount: statusCount,
-                showActiveDot: !hasStatus,
+              // 👑 PREMIUM CHARTER AVATAR
+              AppAvatar(
+                size: 52,
+                imageUrl: profileImageUrl,
+                hasStatus: hasStatus,
+                statusSegmentCount: statusCount,
+                isStatusRead: false, // 👑 TODO: Link to real seen state
+                isOnline: !hasStatus, // 👑 Show online dot if no status active
                 onTap: onAvatarTap ?? onAddFriend,
-                heroTag: 'avatar_$id',
               ),
               SizedBox(width: 16.w),
 

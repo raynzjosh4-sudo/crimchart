@@ -79,6 +79,19 @@ class ChartNativeDB {
     await _db.delete(_db.users).go();
   }
 
+  Future<void> updateUserTokens(
+    String userId,
+    String accessToken,
+    String refreshToken,
+  ) async {
+    await (_db.update(_db.users)..where((t) => t.id.equals(userId))).write(
+      UsersCompanion(
+        accessToken: Value(accessToken),
+        refreshToken: Value(refreshToken),
+      ),
+    );
+  }
+
   Future<Map<String, dynamic>?> getManifesto(String id) async {
     final result = await (_db.select(
       _db.manifestos,
@@ -322,11 +335,9 @@ class ChartNativeDB {
 
   /// Watch all moments in the local cache, ordered by creation time.
   Stream<List<Map<String, dynamic>>> watchAllMoments() {
-    return (_db.select(_db.channelMoments)
-          ..orderBy([
-            (t) =>
-                OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
-          ]))
+    return (_db.select(_db.channelMoments)..orderBy([
+          (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+        ]))
         .watch()
         .map((rows) => rows.map((r) => r.toJson()).toList());
   }
@@ -932,10 +943,11 @@ class ChartNativeDB {
         safePost['postType'] ??= safePost['post_type'] ?? 'post';
         safePost['linkChain'] ??= safePost['link_chain'] ?? '[]';
         safePost['linkDepth'] ??= safePost['link_depth'] ?? 0;
-        safePost['isPublic'] ??= safePost['is_public'] ?? 1;
-        safePost['allowComments'] ??= safePost['allow_comments'] ?? 1;
-        safePost['isPending'] ??= safePost['is_pending'] ?? 0;
-        safePost['isLiked'] ??= safePost['is_liked'] ?? 0;
+        safePost['isPublic'] = (safePost['is_public'] ?? safePost['isPublic'] ?? 1) == true || (safePost['is_public'] ?? safePost['isPublic'] ?? 1) == 1 ? 1 : 0;
+        safePost['allowComments'] = (safePost['allow_comments'] ?? safePost['allowComments'] ?? 1) == true || (safePost['allow_comments'] ?? safePost['allowComments'] ?? 1) == 1 ? 1 : 0;
+        safePost['isPending'] = (safePost['is_pending'] ?? safePost['isPending'] ?? 0) == true || (safePost['is_pending'] ?? safePost['isPending'] ?? 0) == 1 ? 1 : 0;
+        safePost['isLiked'] = (safePost['is_liked'] ?? safePost['isLiked'] ?? 0) == true || (safePost['is_liked'] ?? safePost['isLiked'] ?? 0) == 1 ? 1 : 0;
+        safePost['tagsCount'] ??= safePost['tags_count'] ?? 0;
 
         if (safePost['imageUrls'] is List) {
           safePost['imageUrls'] = jsonEncode(safePost['imageUrls']);
@@ -977,12 +989,47 @@ class ChartNativeDB {
           safeItem['postType'] ??= safeItem['post_type'] ?? 'post';
           safeItem['createdAt'] ??=
               safeItem['created_at'] ?? DateTime.now().toIso8601String();
-          safeItem['isLiked'] ??= safeItem['is_liked'] ?? 0;
-          safeItem['isSponsored'] ??= safeItem['is_sponsored'] ?? 0;
-          safeItem['isPublic'] ??= safeItem['is_public'] ?? 1;
-          safeItem['allowComments'] ??= safeItem['allow_comments'] ?? 1;
+
+          // 👑 ROBUST BOOLEAN MAPPING: SQLite stores bools as 0/1.
+          // Ensure we never pass a NULL to a non-nullable IntColumn.
+          safeItem['isLiked'] =
+              (safeItem['is_liked'] ?? safeItem['isLiked'] ?? 0) == true ||
+                  (safeItem['is_liked'] ?? safeItem['isLiked'] ?? 0) == 1
+              ? 1
+              : 0;
+          safeItem['isSponsored'] =
+              (safeItem['is_sponsored'] ?? safeItem['isSponsored'] ?? 0) ==
+                      true ||
+                  (safeItem['is_sponsored'] ?? safeItem['isSponsored'] ?? 0) ==
+                      1
+              ? 1
+              : 0;
+          safeItem['isPublic'] =
+              (safeItem['is_public'] ?? safeItem['isPublic'] ?? 1) == true ||
+                  (safeItem['is_public'] ?? safeItem['isPublic'] ?? 1) == 1
+              ? 1
+              : 0;
+          safeItem['allowComments'] =
+              (safeItem['allow_comments'] ?? safeItem['allowComments'] ?? 1) ==
+                      true ||
+                  (safeItem['allow_comments'] ??
+                          safeItem['allowComments'] ??
+                          1) ==
+                      1
+              ? 1
+              : 0;
+          safeItem['isPending'] =
+              (safeItem['is_pending'] ?? safeItem['isPending'] ?? 0) == true ||
+                  (safeItem['is_pending'] ?? safeItem['isPending'] ?? 0) == 1
+              ? 1
+              : 0;
+          safeItem['isVideo'] =
+              (safeItem['is_video'] ?? safeItem['isVideo'] ?? 0) == true ||
+                  (safeItem['is_video'] ?? safeItem['isVideo'] ?? 0) == 1
+              ? 1
+              : 0;
+
           safeItem['id'] ??= DateTime.now().millisecondsSinceEpoch.toString();
-          safeItem['isPending'] ??= safeItem['is_pending'] ?? 0;
           safeItem['videoUrls'] ??= safeItem['video_urls'] ?? '[]';
 
           if (safeItem['imageUrls'] is List) {

@@ -1,6 +1,7 @@
 import 'package:injectable/injectable.dart';
 import '../../../../core/db/chart_native_db.dart';
 import '../../domain/entities/user_entity.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Elite Native Auth Source that stores user sessions in the C++ SQLite engine.
 @injectable
@@ -8,6 +9,7 @@ class AuthLocalSource {
   AuthLocalSource();
 
   final _dbProvider = ChartNativeDB.instance;
+  final _storage = const FlutterSecureStorage();
 
   /// Saves the authenticated user and their tokens to the Native C++ DB.
   Future<void> saveUser(
@@ -34,48 +36,61 @@ class AuthLocalSource {
       'accessToken': accessToken,
       'refreshToken': refreshToken,
     });
+    await _storage.write(key: 'active_user_id', value: user.id);
     print("Native Auth: User '${user.username}' session saved to C++ DB.");
   }
 
   /// Retrieves the current user profile from the native engine.
   Future<UserEntity?> getUser() async {
-    final row = await _dbProvider.getUser();
+    final activeId = await _storage.read(key: 'active_user_id');
+    if (activeId == null) return null;
+
+    final db = _dbProvider.db;
+    final row = await (db.select(
+      db.users,
+    )..where((t) => t.id.equals(activeId))).getSingleOrNull();
 
     if (row == null) return null;
 
     return UserEntity(
-      id: row['id'] as String,
-      username: row['username'] as String,
-      displayName: row['displayName'] as String,
-      profileImageUrl: row['profileImageUrl'] as String?,
-      bio: row['bio'] as String?,
-      ChartTitle: row['ChartTitle'] as String?,
-      birthday: row['birthday'] != null
-          ? DateTime.parse(row['birthday'] as String)
-          : null,
-      gender: row['gender'] as String?,
-      isVerified: ((row['isVerified'] as int?) ?? 0) == 1,
-      followersCount: (row['followersCount'] as int?) ?? 0,
-      followingCount: (row['followingCount'] as int?) ?? 0,
-      postsCount: (row['postsCount'] as int?) ?? 0,
-      ChartsCount: (row['ChartsCount'] as int?) ?? 0,
-      channelsCount: (row['channelsCount'] as int?) ?? 0,
-      createdAt: DateTime.parse(row['createdAt'] as String),
+      id: row.id,
+      username: row.username ?? '',
+      displayName: row.displayName ?? '',
+      profileImageUrl: row.profileImageUrl,
+      bio: row.bio,
+      ChartTitle: row.chartTitle,
+      birthday: row.birthday != null ? DateTime.parse(row.birthday!) : null,
+      gender: row.gender,
+      isVerified: (row.isVerified ?? 0) == 1,
+      followersCount: row.followersCount ?? 0,
+      followingCount: row.followingCount ?? 0,
+      postsCount: row.postsCount ?? 0,
+      ChartsCount: row.chartsCount ?? 0,
+      channelsCount: row.channelsCount ?? 0,
+      createdAt: row.createdAt != null
+          ? DateTime.parse(row.createdAt!)
+          : DateTime.now(),
     );
   }
 
   /// Extracts the cached auth tokens from the DB.
   Future<Map<String, String?>?> getTokens() async {
-    final row = await _dbProvider.getUser();
+    final activeId = await _storage.read(key: 'active_user_id');
+    if (activeId == null) return null;
+
+    final db = _dbProvider.db;
+    final row = await (db.select(
+      db.users,
+    )..where((t) => t.id.equals(activeId))).getSingleOrNull();
     if (row == null) return null;
-    return {
-      'access': row['accessToken'] as String?,
-      'refresh': row['refreshToken'] as String?,
-    };
+
+    return {'access': row.accessToken, 'refresh': row.refreshToken};
   }
 
   /// Wipes all native sessions (Logout).
   Future<void> clearAll() async {
-    await _dbProvider.deleteUser();
+    await _storage.delete(key: 'active_user_id');
+    // Intentionally NOT deleting from _dbProvider.users
+    // so the Account Selector can still show the saved accounts!
   }
 }

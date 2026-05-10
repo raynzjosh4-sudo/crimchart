@@ -32,11 +32,15 @@ class ChannelMessages extends _$ChannelMessages {
 
   @override
   Stream<List<ChannelMessageEntity>> build(String channelId) async* {
+    debugPrint('🔌 [ChatPipe] Starting build for channel: $channelId');
+
     // 1. Initial Load from local DB (newest 10)
+    debugPrint('💾 [ChatPipe] Reading from local SQLite...');
     final initialRows = await _nativeDb.getChannelMessages(
       channelId,
       limit: 10,
     );
+    
     _memoryMessages.clear();
     _memoryMessages.addAll(
       initialRows
@@ -45,16 +49,22 @@ class ChannelMessages extends _$ChannelMessages {
           .reversed,
     );
 
+    debugPrint('💾 [ChatPipe] SQLite found ${_memoryMessages.length} messages');
+
     // 👑 Only yield immediately if we actually have local messages.
     // Otherwise, let the UI shimmer until the first remote sync completes!
     if (_memoryMessages.isNotEmpty) {
+      debugPrint('🔄 [ChatPipe] Yielding ${_memoryMessages.length} local messages to UI');
       yield List.from(_memoryMessages);
+    } else {
+      debugPrint('⏳ [ChatPipe] Local DB empty, UI will shimmer until remote sync...');
     }
 
     // 2. Start background sync
     _remoteSync();
 
     ref.onDispose(() {
+      debugPrint('🔌 [ChatPipe] Disposing message stream for $channelId');
       _syncSubscription?.cancel();
       _controller.close();
     });
@@ -65,15 +75,21 @@ class ChannelMessages extends _$ChannelMessages {
   void _remoteSync() {
     bool isFirstSync = true;
     final remoteSource = getIt<ChannelRemoteSource>();
+    
+    debugPrint('📡 [ChatPipe] Connecting to Supabase Realtime...');
+    
     _syncSubscription = remoteSource.streamChannelMessages(channelId).listen((
       messages,
     ) async {
+      debugPrint('🛰️ [ChatPipe] Stream update received: ${messages.length} remote messages');
+      
       bool changed = false;
       for (final msg in messages) {
         final entity = ChannelMessageEntity.fromMap(msg);
 
         // Add to memory if not present
         if (!_memoryMessages.any((m) => m.id == entity.id)) {
+          debugPrint('📥 [ChatPipe] New message arriving: ${entity.id.substring(0, 8)}...');
           _memoryMessages.add(entity);
           _memoryMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
           changed = true;
@@ -88,9 +104,12 @@ class ChannelMessages extends _$ChannelMessages {
       }
       // 👑 Always trigger UI update on the first sync so the shimmer stops
       if (isFirstSync || changed) {
+        debugPrint('🔄 [ChatPipe] Pushing ${_memoryMessages.length} total messages to UI (FirstSync: $isFirstSync)');
         isFirstSync = false;
         _controller.add(List.from(_memoryMessages));
       }
+    }, onError: (err) {
+      debugPrint('🚨 [ChatPipe] Stream ERROR: $err');
     });
   }
 

@@ -27,10 +27,14 @@ class AuthRemoteSource {
       final supabase.Session? session = res.session;
       final supabase.User? authUser = res.user;
 
-      if (authUser == null || session == null) {
+      if (authUser == null) {
         throw const supabase.AuthException(
-          'Signup failed: No user or session returned.',
+          'Signup failed: No user returned.',
         );
+      }
+
+      if (session == null) {
+        throw const AuthException('OTP_REQUIRED');
       }
 
       // 2. Insert into custom "users" or "profiles" table if you want to store metadata

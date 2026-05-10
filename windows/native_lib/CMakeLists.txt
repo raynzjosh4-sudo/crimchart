@@ -8,7 +8,7 @@ set(FFMPEG_LIB_DIR     "${FFMPEG_DIR}/lib")
 set(FFMPEG_BIN_DIR     "${FFMPEG_DIR}/bin")
 
 # ── Build our shared library ───────────────────────────────────────────────────
-add_library(crimchart_native SHARED media_processor.cpp)
+add_library(crimchart_native SHARED media_processor.cpp video_engine.cpp)
 target_compile_features(crimchart_native PUBLIC cxx_std_17)
 
 # Include FFmpeg headers

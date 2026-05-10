@@ -7450,6 +7450,17 @@ class $ChannelMembersTable extends ChannelMembers
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _unreadMomentsCountMeta =
+      const VerificationMeta('unreadMomentsCount');
+  @override
+  late final GeneratedColumn<int> unreadMomentsCount = GeneratedColumn<int>(
+    'unread_moments_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     channelId,
@@ -7457,6 +7468,7 @@ class $ChannelMembersTable extends ChannelMembers
     role,
     joinedAt,
     unreadCount,
+    unreadMomentsCount,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7507,6 +7519,15 @@ class $ChannelMembersTable extends ChannelMembers
         ),
       );
     }
+    if (data.containsKey('unread_moments_count')) {
+      context.handle(
+        _unreadMomentsCountMeta,
+        unreadMomentsCount.isAcceptableOrUnknown(
+          data['unread_moments_count']!,
+          _unreadMomentsCountMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -7536,6 +7557,10 @@ class $ChannelMembersTable extends ChannelMembers
         DriftSqlType.int,
         data['${effectivePrefix}unread_count'],
       )!,
+      unreadMomentsCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}unread_moments_count'],
+      )!,
     );
   }
 
@@ -7551,12 +7576,14 @@ class ChannelMember extends DataClass implements Insertable<ChannelMember> {
   final String role;
   final DateTime? joinedAt;
   final int unreadCount;
+  final int unreadMomentsCount;
   const ChannelMember({
     required this.channelId,
     required this.userId,
     required this.role,
     this.joinedAt,
     required this.unreadCount,
+    required this.unreadMomentsCount,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7568,6 +7595,7 @@ class ChannelMember extends DataClass implements Insertable<ChannelMember> {
       map['joined_at'] = Variable<DateTime>(joinedAt);
     }
     map['unread_count'] = Variable<int>(unreadCount);
+    map['unread_moments_count'] = Variable<int>(unreadMomentsCount);
     return map;
   }
 
@@ -7580,6 +7608,7 @@ class ChannelMember extends DataClass implements Insertable<ChannelMember> {
           ? const Value.absent()
           : Value(joinedAt),
       unreadCount: Value(unreadCount),
+      unreadMomentsCount: Value(unreadMomentsCount),
     );
   }
 
@@ -7594,6 +7623,7 @@ class ChannelMember extends DataClass implements Insertable<ChannelMember> {
       role: serializer.fromJson<String>(json['role']),
       joinedAt: serializer.fromJson<DateTime?>(json['joinedAt']),
       unreadCount: serializer.fromJson<int>(json['unreadCount']),
+      unreadMomentsCount: serializer.fromJson<int>(json['unreadMomentsCount']),
     );
   }
   @override
@@ -7605,6 +7635,7 @@ class ChannelMember extends DataClass implements Insertable<ChannelMember> {
       'role': serializer.toJson<String>(role),
       'joinedAt': serializer.toJson<DateTime?>(joinedAt),
       'unreadCount': serializer.toJson<int>(unreadCount),
+      'unreadMomentsCount': serializer.toJson<int>(unreadMomentsCount),
     };
   }
 
@@ -7614,12 +7645,14 @@ class ChannelMember extends DataClass implements Insertable<ChannelMember> {
     String? role,
     Value<DateTime?> joinedAt = const Value.absent(),
     int? unreadCount,
+    int? unreadMomentsCount,
   }) => ChannelMember(
     channelId: channelId ?? this.channelId,
     userId: userId ?? this.userId,
     role: role ?? this.role,
     joinedAt: joinedAt.present ? joinedAt.value : this.joinedAt,
     unreadCount: unreadCount ?? this.unreadCount,
+    unreadMomentsCount: unreadMomentsCount ?? this.unreadMomentsCount,
   );
   ChannelMember copyWithCompanion(ChannelMembersCompanion data) {
     return ChannelMember(
@@ -7630,6 +7663,9 @@ class ChannelMember extends DataClass implements Insertable<ChannelMember> {
       unreadCount: data.unreadCount.present
           ? data.unreadCount.value
           : this.unreadCount,
+      unreadMomentsCount: data.unreadMomentsCount.present
+          ? data.unreadMomentsCount.value
+          : this.unreadMomentsCount,
     );
   }
 
@@ -7640,14 +7676,21 @@ class ChannelMember extends DataClass implements Insertable<ChannelMember> {
           ..write('userId: $userId, ')
           ..write('role: $role, ')
           ..write('joinedAt: $joinedAt, ')
-          ..write('unreadCount: $unreadCount')
+          ..write('unreadCount: $unreadCount, ')
+          ..write('unreadMomentsCount: $unreadMomentsCount')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(channelId, userId, role, joinedAt, unreadCount);
+  int get hashCode => Object.hash(
+    channelId,
+    userId,
+    role,
+    joinedAt,
+    unreadCount,
+    unreadMomentsCount,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -7656,7 +7699,8 @@ class ChannelMember extends DataClass implements Insertable<ChannelMember> {
           other.userId == this.userId &&
           other.role == this.role &&
           other.joinedAt == this.joinedAt &&
-          other.unreadCount == this.unreadCount);
+          other.unreadCount == this.unreadCount &&
+          other.unreadMomentsCount == this.unreadMomentsCount);
 }
 
 class ChannelMembersCompanion extends UpdateCompanion<ChannelMember> {
@@ -7665,6 +7709,7 @@ class ChannelMembersCompanion extends UpdateCompanion<ChannelMember> {
   final Value<String> role;
   final Value<DateTime?> joinedAt;
   final Value<int> unreadCount;
+  final Value<int> unreadMomentsCount;
   final Value<int> rowid;
   const ChannelMembersCompanion({
     this.channelId = const Value.absent(),
@@ -7672,6 +7717,7 @@ class ChannelMembersCompanion extends UpdateCompanion<ChannelMember> {
     this.role = const Value.absent(),
     this.joinedAt = const Value.absent(),
     this.unreadCount = const Value.absent(),
+    this.unreadMomentsCount = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ChannelMembersCompanion.insert({
@@ -7680,6 +7726,7 @@ class ChannelMembersCompanion extends UpdateCompanion<ChannelMember> {
     this.role = const Value.absent(),
     this.joinedAt = const Value.absent(),
     this.unreadCount = const Value.absent(),
+    this.unreadMomentsCount = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : channelId = Value(channelId),
        userId = Value(userId);
@@ -7689,6 +7736,7 @@ class ChannelMembersCompanion extends UpdateCompanion<ChannelMember> {
     Expression<String>? role,
     Expression<DateTime>? joinedAt,
     Expression<int>? unreadCount,
+    Expression<int>? unreadMomentsCount,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7697,6 +7745,8 @@ class ChannelMembersCompanion extends UpdateCompanion<ChannelMember> {
       if (role != null) 'role': role,
       if (joinedAt != null) 'joined_at': joinedAt,
       if (unreadCount != null) 'unread_count': unreadCount,
+      if (unreadMomentsCount != null)
+        'unread_moments_count': unreadMomentsCount,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7707,6 +7757,7 @@ class ChannelMembersCompanion extends UpdateCompanion<ChannelMember> {
     Value<String>? role,
     Value<DateTime?>? joinedAt,
     Value<int>? unreadCount,
+    Value<int>? unreadMomentsCount,
     Value<int>? rowid,
   }) {
     return ChannelMembersCompanion(
@@ -7715,6 +7766,7 @@ class ChannelMembersCompanion extends UpdateCompanion<ChannelMember> {
       role: role ?? this.role,
       joinedAt: joinedAt ?? this.joinedAt,
       unreadCount: unreadCount ?? this.unreadCount,
+      unreadMomentsCount: unreadMomentsCount ?? this.unreadMomentsCount,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7737,6 +7789,9 @@ class ChannelMembersCompanion extends UpdateCompanion<ChannelMember> {
     if (unreadCount.present) {
       map['unread_count'] = Variable<int>(unreadCount.value);
     }
+    if (unreadMomentsCount.present) {
+      map['unread_moments_count'] = Variable<int>(unreadMomentsCount.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7751,6 +7806,7 @@ class ChannelMembersCompanion extends UpdateCompanion<ChannelMember> {
           ..write('role: $role, ')
           ..write('joinedAt: $joinedAt, ')
           ..write('unreadCount: $unreadCount, ')
+          ..write('unreadMomentsCount: $unreadMomentsCount, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -19785,6 +19841,7 @@ typedef $$ChannelMembersTableCreateCompanionBuilder =
       Value<String> role,
       Value<DateTime?> joinedAt,
       Value<int> unreadCount,
+      Value<int> unreadMomentsCount,
       Value<int> rowid,
     });
 typedef $$ChannelMembersTableUpdateCompanionBuilder =
@@ -19794,6 +19851,7 @@ typedef $$ChannelMembersTableUpdateCompanionBuilder =
       Value<String> role,
       Value<DateTime?> joinedAt,
       Value<int> unreadCount,
+      Value<int> unreadMomentsCount,
       Value<int> rowid,
     });
 
@@ -19828,6 +19886,11 @@ class $$ChannelMembersTableFilterComposer
 
   ColumnFilters<int> get unreadCount => $composableBuilder(
     column: $table.unreadCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get unreadMomentsCount => $composableBuilder(
+    column: $table.unreadMomentsCount,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -19865,6 +19928,11 @@ class $$ChannelMembersTableOrderingComposer
     column: $table.unreadCount,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get unreadMomentsCount => $composableBuilder(
+    column: $table.unreadMomentsCount,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ChannelMembersTableAnnotationComposer
@@ -19890,6 +19958,11 @@ class $$ChannelMembersTableAnnotationComposer
 
   GeneratedColumn<int> get unreadCount => $composableBuilder(
     column: $table.unreadCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get unreadMomentsCount => $composableBuilder(
+    column: $table.unreadMomentsCount,
     builder: (column) => column,
   );
 }
@@ -19936,6 +20009,7 @@ class $$ChannelMembersTableTableManager
                 Value<String> role = const Value.absent(),
                 Value<DateTime?> joinedAt = const Value.absent(),
                 Value<int> unreadCount = const Value.absent(),
+                Value<int> unreadMomentsCount = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ChannelMembersCompanion(
                 channelId: channelId,
@@ -19943,6 +20017,7 @@ class $$ChannelMembersTableTableManager
                 role: role,
                 joinedAt: joinedAt,
                 unreadCount: unreadCount,
+                unreadMomentsCount: unreadMomentsCount,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -19952,6 +20027,7 @@ class $$ChannelMembersTableTableManager
                 Value<String> role = const Value.absent(),
                 Value<DateTime?> joinedAt = const Value.absent(),
                 Value<int> unreadCount = const Value.absent(),
+                Value<int> unreadMomentsCount = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ChannelMembersCompanion.insert(
                 channelId: channelId,
@@ -19959,6 +20035,7 @@ class $$ChannelMembersTableTableManager
                 role: role,
                 joinedAt: joinedAt,
                 unreadCount: unreadCount,
+                unreadMomentsCount: unreadMomentsCount,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

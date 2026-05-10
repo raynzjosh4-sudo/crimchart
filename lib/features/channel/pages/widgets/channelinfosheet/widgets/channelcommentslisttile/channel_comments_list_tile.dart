@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/core/widgets/app_avatar.dart';
 import 'channel_comment_model.dart';
 
 class ChannelCommentsListTile extends StatelessWidget {
   final ChannelComment comment;
   final VoidCallback? onTap;
 
-  const ChannelCommentsListTile({
-    super.key,
-    required this.comment,
-    this.onTap,
-  });
+  const ChannelCommentsListTile({super.key, required this.comment, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -25,19 +21,14 @@ class ChannelCommentsListTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // --- AVATAR ---
-          CircleAvatar(
-            radius: 22.r,
-            backgroundColor: colorScheme.onSurface.withValues(alpha: 0.05),
-            backgroundImage: comment.userAvatar != null 
-                ? CachedNetworkImageProvider(comment.userAvatar!)
-                : null,
-            child: comment.userAvatar == null 
-                ? Icon(LucideIcons.user, size: 20.sp, color: colorScheme.onSurface.withValues(alpha: 0.3))
-                : null,
+          AppAvatar(
+            size: 44,
+            imageUrl: comment.userAvatar,
+            fallbackIcon: LucideIcons.user,
           ),
-          
+
           SizedBox(width: 14.w),
-          
+
           // --- CONTENT ---
           Expanded(
             child: Column(
@@ -52,13 +43,17 @@ class ChannelCommentsListTile extends StatelessWidget {
                     color: colorScheme.onSurface,
                   ),
                 ),
-                
+
                 SizedBox(height: 2.h),
-                
+
                 // Line 2: Status, Level, and Time
                 Row(
                   children: [
-                    Icon(LucideIcons.star, size: 12.sp, color: const Color(0xFFFFD700)),
+                    Icon(
+                      LucideIcons.star,
+                      size: 12.sp,
+                      color: const Color(0xFFFFD700),
+                    ),
                     SizedBox(width: 4.w),
                     Text(
                       "Level ${comment.level} • ${comment.userStatus}",
@@ -78,9 +73,9 @@ class ChannelCommentsListTile extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 SizedBox(height: 8.h),
-                
+
                 // Line 3: The Comment Content
                 Text(
                   comment.commentText,

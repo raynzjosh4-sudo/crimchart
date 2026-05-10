@@ -2,42 +2,25 @@ import 'package:crimchart/chartappbar/chart_app_bar.dart';
 import 'package:crimchart/core/localization/localization_provider.dart';
 import 'package:crimchart/core/router/app_router.dart';
 import 'package:crimchart/core/utils/responsive_size.dart';
+import 'package:crimchart/features/auth/application/auth_controller.dart';
+import 'package:crimchart/features/auth/application/saved_accounts_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as p;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:crimchart/features/showcase/chart_toast.dart';
 
-class AccountSelectorPage extends StatelessWidget {
+class AccountSelectorPage extends ConsumerWidget {
   const AccountSelectorPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final localization = Provider.of<LocalizationProvider>(context);
+    final localization = p.Provider.of<LocalizationProvider>(context);
 
-    // Dummy accounts list - in a real app, these would come from local storage
-    final List<Map<String, dynamic>> savedAccounts = [
-      {
-        'id': '1',
-        'name': 'Josh',
-        'subtext': '4 ${localization.tr('notifications_count')}',
-        'avatar': 'https://i.pravatar.cc/150?u=josh1',
-      },
-      {
-        'id': '2',
-        'name': 'Josh raynz',
-        'subtext': '21 ${localization.tr('notifications_count')}',
-        'avatar': 'https://i.pravatar.cc/150?u=josh2',
-      },
-      {
-        'id': '3',
-        'name': 'joshreinz',
-        'subtext': '',
-        'avatar': 'https://i.pravatar.cc/150?u=josh3',
-      },
-      {'id': '4', 'name': 'raynzjosh4@gmail.com', 'subtext': '', 'avatar': ''},
-    ];
+    final savedAccountsAsync = ref.watch(savedAccountsProvider);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -45,6 +28,13 @@ class AccountSelectorPage extends StatelessWidget {
         title: '',
         showBorder: false,
         backgroundColor: theme.scaffoldBackgroundColor,
+        onBack: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(AppRoutes.landing);
+          }
+        },
       ),
       body: SafeArea(
         child: Stack(
@@ -91,15 +81,40 @@ class AccountSelectorPage extends StatelessWidget {
                 // Accounts List
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24.w),
-                  child: Column(
-                    children: savedAccounts.asMap().entries.map((entry) {
-                      return _buildAccountCard(
-                        entry.value,
-                        colorScheme,
-                        entry.key == 0,
-                        localization,
+                  child: savedAccountsAsync.when(
+                    data: (accounts) {
+                      if (accounts.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.h),
+                            child: Text(
+                              'No saved accounts',
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
+                          ),
+                        );
+                      }
+                      return Column(
+                        children: accounts.asMap().entries.map((entry) {
+                          return _buildAccountCard(
+                            context,
+                            ref,
+                            entry.value,
+                            colorScheme,
+                            entry.key == 0,
+                            localization,
+                          );
+                        }).toList(),
                       );
-                    }).toList(),
+                    },
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (error, stackTrace) => Center(
+                      child: Text(
+                        'Error loading accounts',
+                        style: TextStyle(color: colorScheme.error),
+                      ),
+                    ),
                   ),
                 ),
 
@@ -137,7 +152,7 @@ class AccountSelectorPage extends StatelessWidget {
                                 shape: const RoundedRectangleBorder(),
                               ),
                               child: Text(
-                                localization.tr('account_selector_switch'),
+                                'Email',
                                 style: TextStyle(
                                   color: colorScheme.primary,
                                   fontSize: 14.sp,
@@ -184,7 +199,9 @@ class AccountSelectorPage extends StatelessWidget {
   }
 
   Widget _buildAccountCard(
-    Map<String, dynamic> account,
+    BuildContext context,
+    WidgetRef ref,
+    SavedAccount account,
     ColorScheme colorScheme,
     bool isHighlight,
     LocalizationProvider localization,
@@ -224,7 +241,7 @@ class AccountSelectorPage extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            account['name'] as String,
+                            account.name,
                             style: TextStyle(
                               color: colorScheme.onSurface,
                               fontSize: 16.sp,
@@ -243,12 +260,12 @@ class AccountSelectorPage extends StatelessWidget {
                         ],
                       ],
                     ),
-                    if ((account['subtext'] as String).isNotEmpty) ...[
+                    if (account.notificationsCount > 0) ...[
                       SizedBox(height: 4.h),
                       Text(
-                        account['subtext'] as String,
+                        '${account.notificationsCount} ${localization.tr('notifications_count')}',
                         style: TextStyle(
-                          color: colorScheme.primary.withValues(alpha: 0.8),
+                          color: colorScheme.primary,
                           fontSize: 12.sp,
                           fontWeight: FontWeight.w600,
                         ),
@@ -260,8 +277,24 @@ class AccountSelectorPage extends StatelessWidget {
 
               // Login Button (New Requirement)
               TextButton(
-                onPressed: () {
-                  // Direct login logic
+                onPressed: () async {
+                  final success = await ref
+                      .read(authControllerProvider.notifier)
+                      .switchAccount(account.id);
+                  if (success && context.mounted) {
+                    context.go(AppRoutes.feed);
+                  } else if (!success && context.mounted) {
+                    final errorMessage = ref
+                        .read(authControllerProvider)
+                        .errorMessage;
+                    if (errorMessage != null) {
+                      ChartToast.showError(
+                        context,
+                        title: 'Notice',
+                        message: errorMessage,
+                      );
+                    }
+                  }
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: colorScheme.primary,
@@ -285,8 +318,8 @@ class AccountSelectorPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(Map<String, dynamic> account, ColorScheme colorScheme) {
-    final avatarUrl = account['avatar'] as String;
+  Widget _buildAvatar(SavedAccount account, ColorScheme colorScheme) {
+    final avatarUrl = account.avatar;
     if (avatarUrl.isNotEmpty) {
       return CircleAvatar(
         radius: 28.w,
@@ -309,14 +342,3 @@ class AccountSelectorPage extends StatelessWidget {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-
