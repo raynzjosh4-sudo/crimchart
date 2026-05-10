@@ -8,6 +8,7 @@ class LikeAction extends StatefulWidget {
   final double iconSize;
   final TextStyle? textStyle;
   final bool initialIsLiked;
+  final bool isVertical;
   final ValueChanged<bool>? onLikeChanged;
 
   const LikeAction({
@@ -18,6 +19,7 @@ class LikeAction extends StatefulWidget {
     this.inactiveColor,
     this.iconSize = 16.0,
     this.textStyle,
+    this.isVertical = false,
     this.onLikeChanged,
   });
 
@@ -110,22 +112,29 @@ class _LikeActionState extends State<LikeAction> {
               color: _isLiked ? widget.themeColor : effectiveInactiveColor,
             );
 
+    final children = [
+      Icon(
+        key: _iconKey,
+        _isLiked ? Icons.favorite : Icons.favorite_border,
+        size: widget.iconSize,
+        color: _isLiked ? widget.themeColor : effectiveInactiveColor,
+      ),
+      SizedBox(width: widget.isVertical ? 0 : 4, height: widget.isVertical ? 4 : 0),
+      Text(_formatLikes(_likes), style: defaultTextStyle),
+    ];
+
     return GestureDetector(
       onTap: _toggleLike,
       behavior: HitTestBehavior.opaque,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            key: _iconKey,
-            _isLiked ? Icons.favorite : Icons.favorite_border,
-            size: widget.iconSize,
-            color: _isLiked ? widget.themeColor : effectiveInactiveColor,
-          ),
-          const SizedBox(width: 4),
-          Text(_formatLikes(_likes), style: defaultTextStyle),
-        ],
-      ),
+      child: widget.isVertical
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: children,
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: children,
+            ),
     );
   }
 }

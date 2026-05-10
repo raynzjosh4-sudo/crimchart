@@ -53,6 +53,9 @@ void VideoDecoder::stop() {
   }
 }
 
+double VideoDecoder::getPosition() { return currentPosition.load(); }
+double VideoDecoder::getDuration() { return duration.load(); }
+
 // Callback to force MediaCodec to output software-readable pixels (NV12)
 // instead of opaque hardware buffers
 static enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
@@ -108,6 +111,10 @@ void VideoDecoder::decodeLoop() {
     LOGE("Failed to find stream info for %s", url.c_str());
     avformat_close_input(&formatCtx);
     return;
+  }
+
+  if (formatCtx->duration != AV_NOPTS_VALUE) {
+    this->duration = (double)formatCtx->duration / AV_TIME_BASE;
   }
 
   int videoStreamIdx = -1;
@@ -427,6 +434,7 @@ void VideoDecoder::decodeLoop() {
           if (expectedTime > now) {
             usleep((long)((expectedTime - now) * 1000000.0));
           }
+          currentPosition = (double)frame->pts * av_q2d(videoTimeBase);
           frameCount++;
 
           // 🖼️ Lazy SWS Scaler Init: Wait until the first frame reveals its

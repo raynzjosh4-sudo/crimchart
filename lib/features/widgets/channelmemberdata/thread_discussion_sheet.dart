@@ -14,19 +14,21 @@ import 'package:uuid/uuid.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 import 'manifesto_chat_bubble_shimmer.dart';
-import 'manifesto_chat_bubble.dart';
+import 'tiktok_comment_tile.dart';
 import 'package:crimchart/profile/pages/profile_page.dart';
 
 class ThreadDiscussionSheet extends ConsumerStatefulWidget {
   final String threadId;
   final String? channelId;
   final String? channelName;
+  final VoidCallback? onClose;
 
   const ThreadDiscussionSheet({
     super.key,
     required this.threadId,
     this.channelId,
     this.channelName,
+    this.onClose,
   });
 
   @override
@@ -90,9 +92,9 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
     super.dispose();
   }
 
-  Future<void> _handleSend() async {
-    final text = _commentController.text.trim();
-    if (text.isEmpty) return;
+  Future<void> _handleSend(String text) async {
+    final trimmedText = text.trim();
+    if (trimmedText.isEmpty) return;
 
     final authState = ref.read(authControllerProvider);
     final user = authState.user;
@@ -112,7 +114,7 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
       createdAt: DateTime.now(),
       channelId: widget.channelId ?? 'unknown',
       channelName: widget.channelName ?? 'Channel',
-      caption: text,
+      caption: trimmedText,
       isPending: 1,
     );
 
@@ -135,7 +137,7 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
       await Supabase.instance.client.from('channel_post_comments').insert({
         'post_id': widget.threadId,
         'author_id': user?.id,
-        'message': text,
+        'message': trimmedText,
         'channel_id': widget.channelId,
         'image_urls': _selectedMedia.map((m) => m.path).toList(),
       });
@@ -166,8 +168,8 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF121212),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+        color: const Color(0xFF0F0F0F),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       child: Column(
         children: [
@@ -210,22 +212,36 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
 
           // ── HEADER ──
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  'Discussion',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
+                Center(
+                  child: Text(
+                    commentsAsync.when(
+                      data: (c) => '${c.length} comments',
+                      loading: () => 'Comments',
+                      error: (_, __) => 'Discussion',
+                    ),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, color: Colors.white60),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    onPressed: () {
+                      if (widget.onClose != null) {
+                        widget.onClose!();
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
+                    icon: Icon(Icons.close, color: Colors.white70, size: 22.sp),
+                  ),
                 ),
               ],
             ),
@@ -256,24 +272,25 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
                   itemCount: comments.length,
                   itemBuilder: (context, index) {
                     final c = comments[index];
-                    return ManifestoChatBubble(
+                    return TikTokCommentTile(
                       username: c.authorUsername,
                       avatarUrl: c.authorAvatarUrl,
                       message: c.caption ?? '',
-                      themeColor: const Color(0xFFFFD700),
-                      isMe: c.authorId == currentUserId,
-                      imageUrls: c.imageUrls,
+                      likes: c.likes,
+                      isLiked: c.isLiked ?? false,
                       // 👑 Long-press → delete sheet (only for own messages)
-                      onLongPress: c.authorId == currentUserId
-                          ? () => _showDeleteSheet(context, c.id)
-                          : null,
-                      // 👑 Avatar tap → profile page
                       onAvatarTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => ProfilePage(userId: c.authorId),
                         ),
                       ),
+                      onLike: () {
+                        // Implement like logic here if needed
+                      },
+                      onReply: () {
+                        // Implement reply logic here if needed
+                      },
                     );
                   },
                 );
@@ -336,32 +353,91 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
               ),
             ),
 
-          // ── INPUT FIELD ──
           CommentInputField(
             controller: _commentController,
-            onSend: _handleSend,
+            onSend: (String text) => _handleSend(text),
+            isTikTokStyle: true,
+            onTap: () => _triggerInputModal(context), // 👑 TRIGGER MODAL
+            onImageTap: _openImagePicker, // 👑 ADDED CAMERA SUPPORT
             userImageUrl: Supabase
                 .instance
                 .client
                 .auth
                 .currentUser
                 ?.userMetadata?['avatar_url'],
-            onImageTap: () async {
-              final result = await Navigator.push<List<MediaItem>>(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PostPage(
-                    targetChannelId: widget.channelId,
-                    isManifestoContext: true,
-                  ),
-                ),
-              );
-              if (result != null && result.isNotEmpty) {
-                setState(() => _selectedMedia = [..._selectedMedia, ...result]);
-              }
-            },
           ),
         ],
+      ),
+    );
+  }
+
+  // 👑 NEW: Open specialized image/media picker
+  Future<void> _openImagePicker() async {
+    final result = await Navigator.push<List<MediaItem>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostPage(
+          targetChannelId: widget.channelId,
+          isManifestoContext: true,
+        ),
+      ),
+    );
+    if (result != null && result.isNotEmpty) {
+      setState(() => _selectedMedia = [..._selectedMedia, ...result]);
+    }
+  }
+
+  // 👑 NEW: Trigger specialized input modal
+  void _triggerInputModal(BuildContext context) {
+    final TextEditingController modalController = TextEditingController();
+    modalController.text = _commentController.text;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: EdgeInsets.symmetric(vertical: 12.h),
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Colors.white12,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              CommentInputField(
+                controller: modalController,
+                isTikTokStyle: true,
+                autoFocus: true,
+                onSend: (String text) {
+                  _commentController.text = text;
+                  _handleSend(text);
+                  Navigator.pop(context);
+                },
+                onImageTap: _openImagePicker, // 👑 ADDED CAMERA SUPPORT
+                userImageUrl: Supabase
+                    .instance
+                    .client
+                    .auth
+                    .currentUser
+                    ?.userMetadata?['avatar_url'],
+              ),
+              SizedBox(height: 8.h),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -418,8 +494,10 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
                   color: Colors.red.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.delete_outline_rounded,
-                    color: Colors.redAccent),
+                child: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.redAccent,
+                ),
               ),
               title: Text(
                 'Delete Comment',
@@ -431,10 +509,7 @@ class _ThreadDiscussionSheetState extends ConsumerState<ThreadDiscussionSheet> {
               ),
               subtitle: Text(
                 'This cannot be undone',
-                style: TextStyle(
-                  color: Colors.white30,
-                  fontSize: 12.sp,
-                ),
+                style: TextStyle(color: Colors.white30, fontSize: 12.sp),
               ),
               onTap: () {
                 Navigator.pop(context);

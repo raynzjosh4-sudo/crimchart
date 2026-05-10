@@ -3,6 +3,8 @@ import 'package:crimchart/features/channel/application/channel_moments_provider.
 import 'package:flutter/material.dart';
 import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crimchart/video/pages/video_feed_page.dart';
+import 'package:crimchart/video/core/models/feed_video_item.dart';
 import 'native_button.dart';
 import 'promotion_banner_card.dart';
 
@@ -124,8 +126,31 @@ class _VideoPromotionBannerState extends ConsumerState<VideoPromotionBanner> {
                         ),
                       );
                     },
-                    child: PromotionBannerCard(
-                      moment: moments[index % moments.length],
+                    child: GestureDetector(
+                      onTap: () {
+                        // Map the moments to feed items and push the VideoFeedPage
+                        final feedItems = moments
+                            .map(
+                              (m) => FeedVideoItem.fromChannelMoment(
+                                m,
+                                widget.channelName ?? 'Channel',
+                              ),
+                            )
+                            .toList();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => VideoFeedPage(
+                              videos: feedItems,
+                              initialIndex: index % moments.length,
+                              initialTab: VideoFeedTab.channel,
+                            ),
+                          ),
+                        );
+                      },
+                      child: PromotionBannerCard(
+                        moment: moments[index % moments.length],
+                      ),
                     ),
                   );
                 },

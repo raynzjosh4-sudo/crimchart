@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:crimchart/core/utils/responsive_size.dart';
 import 'package:crimchart/features/feed/domain/entities/post_entity.dart';
-import '../video_feed_page.dart';
+import 'package:crimchart/video/pages/video_feed_page.dart';
+import 'package:crimchart/video/core/models/feed_video_item.dart';
 
 class VideoCard extends StatelessWidget {
   final PostEntity video;
@@ -20,8 +21,11 @@ class VideoCard extends StatelessWidget {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (_, animation, __) => VideoFeedPage(
-          videos: allVideos,
+          videos: allVideos
+              .map((p) => FeedVideoItem.fromPostEntity(p))
+              .toList(),
           initialIndex: index,
+          initialTab: VideoFeedTab.channel,
         ),
         transitionsBuilder: (_, animation, __, child) {
           // Native-feel fade + scale up from the card

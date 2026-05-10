@@ -114,7 +114,7 @@ class ChartNativeFFI {
 
   /// 👑 STABILITY TOGGLE: If the Native C++ engine (FFI) is causing crashes (SIGSEGV),
   /// set this to 'false' to force the app to use FFmpegKit fallback instead.
-  static bool useNativeEngine = true; // 👑 ENABLED: Build issues fixed
+  static bool useNativeEngine = false; // 👑 DISABLED to prevent posting crashes
 
   factory ChartNativeFFI() {
     return _instance;

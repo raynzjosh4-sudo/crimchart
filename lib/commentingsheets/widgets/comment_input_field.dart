@@ -6,13 +6,16 @@ import 'animated_send_button.dart';
 
 class CommentInputField extends StatelessWidget {
   final TextEditingController controller;
-  final VoidCallback onSend;
+  final void Function(String) onSend;
   final VoidCallback? onImageTap;
   final VoidCallback? onLongPressStart;
   final VoidCallback? onLongPressEnd;
   final String? userImageUrl;
   final bool hasMedia;
-  final bool showTextField; // 👑 ADDED
+  final bool showTextField;
+  final bool isTikTokStyle;
+  final bool autoFocus;
+  final VoidCallback? onTap;
 
   const CommentInputField({
     super.key,
@@ -22,8 +25,11 @@ class CommentInputField extends StatelessWidget {
     this.onLongPressStart,
     this.onLongPressEnd,
     this.userImageUrl,
+    this.onTap,
     this.hasMedia = false,
-    this.showTextField = true, // 👑 DEFAULT TO TRUE
+    this.showTextField = true,
+    this.isTikTokStyle = false,
+    this.autoFocus = false,
   });
 
   @override
@@ -60,77 +66,94 @@ class CommentInputField extends StatelessWidget {
                   Expanded(
                     child: Container(
                       constraints: BoxConstraints(
-                        minHeight: 48.h,
+                        minHeight: isTikTokStyle ? 42.h : 48.h,
                         maxHeight: 120.h,
                       ),
                       decoration: BoxDecoration(
-                        color: colorScheme.onSurface.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(28.r),
+                        color: isTikTokStyle
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : colorScheme.onSurface.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(
+                          isTikTokStyle ? 24.r : 28.r,
+                        ),
                       ),
-                      padding: EdgeInsets.symmetric(horizontal: 12.w),
+                      padding: EdgeInsets.symmetric(horizontal: 14.w),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Post/Camera Icon (on the left now)
-                          Padding(
-                            padding: EdgeInsets.only(bottom: 12.h),
-                            child: GestureDetector(
+                          // Main TextField
+                          Expanded(
+                            child: TextField(
+                              controller: controller,
+                              autofocus: autoFocus,
+                              readOnly: onTap != null,
+                              onTap: onTap,
+                              maxLines: 5,
+                              minLines: 1,
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: isTikTokStyle
+                                    ? 'Add comment...'
+                                    : context.tr('message'),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 10.h,
+                                ),
+                                hintStyle: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (isTikTokStyle) ...[
+                            GestureDetector(
                               onTap: onImageTap,
                               child: Icon(
                                 LucideIcons.camera,
-                                color: colorScheme.onSurface.withValues(
-                                  alpha: 0.5,
-                                ),
-                                size: 24.sp,
+                                size: 22.sp,
+                                color: Colors.white,
                               ),
                             ),
-                          ),
-                          SizedBox(width: 8.w),
-
-                          // Main TextField
-                          Expanded(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12.h),
-                              child: TextField(
-                                controller: controller,
-                                maxLines: 5,
-                                minLines: 1,
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: colorScheme.onSurface,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: context.tr(
-                                    'message',
-                                  ), // Update translation key if needed
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                  hintStyle: TextStyle(
-                                    color: colorScheme.onSurface.withValues(
-                                      alpha: 0.4,
-                                    ),
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
                   )
                 else
-                  const Spacer(), // 👑 Pushes the button to the right
+                  const Spacer(),
                 SizedBox(width: 8.w),
 
-                // Floating Send/Mic Button
+                // Send Button
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
                     final showSend = value.text.isNotEmpty || hasMedia;
+
+                    if (isTikTokStyle) {
+                      return GestureDetector(
+                        onTap: showSend ? () => onSend(controller.text) : null,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 4.w,
+                            vertical: 8.h,
+                          ),
+                          child: Icon(
+                            LucideIcons.send,
+                            color: showSend
+                                ? colorScheme.primary
+                                : Colors.white24,
+                            size: 28.sp,
+                          ),
+                        ),
+                      );
+                    }
 
                     return Container(
                       width: 48.r,
@@ -152,9 +175,13 @@ class CommentInputField extends StatelessWidget {
                       child: Center(
                         child: AnimatedSendButton(
                           size: 22.sp,
-                          color: showSend ? Colors.white : colorScheme.onSurface.withValues(alpha: 0.5),
+                          color: showSend
+                              ? Colors.white
+                              : colorScheme.onSurface.withValues(alpha: 0.5),
                           icon: LucideIcons.send,
-                          onTap: showSend ? onSend : () {},
+                          onTap: showSend
+                              ? () => onSend(controller.text)
+                              : () {},
                           onLongPressStart: null,
                           onLongPressEnd: null,
                         ),

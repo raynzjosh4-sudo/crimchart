@@ -557,7 +557,7 @@ class _CommentingSheetState extends ConsumerState<CommentingSheet> {
               controller: _commentController,
               userImageUrl: currentUser?.profileImageUrl,
               hasMedia: _selectedMediaItems.isNotEmpty,
-              onSend: _handlePost,
+              onSend: (text) => _handlePost(),
               onLongPressStart: _startRecording,
               onLongPressEnd: _stopRecording,
               showTextField: widget.showInputField, // 👑 USE THE FLAG HERE

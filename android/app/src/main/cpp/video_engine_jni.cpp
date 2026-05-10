@@ -61,6 +61,20 @@ extern "C" {
         }
         return 0;
     }
+
+    double ve_get_position(int32_t textureId) {
+        if (decoders.find(textureId) != decoders.end()) {
+            return decoders[textureId]->getPosition();
+        }
+        return 0.0;
+    }
+
+    double ve_get_duration(int32_t textureId) {
+        if (decoders.find(textureId) != decoders.end()) {
+            return decoders[textureId]->getDuration();
+        }
+        return 0.0;
+    }
 }
 
 extern "C" JNIEXPORT void JNICALL

@@ -28,6 +28,12 @@ typedef _VePauseVideoDart = int Function(int textureId);
 typedef _VeResumeVideoC = ffi.Int32 Function(ffi.Int32 textureId);
 typedef _VeResumeVideoDart = int Function(int textureId);
 
+typedef _VeGetPositionC = ffi.Double Function(ffi.Int32 textureId);
+typedef _VeGetPositionDart = double Function(int textureId);
+
+typedef _VeGetDurationC = ffi.Double Function(ffi.Int32 textureId);
+typedef _VeGetDurationDart = double Function(int textureId);
+
 class NativeVideoEngine {
   static late final ffi.DynamicLibrary _lib;
 
@@ -39,6 +45,8 @@ class NativeVideoEngine {
   static late final _VeStopVideoDart _stopVideo;
   static late final _VePauseVideoDart _pauseVideo;
   static late final _VeResumeVideoDart _resumeVideo;
+  static late final _VeGetPositionDart _getPosition;
+  static late final _VeGetDurationDart _getDuration;
 
   static bool _initialized = false;
 
@@ -72,6 +80,8 @@ class NativeVideoEngine {
       _stopVideo = _lib.lookupFunction<_VeStopVideoC, _VeStopVideoDart>('ve_stop_video');
       _pauseVideo = _lib.lookupFunction<_VePauseVideoC, _VePauseVideoDart>('ve_pause_video');
       _resumeVideo = _lib.lookupFunction<_VeResumeVideoC, _VeResumeVideoDart>('ve_resume_video');
+      _getPosition = _lib.lookupFunction<_VeGetPositionC, _VeGetPositionDart>('ve_get_position');
+      _getDuration = _lib.lookupFunction<_VeGetDurationC, _VeGetDurationDart>('ve_get_duration');
     } catch (e) {
       print('[NativeVideoEngine Dart] Optional ve_play_video, ve_stop_video, ve_pause_video, ve_resume_video or ve_dispose_video not found.');
     }
@@ -167,6 +177,26 @@ class NativeVideoEngine {
       print('[NativeVideoEngine Dart] Resume queued $textureId: $result');
     } catch (e) {
       print('[NativeVideoEngine Dart] Error resuming video: $e');
+    }
+  }
+
+  static double getPosition(int textureId) {
+    if (!_initialized) return 0.0;
+    if (Platform.isWindows) return 0.0;
+    try {
+      return _getPosition(textureId);
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  static double getDuration(int textureId) {
+    if (!_initialized) return 0.0;
+    if (Platform.isWindows) return 0.0;
+    try {
+      return _getDuration(textureId);
+    } catch (e) {
+      return 0.0;
     }
   }
 

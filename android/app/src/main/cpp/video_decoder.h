@@ -27,6 +27,9 @@ public:
     void resume();
     void stop();
 
+    double getPosition();
+    double getDuration();
+
 private:
     void decodeLoop();
 
@@ -35,6 +38,8 @@ private:
     std::string url;
     std::atomic<bool> isRunning{false};
     std::atomic<bool> isPaused{false};
+    std::atomic<double> currentPosition{0.0};
+    std::atomic<double> duration{0.0};
     std::thread* decoderThread = nullptr;
 };
 

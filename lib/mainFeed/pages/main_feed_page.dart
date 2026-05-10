@@ -1,20 +1,6 @@
 import 'dart:convert';
 import 'package:crimchart/core/utils/responsive_size.dart';
 
-import 'package:crimchart/chartappbar/chart_app_bar.dart';
-import 'package:crimchart/features/newinsidechartstartpage/widgets/pagination_indicators.dart';
-import 'package:crimchart/features/widgets/shimmer/shimmer_effect.dart';
-import 'package:crimchart/mainFeed/dummydata/feed_dummy_data.dart';
-import 'package:crimchart/mainFeed/features/bottomappbar/widgets/main_bottom_app_bar.dart';
-import 'package:crimchart/mainFeed/features/cardwidgets/shimmer/discover_charts_shimmer.dart';
-import 'package:crimchart/mainFeed/features/cardwidgets/shimmer/main_feed_card_shimmer.dart';
-import 'package:crimchart/mainFeed/features/cardwidgets/shimmer/story_list_shimmer.dart';
-import 'package:crimchart/mainFeed/features/mainfeedcard/main_feed_card.dart';
-import 'package:crimchart/mainFeed/features/mainfeedcard/models/main_feed_card_type_model.dart';
-import 'package:crimchart/posting/pages/post_page.dart';
-import 'package:crimchart/profile/channels/pages/channels_page.dart';
-import 'package:crimchart/profile/pages/profile_page.dart';
-import 'package:crimchart/video/pages/video_feed_page.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -281,7 +267,8 @@ class _MainFeedPageState extends State<MainFeedPage> {
                                 firstPageErrorIndicatorBuilder: (_) =>
                                     ErrorIndicator(
                                       onRetry: _pagingController.refresh,
-                                      message: 'We couldn\'t load your feed. Please check your connection.',
+                                      message:
+                                          'We couldn\'t load your feed. Please check your connection.',
                                     ),
                                 newPageErrorIndicatorBuilder: (_) =>
                                     ErrorIndicator(
@@ -295,7 +282,7 @@ class _MainFeedPageState extends State<MainFeedPage> {
               ),
             )
           : _selectedIndex == 1
-          ? const VideoFeedPage()
+          ? const VideoFeedPage(showBack: false)
           : _selectedIndex == 2
           ? const PostPage()
           : _selectedIndex == 3
@@ -315,14 +302,3 @@ class _MainFeedPageState extends State<MainFeedPage> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
